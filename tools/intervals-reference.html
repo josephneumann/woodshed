@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="header.js" defer></script>
+<script src="theory.js"></script><script src="audio.js"></script>
+<title>Interval Reference · The Woodshed</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);padding:24px;display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+  .wrap{width:100%;max-width:860px}
+  .sub a{color:var(--accent)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  h2{font-size:15px;margin:0 0 12px;font-weight:600}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:0 8px 8px}
+  td{padding:9px 8px;border-top:1px solid var(--line);vertical-align:middle}
+  tr:hover td{background:var(--panel2)}
+  .iv{font-weight:700;font-size:14px;line-height:1.3}.iv small{display:block;color:var(--muted);font-weight:400;font-size:11px}
+  .riff{color:var(--ink)}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap;color:#10131a}
+  .form{color:var(--muted);font-variant-numeric:tabular-nums}
+  .inv{color:var(--muted)}
+  .play{padding:7px 12px;font-size:13px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);cursor:pointer}
+  .play:hover{border-color:var(--accent)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr}td .form,th.h-form{display:none}}
+  @media(max-width:520px){table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}body{padding:14px}}
+  ul{margin:6px 0 0;padding-left:18px;color:var(--muted);font-size:13px;line-height:1.7}
+  ul b{color:var(--ink);font-weight:600}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:12px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .wk{font-weight:600;color:var(--accent)}
+  .shapes{display:grid;grid-template-columns:repeat(auto-fill,minmax(94px,1fr));gap:10px}
+  .mini{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;border:1px solid transparent;border-radius:10px;padding:7px 4px}
+  .mini:hover{border-color:var(--line);background:var(--panel2)}
+  .mini .lbl{font-size:12px;font-weight:600}
+  .mini svg{display:block}
+  svg.li{display:inline-block;width:1em;height:1em;min-width:0;max-width:none;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em;flex:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead"><img class="masthead-plate" src="../assets/plates/plate-ear.png" alt="">
+    <div class="kicker">The Woodshed · Ear</div>
+    <h1>Interval Reference</h1>
+    <p class="sub">The 12 intervals — each with a riff you know, its colour, its formula, and what it inverts to. Click <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg> to hear it (played up from A). Practice in the <a href="ear-trainer.html">Ear Trainer →</a></p>
+  </div>
+  <hr class="fretline">
+
+  <div class="panel">
+    <table>
+      <thead><tr><th>Interval</th><th>Sounds like (first pitch jump)</th><th>Colour</th><th class="h-form">Formula</th><th>Inverts to</th><th></th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="panel">
+    <h2>The shapes on the neck</h2>
+    <div class="shapes" id="shapes"></div>
+    <div style="color:var(--muted);font-size:12px;margin-top:12px;line-height:1.5">Chord-diagram view — <b style="color:var(--ink)">low E on the left, high e on the right</b>; nut at top. <span style="color:var(--accent)">●</span> = the lower (root) note, ○ = the other. These compact shapes stay the same anywhere on the neck — but cross the <b style="color:var(--ink)">G–B strings</b> and shift the upper note one fret. Click any diagram to hear it.</div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>Identify by ear</h2>
+      <ul>
+        <li><b>Consonance first.</b> Is it stable/sweet or tense? Then use process of elimination within that group.</li>
+        <li><b>Then distance.</b> 6ths sound wider apart than 3rds — because they are.</li>
+        <li><b>Sing the gap.</b> Run a major scale up to the note for major/perfect intervals, a minor scale for minor 3rds/6ths/7ths.</li>
+        <li><b>Imaginary tonic.</b> Hear one note as the root of a key and place the other against it (a tritone = degrees 4→7 pulling home).</li>
+        <li><b>Riff anchors</b> work but take extra mental steps — lean on them at first, then drop them.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h2>Memorize them in a month</h2>
+      <ul>
+        <li><span class="wk">Week 1</span> — Steps: Minor 2nd, Major 2nd.</li>
+        <li><span class="wk">Week 2</span> — Perfects: unison, P4, P5, octave.</li>
+        <li><span class="wk">Week 3</span> — Imperfect consonants: m3, M3, m6, M6.</li>
+        <li><span class="wk">Week 4</span> — Dissonants: tritone, m7, M7.</li>
+      </ul>
+      <h2 style="margin-top:14px">Inversions</h2>
+      <ul>
+        <li>Flip an interval (top note down an octave) and: <b>Perfect stays perfect</b>, <b>Major↔Minor</b>, <b>Tritone stays tritone</b>. The two always sum to 12 semitones.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="panel" style="color:var(--muted);font-size:12.5px">
+    Shapes note: interval fingerings stay the same across the neck <b style="color:var(--ink)">except</b> when they cross the <b style="color:var(--ink)">G–B strings</b> (the only pair tuned a major 3rd apart, not a 4th) — shift one fret. The Ear Trainer's fretboard shows the real voicing for each one.
+  </div>
+</div>
+<script>
+const ROOT=57; // A3
+const COLOR={'Perfect consonance':'#5ec07a','Imperfect consonance':'#7e95b3','Soft dissonance':'#e0b15e','Sharp dissonance':'#e0655e'};
+const IVS=[
+  {n:'m2',long:'Minor 2nd',semi:1,riff:'Miserlou (Dick Dale) · or “Jaws”',cls:'Sharp dissonance',form:'half step',inv:'Major 7th'},
+  {n:'M2',long:'Major 2nd',semi:2,riff:'You Really Got Me (The Kinks)',cls:'Soft dissonance',form:'whole step',inv:'Minor 7th'},
+  {n:'m3',long:'Minor 3rd',semi:3,riff:'Smoke on the Water (Deep Purple)',cls:'Imperfect consonance',form:'whole + half',inv:'Major 6th'},
+  {n:'M3',long:'Major 3rd',semi:4,riff:'Ob-La-Di bass riff (The Beatles)',cls:'Imperfect consonance',form:'2 whole steps',inv:'Minor 6th'},
+  {n:'P4',long:'Perfect 4th',semi:5,riff:'Smells Like Teen Spirit (Nirvana)',cls:'Perfect consonance',form:'2 whole + half',inv:'Perfect 5th'},
+  {n:'TT',long:'Tritone',semi:6,riff:'YYZ (Rush)',cls:'Sharp dissonance',form:'3 whole steps',inv:'Tritone'},
+  {n:'P5',long:'Perfect 5th',semi:7,riff:'Crazy Train (Ozzy) · any power chord',cls:'Perfect consonance',form:'3 whole + half',inv:'Perfect 4th'},
+  {n:'m6',long:'Minor 6th',semi:8,riff:'In My Life (The Beatles)',cls:'Imperfect consonance',form:'4 whole steps',inv:'Major 3rd'},
+  {n:'M6',long:'Major 6th',semi:9,riff:'Two of Us (The Beatles)',cls:'Imperfect consonance',form:'4 whole + half',inv:'Minor 3rd'},
+  {n:'m7',long:'Minor 7th',semi:10,riff:"Can't Stop (Red Hot Chili Peppers)",cls:'Soft dissonance',form:'5 whole steps',inv:'Major 2nd'},
+  {n:'M7',long:'Major 7th',semi:11,riff:'Take on Me — chorus leap (a-ha)',cls:'Sharp dissonance',form:'5 whole + half',inv:'Minor 2nd'},
+  {n:'P8',long:'Octave',semi:12,riff:'My Sharona (The Knack)',cls:'Perfect consonance',form:'12 half steps',inv:'Unison'}
+];
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function playIv(semi){
+  if(typeof stopTones==='function')stopTones();
+  tone(ROOT,0,0.55,0.3);
+  tone(ROOT+semi,0.62,0.95,0.3);
+}
+document.getElementById('rows').innerHTML=IVS.map((v,i)=>`
+  <tr>
+    <td><span class="iv tab-num">${v.n}<small>${esc(v.long)}</small></span></td>
+    <td class="riff">${esc(v.riff)}</td>
+    <td><span class="pill" style="background:${COLOR[v.cls]}">${esc(v.cls.replace(' consonance','').replace(' dissonance',' diss.'))}</span></td>
+    <td class="form">${esc(v.form)}</td>
+    <td class="inv">${esc(v.inv)}</td>
+    <td><button class="play" data-semi="${v.semi}" aria-label="Play ${v.long}"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg></button></td>
+  </tr>`).join('');
+document.getElementById('rows').addEventListener('click',e=>{const b=e.target.closest('.play');if(b)playIv(+b.dataset.semi);});
+document.getElementById('legend').innerHTML=Object.entries(COLOR).map(([k,c])=>`<span><i class="dot" style="background:${c}"></i>${esc(k)}</span>`).join('');
+
+// ---- canonical two-note shape per interval, computed from standard tuning (deterministic) ----
+const OM=OPEN_MIDI; // [40,45,50,55,59,64] low E … high e
+function canonicalShape(semi){
+  let best=null;
+  for(let s1=0;s1<6;s1++)for(let s2=s1;s2<=Math.min(s1+2,5);s2++){
+    const gap=s2-s1, df=semi-(OM[s2]-OM[s1]);       // df = upper fret - lower fret
+    if(gap===0){ if(semi>2)continue; } else if(df<-2||df>3){ continue; }   // same string only for 2nds; else a compact window
+    const fL=Math.max(1,1-df), fU=fL+df;
+    if(fL>5||fU>5||fU<1)continue;
+    const bCross=(gap===1&&(OM[s2]-OM[s1])!==5)?5:0;  // avoid the irregular G–B (major-3rd) pair in the canonical view
+    const score=gap*10+Math.abs(df)+bCross+fL*0.1+s1*0.01;  // prefer adjacent 4th strings, compact span, low position
+    if(!best||score<best.score)best={s1,s2,fL,fU,score};
+  }
+  return best?[{s:best.s1,f:best.fL},{s:best.s2,f:best.fU}]:null;
+}
+function miniFret(pos){
+  const W=84,H=92,padX=11,padY=15,FR=5,ST=6,ns='http://www.w3.org/2000/svg';
+  const x=s=>padX+(W-2*padX)*(s/(ST-1));
+  const yF=f=>padY+(H-2*padY)*(f/FR);              // fret-line y (f=0 nut … 5)
+  const yD=f=>padY+(H-2*padY)*((f-0.5)/FR);        // dot y centred in fret row f(1..5)
+  let g=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`;
+  for(let s=0;s<ST;s++)g+=`<line x1="${x(s)}" y1="${yF(0)}" x2="${x(s)}" y2="${yF(FR)}" stroke="var(--line)" stroke-width="1.4"/>`;
+  for(let f=0;f<=FR;f++)g+=`<line x1="${x(0)}" y1="${yF(f)}" x2="${x(ST-1)}" y2="${yF(f)}" stroke="var(--line)" stroke-width="${f===0?3.2:1.4}"/>`;
+  const midi=p=>OM[p.s]+p.f, root=midi(pos[0])<=midi(pos[1])?0:1;
+  pos.forEach((p,i)=>{ const cxv=x(p.s),cyv=yD(p.f);
+    g+= i===root
+      ? `<circle cx="${cxv}" cy="${cyv}" r="6" fill="var(--accent)"/>`
+      : `<circle cx="${cxv}" cy="${cyv}" r="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>`;
+  });
+  return g+`</svg>`;
+}
+document.getElementById('shapes').innerHTML=IVS.map(v=>{
+  const sh=canonicalShape(v.semi);
+  return sh?`<div class="mini" data-semi="${v.semi}" title="Play ${esc(v.long)}"><span class="lbl tab-num">${v.n}</span>${miniFret(sh)}</div>`:'';
+}).join('');
+document.getElementById('shapes').addEventListener('click',e=>{const m=e.target.closest('.mini');if(m)playIv(+m.dataset.semi);});
+</script>
+</body>
+</html>

@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="header.js" defer></script>
+<script src="audio.js"></script>
+<script src="stats.js"></script>
+<title>Circle of Fifths · The Woodshed</title>
+<style>
+  *{box-sizing:border-box}
+  :root{--accent2:#7e95b3}            /* "diatonic neighbours" highlight — the app's muted steel, keeps the wheel on the espresso/amber palette */
+  body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);padding:24px;display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+  .wrap{width:100%;max-width:920px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 12px;font-weight:600}
+  .controls{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  .controls label{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{background:var(--panel2,#1f242e);color:var(--muted);border:none;padding:7px 12px;cursor:pointer;font-size:13px;border-right:1px solid var(--line)}
+  .seg button:last-child{border-right:none}
+  /* Amber discipline: label-mode selected state is quiet — amber fill reserved for the Play button */
+  .seg button.sel{background:var(--panel);color:var(--ink);font-weight:600;border:1px solid var(--line);box-shadow:0 1px 2px hsl(26 30% 8%/.12)}
+  .layout{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+  .wheelbox{flex:1;min-width:340px}
+  #wheel{display:block;width:100%;max-width:480px;margin:0 auto}
+  #wheel path{cursor:pointer;transition:opacity .1s}
+  #wheel path:hover{opacity:.85}
+  .info{flex:1;min-width:280px}
+  .info h3{font-size:18px;margin:0 0 4px}
+  .info .sig{font-size:13px;color:var(--muted);margin-bottom:2px}
+  .info .rel{font-size:13px;color:var(--muted);margin-bottom:12px}
+  .ihead{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:14px 0 7px}
+  .chips{display:flex;gap:7px;flex-wrap:wrap}
+  .chip{background:var(--panel2,#1f242e);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 11px;font-size:13.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .chip:hover{border-color:var(--accent)}
+  .chip .rn{font-size:11px;color:var(--accent);font-weight:700;min-width:22px;text-align:center}
+  .chip.dim .rn{color:var(--accent2)}
+  .row{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+  .btn{background:var(--accent);color:#1a1407;border:none;border-radius:9px;padding:9px 14px;font-size:13.5px;font-weight:600;cursor:pointer}
+  .btn.ghost{background:var(--panel2,#1f242e);color:var(--ink);border:1px solid var(--line);font-weight:500}
+  .btn.ghost:hover{border-color:var(--accent)}
+  .btn.on{background:var(--accent2);color:#10151d}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:10px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}.sw{width:13px;height:13px;border-radius:3px;display:inline-block}
+  .hint{font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:12px}
+  /* degree map */
+  .dm-bar{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+  .dm-drill{border:1px solid hsl(var(--brand)/.55);background:none;color:hsl(var(--brand-strong));border-radius:8px;padding:6px 13px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s}
+  .dm-drill:hover{background:hsl(var(--brand)/.1)}
+  .dm-q{font-size:13.5px;color:var(--ink)}
+  .dm-chip:hover circle{opacity:1}
+  .muted2{font-size:13px;color:var(--muted)}
+  /* guitar shapes */
+  #shapes{display:flex;gap:10px;flex-wrap:wrap}
+  .shape{text-align:center;background:var(--panel2,#1f242e);border:1px solid var(--line);border-radius:10px;padding:8px 6px 4px;min-width:72px}
+  .shape .slbl{font-size:11px;color:var(--muted);margin-bottom:2px}
+  .shape .slbl b{color:var(--accent);font-weight:700}
+  .nodia{height:78px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:18px}
+  /* builder palette */
+  .palgrp{margin-bottom:12px}
+  .palgrp .lab{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px}
+  .pal,.preset{background:var(--panel2,#1f242e);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin:0 6px 6px 0}
+  .pal:hover,.preset:hover{border-color:var(--accent)}
+  .pal .rn{font-size:10px;color:var(--accent);font-weight:700}
+  .preset{color:var(--muted)}
+  /* Preset active: amber border accent, no amber fill */
+  .preset.active{border-color:var(--accent);border-width:2px;color:var(--ink);font-weight:600;background:var(--panel2,#1f242e)}
+  .click-wrap{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+  .strip{display:flex;gap:7px;flex-wrap:wrap;align-items:center;min-height:46px;background:var(--panel2,#1f242e);border:1px dashed var(--line);border-radius:10px;padding:9px}
+  .pchip{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:6px 9px;font-size:13.5px;cursor:pointer;display:inline-flex;flex-direction:column;align-items:center;gap:1px;line-height:1.15}
+  .pchip .rn{font-size:10px;color:var(--accent);font-weight:700}
+  .pchip .x{display:none}
+  .pchip:hover{border-color:var(--accent2)}
+  .pchip.on{background:var(--accent);color:#1a1407}.pchip.on .rn{color:#1a1407}
+  .pbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .pbar .tempo{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin-left:auto}
+  .pbar input[type=range]{accent-color:var(--accent)}
+  svg.li{display:inline-block;width:1em;height:1em;min-width:0;max-width:none;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em;flex:none}
+  /* tiny animated equalizer — swaps in for the Play icon while drums are grooving */
+  .eq{display:inline-flex;align-items:flex-end;gap:2px;width:1em;height:1em;vertical-align:-0.12em}
+  .eq i{width:3px;background:currentColor;border-radius:1px;height:35%;animation:eq-bounce .9s ease-in-out infinite}
+  .eq i:nth-child(2){animation-delay:.25s;height:80%}
+  .eq i:nth-child(3){animation-delay:.5s;height:55%}
+  @keyframes eq-bounce{0%,100%{height:30%}50%{height:100%}}
+  @media(prefers-reduced-motion:reduce){.eq i{animation:none;height:65%}.eq i:nth-child(2){height:90%}.eq i:nth-child(3){height:75%}}
+  @media(max-width:480px){body{padding:14px}.panel{padding:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead"><img class="masthead-plate" src="../assets/plates/plate-fretboard.png" alt="">
+    <div class="kicker">The Woodshed · Theory</div>
+    <h1>Circle of Fifths</h1>
+    <p class="sub">Click any key to make it home — its diatonic neighbours light up, chords play, shapes appear, and progressions transpose automatically.</p>
+  </div>
+  <hr class="fretline">
+
+  <div class="panel">
+    <div class="controls">
+      <label>Labels
+        <div class="seg" id="labels">
+          <button data-l="name" class="sel">Names</button>
+          <button data-l="roman">Roman numerals</button>
+          <button data-l="both">Both</button>
+          <button data-l="keysig">Key signatures</button>
+        </div>
+      </label>
+      <span class="hint" style="margin:0">Tip: click the outer ring for a major key, the inner ring for a minor key. Arrow keys ◄ ► rotate, ▲ ▼ switch major/minor.</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="layout">
+      <div class="wheelbox">
+        <div style="overflow-x:auto">
+        <svg id="wheel" viewBox="0 0 480 480" tabindex="0" aria-label="Circle of fifths" style="min-width:300px"></svg>
+        </div>
+        <div class="legend">
+          <span><span class="sw" style="background:var(--accent)"></span> tonic (I)</span>
+          <span><span class="sw" style="background:var(--accent2)"></span> diatonic neighbours</span>
+        </div>
+      </div>
+      <div class="info">
+        <h3 id="selKey"></h3>
+        <div class="sig" id="selSig"></div>
+        <div class="rel" id="relKey"></div>
+        <div class="row">
+          <button class="btn" id="playTonic"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg> Hear the chord</button>
+          <button class="btn ghost" id="playCad"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg> I–IV–V–I</button>
+          <button class="btn ghost" id="playScale"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg> Scale</button>
+        </div>
+        <div class="ihead">Diatonic chords — click to hear</div>
+        <div class="chips" id="chords"></div>
+        <div class="ihead">Closely related keys — click to visit</div>
+        <div class="chips" id="related"></div>
+      </div>
+    </div>
+    <div class="hint">The 7 diatonic chords of any key sit in one neat slice: the <b>I, IV, V</b> on the major ring with their relative minors (<b>ii, iii, vi</b>) directly inside, plus the <b>vii°</b>. Keys next to each other share all but one note — that's why neighbours modulate smoothly.</div>
+  </div>
+
+  <div class="panel">
+    <h2>Guitar shapes in this key</h2>
+    <div id="shapes"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Degree map — where the chords live from a barre</h2>
+    <div class="dm-bar">
+      <div class="seg" role="group" aria-label="Anchor string">
+        <button type="button" id="dmAnchorE" aria-pressed="true">Root on E</button>
+        <button type="button" id="dmAnchorA" aria-pressed="false">Root on A</button>
+      </div>
+      <button type="button" class="dm-drill" id="dmDrill">Drill me</button>
+      <span class="dm-q" id="dmQ" hidden></span>
+    </div>
+    <div id="degMap"></div>
+    <div class="hint" id="degRule"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Progression builder</h2>
+    <div class="palgrp"><div class="lab">Diatonic</div><div id="palDia"></div></div>
+    <div class="palgrp"><div class="lab">Secondary dominants</div><div id="palSec"></div></div>
+    <div class="palgrp"><div class="lab">Borrowed / modal interchange</div><div id="palBor"></div></div>
+    <div class="palgrp"><div class="lab">Presets</div><div id="presets"></div></div>
+    <div class="ihead" style="margin-top:6px">Your progression — click a chord to remove it</div>
+    <div class="strip" id="progStrip"></div>
+    <div class="pbar">
+      <button class="btn" id="progPlay"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg> Play</button>
+      <button class="btn ghost" id="progLoop"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> Loop</button>
+      <button class="btn ghost" id="progDrums"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg> Drums</button>
+      <select id="drPat" style="background:var(--panel2,#1f242e);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:13px;cursor:pointer"><option value="straight">Straight</option><option value="swing">Swing</option></select>
+      <label class="click-wrap">Drums <input type="range" id="drVol" min="0" max="100" value="25" style="accent-color:var(--accent);width:70px"></label>
+      <button class="btn ghost" id="progClear">Clear</button>
+      <label class="click-wrap"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg><input type="checkbox" id="clickTrack"> Click</label>
+      <span class="tempo">Tempo <input type="range" id="progTempo" min="50" max="170" value="100"> <span id="tempoVal">100</span> bpm</span>
+    </div>
+    <div class="hint">Everything here is stored as roman numerals, so when you click a new tonic on the wheel the whole progression <b>transposes automatically</b>. Secondary dominants borrow a chord's own V7 to lead into it; borrowed chords pull colour from the parallel major/minor.</div>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const TOOL_ID='circle-of-fifths';
+
+// ==== Woodshed drum engine (inline module — identical in target-tone-trainer.html & circle-of-fifths.html) ====
+// WebAudio kit on the shared ac() context. Lookahead scheduler (setInterval + audio-clock; no per-hit setTimeout).
+// Drums.start(bpm,pattern,bars,t0?) · Drums.stop() · Drums.setVol(v) · Drums.events(bpm,pattern,bars)
+const Drums=(function(){
+  const LOOK=0.12, TICK=25;                       // schedule 120ms ahead every 25ms
+  let master=null, timer=null, vol=0.25, running=false;
+  let bpm=100, pattern='straight', bars=1, barDur=0, t0=0, next=0;   // next = index into the virtual infinite event stream
+  function barEvents(pat){                          // one bar as beat-fractions (0..4) → drum; times never accumulated
+    const e=[];
+    if(pat==='swing'){                              // jazz: ride/hat swung 2:1, kick light 1&3, snare(brush) quiet 2&4
+      for(let b=0;b<4;b++){ e.push({beat:b,drum:'hat',vel:0.5}); e.push({beat:b+2/3,drum:'hat',vel:0.32}); } // "and" at 2/3 beat → 2:1
+      e.push({beat:0,drum:'kick',vel:0.7}); e.push({beat:2,drum:'kick',vel:0.6});
+      e.push({beat:1,drum:'snare',vel:0.28}); e.push({beat:3,drum:'snare',vel:0.28});
+      return e;
+    }
+    for(let b=0;b<4;b++){ e.push({beat:b,drum:'hat',vel:0.5}); e.push({beat:b+0.5,drum:'hat',vel:0.4}); } // even 8ths
+    e.push({beat:0,drum:'kick',vel:0.9}); e.push({beat:2,drum:'kick',vel:0.9});
+    e.push({beat:1,drum:'snare',vel:0.8}); e.push({beat:3,drum:'snare',vel:0.8});
+    return e;
+  }
+  function events(bpmv,pat,barsv){                  // pure: absolute times; bar N start = N*barDur (no drift)
+    const bd=60/bpmv, out=[], be=barEvents(pat).slice().sort((a,b)=>a.beat-b.beat);
+    for(let bar=0;bar<barsv;bar++){ const barStart=bar*4*bd; for(const ev of be) out.push({t:barStart+ev.beat*bd,drum:ev.drum,vel:ev.vel}); }
+    return out.sort((a,b)=>a.t-b.t);
+  }
+  function kick(a,t,vel){ const o=a.createOscillator(),g=a.createGain(); o.type='sine'; o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(50,t+0.12); g.gain.setValueAtTime(vel,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.16); o.connect(g).connect(master); o.start(t); o.stop(t+0.18); }
+  function noiseBuf(a,dur){ const n=Math.max(1,(a.sampleRate*dur)|0),b=a.createBuffer(1,n,a.sampleRate),d=b.getChannelData(0); for(let i=0;i<n;i++)d[i]=Math.random()*2-1; return b; }
+  function snare(a,t,vel){ const s=a.createBufferSource(); s.buffer=noiseBuf(a,0.2); const bp=a.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1800; bp.Q.value=0.7; const g=a.createGain(); g.gain.setValueAtTime(vel,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.14); s.connect(bp).connect(g).connect(master); s.start(t); s.stop(t+0.2);
+    const o=a.createOscillator(),og=a.createGain(); o.type='triangle'; o.frequency.value=180; og.gain.setValueAtTime(vel*0.3,t); og.gain.exponentialRampToValueAtTime(0.001,t+0.06); o.connect(og).connect(master); o.start(t); o.stop(t+0.08); }
+  function hat(a,t,vel){ const s=a.createBufferSource(); s.buffer=noiseBuf(a,0.05); const hp=a.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=7000; const g=a.createGain(); g.gain.setValueAtTime(vel*0.5,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.04); s.connect(hp).connect(g).connect(master); s.start(t); s.stop(t+0.06); }
+  const HIT={kick,snare,hat};
+  function scheduler(a){                             // emit each event exactly once via monotonic `next` (no window-boundary doubles)
+    const now=a.currentTime, horizon=now+LOOK, loopDur=bars*4*barDur, be=events(bpm,pattern,bars);
+    while(true){ const cycle=Math.floor(next/be.length), i=next%be.length, t=t0+cycle*loopDur+be[i].t;
+      if(t>=horizon) break;
+      if(t>=now-0.05) (HIT[be[i].drum]||hat)(a,Math.max(t,now),be[i].vel*vol);
+      next++;
+    }
+  }
+  function start(bpmv,pat,barsv,startAt){ stop(); const a=ac(); if(a.resume)a.resume();
+    bpm=bpmv; pattern=pat; bars=barsv||1; barDur=60/bpm; running=true;
+    master=a.createGain(); master.gain.value=1; master.connect(a.destination);
+    t0=(startAt!=null?startAt:a.currentTime+0.06); next=0;
+    scheduler(a); timer=setInterval(()=>{ if(running)scheduler(a); },TICK);
+  }
+  function stop(){ running=false; if(timer){clearInterval(timer);timer=null;} if(master){try{master.disconnect()}catch(e){}master=null;} }
+  function setVol(v){ vol=Math.max(0,Math.min(1,v)); }
+  return {start,stop,setVol,events,isRunning:()=>running};
+})();
+const N_SHARP=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+const N_FLAT =['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
+const SHARP_ORDER=['F♯','C♯','G♯','D♯','A♯','E♯','B♯'];
+const FLAT_ORDER =['B♭','E♭','A♭','D♭','G♭','C♭','F♭'];
+// clockwise from 12 o'clock (C). pc = pitch class of the MAJOR tonic; sig = +sharps / -flats.
+const KEYS=[
+ {pc:0, maj:'C', min:'Am',  sig:0},
+ {pc:7, maj:'G', min:'Em',  sig:1},
+ {pc:2, maj:'D', min:'Bm',  sig:2},
+ {pc:9, maj:'A', min:'F♯m', sig:3},
+ {pc:4, maj:'E', min:'C♯m', sig:4},
+ {pc:11,maj:'B', min:'G♯m', sig:5, altMaj:'C♭'},
+ {pc:6, maj:'F♯',min:'D♯m', sig:6, altMaj:'G♭', altMin:'E♭m'},
+ {pc:1, maj:'D♭',min:'B♭m', sig:-5, altMaj:'C♯', altMin:'A♯m'},
+ {pc:8, maj:'A♭',min:'Fm',  sig:-4},
+ {pc:3, maj:'E♭',min:'Cm',  sig:-3},
+ {pc:10,maj:'B♭',min:'Gm',  sig:-2},
+ {pc:5, maj:'F', min:'Dm',  sig:-1},
+];
+const pcName=(pc,flat)=>(flat?N_FLAT:N_SHARP)[((pc%12)+12)%12];
+const majRoot=p=>KEYS[p].pc, minRoot=p=>(KEYS[p].pc+9)%12;
+const tonicPc=()=>selMode==='maj'?KEYS[selPos].pc:minRoot(selPos);
+const keyFlat=()=>KEYS[selPos].sig<0;
+function sigText(sig){ if(sig===0) return 'no sharps or flats'; const n=Math.abs(sig), arr=sig>0?SHARP_ORDER:FLAT_ORDER; return `${arr.slice(0,n).join(' ')} — ${n} ${sig>0?'sharp':'flat'}${n>1?'s':''}`; }
+function sigShort(sig){ return sig===0?'♮':Math.abs(sig)+(sig>0?'♯':'♭'); }
+
+// chord quality → semitone voicing + name suffix
+const VOICE={maj:[0,4,7],min:[0,3,7],dim:[0,3,6],aug:[0,4,8],dom7:[0,4,7,10],maj7:[0,4,7,11],min7:[0,3,7,10],dim7:[0,3,6,9],m7b5:[0,3,6,10]};
+const SUF={maj:'',min:'m',dim:'°',aug:'+',dom7:'7',maj7:'maj7',min7:'m7',dim7:'°7',m7b5:'m7♭5'};
+const chordName=(pc,q)=>pcName(pc,keyFlat())+(SUF[q]||'');
+// spell flat-labelled chords (♭VI, ♭III…) with flats even in a sharp key
+const chordNameL=(pc,q,label)=>pcName(pc,keyFlat()||(label&&label.indexOf('♭')>=0))+(SUF[q]||'');
+
+// the 7 diatonic chords for a key (pos) in a mode; each tagged with its wheel segment (pos,ring) when it has one
+function diatonic(pos,mode){
+  const P=o=>((pos+o)%12+12)%12, K=KEYS, flat=K[pos].sig<0;
+  if(mode==='maj') return [
+    {rn:'I',  name:K[pos].maj,  root:majRoot(pos),  q:'maj', pos:pos,   ring:'maj'},
+    {rn:'ii', name:K[P(-1)].min,root:minRoot(P(-1)),q:'min', pos:P(-1), ring:'min'},
+    {rn:'iii',name:K[P(1)].min, root:minRoot(P(1)), q:'min', pos:P(1),  ring:'min'},
+    {rn:'IV', name:K[P(-1)].maj,root:majRoot(P(-1)),q:'maj', pos:P(-1), ring:'maj'},
+    {rn:'V',  name:K[P(1)].maj, root:majRoot(P(1)), q:'maj', pos:P(1),  ring:'maj'},
+    {rn:'vi', name:K[pos].min,  root:minRoot(pos),  q:'min', pos:pos,   ring:'min'},
+    {rn:'vii°',name:pcName((K[pos].pc+11)%12,flat)+'°', root:(K[pos].pc+11)%12, q:'dim', pos:-1},
+  ];
+  return [
+    {rn:'i',  name:K[pos].min,  root:minRoot(pos),  q:'min', pos:pos,   ring:'min'},
+    {rn:'ii°',name:pcName((minRoot(pos)+2)%12,flat)+'°', root:(minRoot(pos)+2)%12, q:'dim', pos:-1},
+    {rn:'III',name:K[pos].maj,  root:majRoot(pos),  q:'maj', pos:pos,   ring:'maj'},
+    {rn:'iv', name:K[P(-1)].min,root:minRoot(P(-1)),q:'min', pos:P(-1), ring:'min'},
+    {rn:'v',  name:K[P(1)].min, root:minRoot(P(1)), q:'min', pos:P(1),  ring:'min'},
+    {rn:'VI', name:K[P(-1)].maj,root:majRoot(P(-1)),q:'maj', pos:P(-1), ring:'maj'},
+    {rn:'VII',name:K[P(1)].maj, root:majRoot(P(1)), q:'maj', pos:P(1),  ring:'maj'},
+  ];
+}
+
+// ---- geometry ----
+const CX=240, CY=240;
+const MAJ=[166,222,194], MIN=[110,164,137], CTR=108;   // [innerR, outerR, labelR]
+const pol=(r,deg)=>{const a=deg*Math.PI/180;return [CX+r*Math.cos(a), CY+r*Math.sin(a)];};
+function sector(r0,r1,a0,a1){const[x0,y0]=pol(r1,a0),[x1,y1]=pol(r1,a1),[x2,y2]=pol(r0,a1),[x3,y3]=pol(r0,a0);
+  const f=n=>n.toFixed(2); return `M${f(x0)} ${f(y0)} A${r1} ${r1} 0 0 1 ${f(x1)} ${f(y1)} L${f(x2)} ${f(y2)} A${r0} ${r0} 0 0 0 ${f(x3)} ${f(y3)} Z`;}
+
+// restore persisted state (must happen before first render)
+let selPos=Stats.getPref(TOOL_ID,'selPos',0);
+let selMode=Stats.getPref(TOOL_ID,'selMode','maj');
+let labelMode=Stats.getPref(TOOL_ID,'labelMode','name');
+let lastDia=null;
+
+function savePrefs(){
+  Stats.setPref(TOOL_ID,'selPos',selPos);
+  Stats.setPref(TOOL_ID,'selMode',selMode);
+  Stats.setPref(TOOL_ID,'labelMode',labelMode);
+  Stats.setPref(TOOL_ID,'tempo',tempo);
+  Stats.setPref(TOOL_ID,'loop',loop);
+  Stats.setPref(TOOL_ID,'prog',JSON.stringify(prog));
+}
+
+function render(){
+  const dia=diatonic(selPos,selMode); lastDia=dia;
+  const segRN={}; dia.forEach(c=>{ if(c.pos>=0) segRN[c.pos+','+c.ring]=c.rn; });
+  const wedge=new Set([((selPos-1)%12+12)%12, selPos, (selPos+1)%12]);
+  let g='';
+  for(let i=0;i<12;i++){
+    const ai=i*30-90, a0=ai-15, a1=ai+15;
+    [['maj',MAJ],['min',MIN]].forEach(([ring,R])=>{
+      const isTonic = i===selPos && ((selMode==='maj')===(ring==='maj'));
+      const inW = wedge.has(i) && segRN[i+','+ring]!=null;
+      const fill = isTonic?'var(--accent)':(inW?'var(--accent2)':'var(--panel2,#1f242e)');
+      const tcol = isTonic?'#1a1407':(inW?'#06140b':'var(--ink)');
+      const k=KEYS[i];
+      let label = ring==='maj'?k.maj:k.min;
+      if(labelMode==='keysig') label = ring==='maj'?sigShort(k.sig):k.min;
+      else if(labelMode==='roman') label = segRN[i+','+ring]||'';
+      const rn2 = labelMode==='both' ? (segRN[i+','+ring]||'') : '';   // name + roman together
+      const [lx,ly]=pol(R[2],ai);
+      const tip = (ring==='maj'?k.maj+' major':k.min.slice(0,-1)+' minor')+' · '+(k.sig===0?'no accidentals':sigShort(k.sig));
+      g+=`<path d="${sector(R[0],R[1],a0,a1)}" fill="${fill}" stroke="var(--panel)" stroke-width="2" data-pos="${i}" data-ring="${ring}"><title>${tip}</title></path>`;
+      if(label&&rn2){ // stacked: the note carries the sector, the roman sits beneath it
+        g+=`<text x="${lx.toFixed(1)}" y="${(ly-1).toFixed(1)}" fill="${tcol}" font-size="${ring==='maj'?13:11.5}" font-weight="${isTonic?700:600}" text-anchor="middle" style="pointer-events:none">${label}</text>`;
+        g+=`<text x="${lx.toFixed(1)}" y="${(ly+11).toFixed(1)}" fill="${tcol}" font-size="9.5" opacity="0.78" text-anchor="middle" style="pointer-events:none">${rn2}</text>`;
+      }
+      else if(label) g+=`<text x="${lx.toFixed(1)}" y="${(ly+4).toFixed(1)}" fill="${tcol}" font-size="${ring==='maj'?14:12}" font-weight="${isTonic?700:600}" text-anchor="middle" style="pointer-events:none">${label}</text>`;
+    });
+  }
+  const k=KEYS[selPos];
+  const ctrName = selMode==='maj'?k.maj:k.min.slice(0,-1);
+  g+=`<circle cx="${CX}" cy="${CY}" r="${CTR}" fill="var(--panel)" stroke="var(--line)" stroke-width="2"/>`;
+  g+=`<text x="${CX}" y="${CY-6}" fill="var(--ink)" font-size="42" font-weight="580" text-anchor="middle" style="pointer-events:none;font-family:var(--font-display)">${ctrName}</text>`;
+  g+=`<text x="${CX}" y="${CY+22}" fill="var(--muted)" font-size="14" text-anchor="middle" style="pointer-events:none">${selMode==='maj'?'major':'minor'}</text>`;
+  $('wheel').innerHTML=g;
+  renderInfo(dia);
+  renderPalettes(dia);
+  renderProg();
+  drawShapes(dia);
+  renderDegreeMap(dia);
+}
+
+function renderInfo(dia){
+  const k=KEYS[selPos];
+  const enh = selMode==='maj'?(k.altMaj?` (= ${k.altMaj} major)`:''):(k.altMin?` (= ${k.altMin.slice(0,-1)} minor)`:'');
+  $('selKey').innerHTML = (selMode==='maj'?k.maj+' major':k.min.slice(0,-1)+' minor')+enh;
+  $('selSig').textContent = 'Key signature: '+sigText(k.sig);
+  $('relKey').innerHTML = selMode==='maj'?`Relative minor: <b>${k.min}</b>`:`Relative major: <b>${k.maj}</b>`;
+  $('chords').innerHTML = dia.map(c=>`<button class="chip${c.q==='dim'?' dim':''}" data-root="${c.root}" data-q="${c.q}"><span class="rn">${c.rn}</span> ${c.name}</button>`).join('');
+  const P=o=>((selPos+o)%12+12)%12;
+  const rel = selMode==='maj'?{pos:selPos,mode:'min',label:KEYS[selPos].min}:{pos:selPos,mode:'maj',label:KEYS[selPos].maj+' major'};
+  const related=[ {pos:rel.pos,mode:rel.mode,label:rel.label+' · relative'},
+                  {pos:P(1),mode:'maj',label:KEYS[P(1)].maj+' · V'},
+                  {pos:P(-1),mode:'maj',label:KEYS[P(-1)].maj+' · IV'} ];
+  $('related').innerHTML = related.map(r=>`<button class="chip" data-pos="${r.pos}" data-mode="${r.mode}">${r.label}</button>`).join('');
+}
+
+// ---- builder: secondary dominants, borrowed chords, presets (mode-aware, all roman-relative) ----
+function extras(mode){
+  if(mode==='maj') return {
+    sec:[['V7/ii',9,'dom7'],['V7/iii',11,'dom7'],['V7/IV',0,'dom7'],['V7/V',2,'dom7'],['V7/vi',4,'dom7']],
+    bor:[['iv',5,'min'],['♭VI',8,'maj'],['♭VII',10,'maj'],['♭III',3,'maj'],['ii°',2,'dim'],['♭II',1,'maj']],
+  };
+  return {
+    sec:[['V',7,'maj'],['V7',7,'dom7'],['vii°',11,'dim'],['V7/iv',0,'dom7'],['V7/V',2,'dom7']],
+    bor:[['IV',5,'maj'],['I (Picardy)',0,'maj'],['ii',2,'min'],['♭II',1,'maj']],
+  };
+}
+function presets(mode){
+  if(mode==='maj') return [
+    {n:'I–V–vi–IV', c:[['I',0,'maj'],['V',7,'maj'],['vi',9,'min'],['IV',5,'maj']]},
+    {n:'I–vi–IV–V (50s)', c:[['I',0,'maj'],['vi',9,'min'],['IV',5,'maj'],['V',7,'maj']]},
+    {n:'ii–V–I (jazz)', c:[['ii7',2,'min7'],['V7',7,'dom7'],['Imaj7',0,'maj7']]},
+    {n:'I–IV–V', c:[['I',0,'maj'],['IV',5,'maj'],['V',7,'maj']]},
+    {n:'vi–IV–I–V', c:[['vi',9,'min'],['IV',5,'maj'],['I',0,'maj'],['V',7,'maj']]},
+    {n:'12-bar blues', c:[['I7',0,'dom7'],['I7',0,'dom7'],['I7',0,'dom7'],['I7',0,'dom7'],['IV7',5,'dom7'],['IV7',5,'dom7'],['I7',0,'dom7'],['I7',0,'dom7'],['V7',7,'dom7'],['IV7',5,'dom7'],['I7',0,'dom7'],['V7',7,'dom7']]},
+  ];
+  return [
+    {n:'i–♭VI–♭III–♭VII', c:[['i',0,'min'],['♭VI',8,'maj'],['♭III',3,'maj'],['♭VII',10,'maj']]},
+    {n:'i–iv–v', c:[['i',0,'min'],['iv',5,'min'],['v',7,'min']]},
+    {n:'i–iv–V (harmonic)', c:[['i',0,'min'],['iv',5,'min'],['V',7,'maj']]},
+    {n:'ii°–V–i', c:[['ii°',2,'dim'],['V7',7,'dom7'],['i',0,'min']]},
+    {n:'i–♭VII–♭VI–V', c:[['i',0,'min'],['♭VII',10,'maj'],['♭VI',8,'maj'],['V',7,'maj']]},
+  ];
+}
+let curPresets=[];
+// activePreset: index of the currently-loaded preset, or -1 if manually edited
+let activePreset=-1;
+function setActivePreset(i){
+  activePreset=i;
+  document.querySelectorAll('#presets .preset').forEach((b,bi)=>{
+    const on=bi===i; b.classList.toggle('active',on); b.setAttribute('aria-pressed',on?'true':'false');
+  });
+}
+function clearActivePreset(){ setActivePreset(-1); }
+
+function palHTML(arr){ return arr.map(([lbl,semis,q])=>`<button class="pal" data-semis="${semis}" data-q="${q}" data-lbl="${lbl}"><span class="rn">${lbl}</span> ${chordNameL((tonicPc()+semis)%12,q,lbl)}</button>`).join(''); }
+function renderPalettes(dia){
+  $('palDia').innerHTML = palHTML(dia.map(c=>[c.rn,(c.root-tonicPc()+12)%12,c.q]));
+  const ex=extras(selMode);
+  $('palSec').innerHTML = palHTML(ex.sec);
+  $('palBor').innerHTML = palHTML(ex.bor);
+  curPresets=presets(selMode);
+  $('presets').innerHTML = curPresets.map((p,i)=>`<button class="preset" data-i="${i}" aria-pressed="false">${p.n}</button>`).join('');
+  // re-apply active state after re-render
+  if(activePreset>=0 && activePreset<curPresets.length) setActivePreset(activePreset);
+}
+
+// ---- progression model (roman-relative, transposes with the wheel) ----
+let prog=[];
+// restore progression from prefs
+try{ const saved=Stats.getPref(TOOL_ID,'prog',null); if(saved){ const arr=JSON.parse(saved); if(Array.isArray(arr))prog=arr; } }catch(e){}
+
+function renderProg(){
+  $('progStrip').innerHTML = prog.length
+    ? prog.map((c,i)=>`<button class="pchip" data-i="${i}"><span class="rn">${c.label}</span>${chordNameL((tonicPc()+c.semis)%12,c.q,c.label)}<span class="x">×</span></button>`).join('')
+    : '<span class="muted2">Click chords above to build a progression, or load a preset.</span>';
+  savePrefs();
+}
+function appendChord(label,semis,q){ prog.push({label,semis,q}); clearActivePreset(); renderProg(); playChord((tonicPc()+semis)%12,q); }
+
+// ---- audio ----
+function playChord(rootPc,q,at,dur,dest){ const base=48+(((rootPc%12)+12)%12); (VOICE[q]||VOICE.maj).forEach(iv=>tone(base+iv, at||0, dur||1.3, 0.21, dest)); }
+function playTonic(){ const d=diatonic(selPos,selMode); playChord(d[0].root,d[0].q); }
+function playCadence(){ const d=diatonic(selPos,selMode); const seq=[d[0],d[3],d[4],d[0]]; let t=0; const a=ac(); if(a.resume)a.resume(); seq.forEach(c=>{ playChord(c.root,c.q,t,0.7); t+=0.72; }); }
+function playScale(){ const ints = selMode==='maj'?[0,2,4,5,7,9,11]:[0,2,3,5,7,8,10]; const root=tonicPc(); let t=0; const a=ac(); if(a.resume)a.resume(); ints.concat([12]).forEach(iv=>{ tone(48+root+iv, t, 0.28, 0.3); t+=0.28; }); }
+
+// ---- click track ----
+// Schedule metronome ticks via Web Audio directly (no tone() to keep it separate from global mute).
+// clickAccented = beat 1 of each chord; others are regular subdivisions.
+function scheduleTick(a, at, accented){
+  if(!$('clickTrack').checked) return;
+  const freq=accented?1200:900, vol=accented?0.18:0.10, dur=0.018;
+  const o=a.createOscillator(), g=a.createGain();
+  o.type='sine'; o.frequency.value=freq;
+  g.gain.setValueAtTime(vol,at);
+  g.gain.exponentialRampToValueAtTime(0.0001,at+dur);
+  o.connect(g).connect(a.destination);
+  o.start(at); o.stop(at+dur+0.002);
+}
+function scheduleClickTrack(a, startAbs, numChords, beatDur){
+  // one accent per chord (beat 1), one plain tick per second beat
+  for(let i=0;i<numChords;i++){
+    const cAt=startAbs+i*beatDur*2;
+    scheduleTick(a, cAt, true);           // beat 1 — accented
+    scheduleTick(a, cAt+beatDur, false);  // beat 2
+  }
+}
+
+// progression playback
+let pPlaying=false, pRaf=0, pBus=null, pStart=0, tempo=Stats.getPref(TOOL_ID,'tempo',100), loop=Stats.getPref(TOOL_ID,'loop',false);
+// restore tempo + loop + drum controls to the UI
+(function(){ $('progTempo').value=tempo; $('tempoVal').textContent=tempo;
+  if(loop) $('progLoop').classList.add('on');
+  const dp=Stats.getPref(TOOL_ID,'drPat',null); if(dp)$('drPat').value=dp;
+  const dv=Stats.getPref(TOOL_ID,'drVol',null); if(dv!==null)$('drVol').value=dv;
+})();
+const ICON_PLAY='<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
+const ICON_STOP='<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>';
+const ICON_EQ='<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>'; // grooving drums → tiny animated equalizer
+let drumsOn=Stats.getPref(TOOL_ID,'drums',false);
+if(drumsOn) $('progDrums').classList.add('on');
+// Play button face: EQ while drums groove, Stop while otherwise playing, Play at rest.
+function setPlayFace(){ $('progPlay').innerHTML = pPlaying ? ((drumsOn?ICON_EQ:ICON_STOP)+' Stop') : (ICON_PLAY+' Play'); }
+function stopProg(){ pPlaying=false; Drums.stop(); if(pBus){try{pBus.disconnect()}catch(e){}pBus=null;} cancelAnimationFrame(pRaf); document.querySelectorAll('#progStrip .pchip').forEach(e=>e.classList.remove('on')); setPlayFace(); }
+function chordDur(){ return 60/tempo*2; }            // 2 beats per chord
+// tone() schedules at a.currentTime + offset, so pass RELATIVE offsets but anchor them to an
+// ABSOLUTE start (pStart) shared with the highlight clock. On loop we pass the previous loop's
+// exact end as startAbs so playback is gapless (no re-base to currentTime+lead each cycle).
+function scheduleProg(a, startAbs){
+  const dur=chordDur(); pStart = startAbs!=null ? startAbs : a.currentTime+0.08;
+  prog.forEach((c,i)=>{ const root=(tonicPc()+c.semis)%12; const off=(pStart-a.currentTime)+i*dur; playChord(root,c.q,Math.max(0,off),dur*0.96,pBus); });
+  scheduleClickTrack(a, pStart, prog.length, 60/tempo);
+}
+function animateProg(a){ const dur=chordDur(); const chips=[...document.querySelectorAll('#progStrip .pchip')]; const tick=()=>{ if(!pPlaying)return; const idx=Math.floor((a.currentTime-pStart)/dur); chips.forEach((e,i)=>e.classList.toggle('on',i===idx)); if(idx>=prog.length){ if(loop){ scheduleProg(a, pStart+prog.length*dur); animateProg(a); return; } stopProg(); return; } pRaf=requestAnimationFrame(tick); }; pRaf=requestAnimationFrame(tick); }
+function playProg(){ if(!prog.length)return; stopProg(); const a=ac(); if(a.resume)a.resume(); pBus=a.createGain(); pBus.connect(a.destination); pPlaying=true; setPlayFace(); scheduleProg(a); // scheduleProg sets pStart on the shared audio clock
+  if(drumsOn){ Drums.setVol(+$('drVol').value/100); Drums.start(tempo,$('drPat').value,1,pStart); } // drums lock to pStart at the same tempo; loop with the internal pointer
+  animateProg(a); Stats.activity(TOOL_ID); }
+
+// ---- guitar chord diagrams (chords-db, loaded by the module below) ----
+const CDB_KEYS=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+const CDB_SUF={maj:'major',min:'minor',dim:'dim',aug:'aug',dom7:'7',maj7:'maj7',min7:'m7',dim7:'dim7',m7b5:'m7b5'};
+function findVoicing(rootPc,q){ const data=window.__gchords; if(!data)return null; const set=data[CDB_KEYS[((rootPc%12)+12)%12]]; if(!set)return null;
+  // exact suffix, else a same-family approximation (min-family→minor, maj-family→major); never an unrelated shape
+  let e=set.find(x=>x.suffix===(CDB_SUF[q]||'major'));
+  if(!e){ const fam=(q==='min'||q==='min7'||q==='m7b5'||q==='dim'||q==='dim7')?'minor':(q==='maj'||q==='maj7'||q==='dom7')?'major':null; if(fam)e=set.find(x=>x.suffix===fam); }
+  return e&&e.positions&&e.positions.length?e.positions[0]:null; }
+function diagramSVG(pos){
+  const W=58,H=78,padX=8,padTop=18,gridW=W-2*padX,gridH=46,S=6,F=5,sx=gridW/(S-1),fy=gridH/F;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`;
+  for(let i=0;i<S;i++){const x=padX+i*sx;s+=`<line x1="${x}" y1="${padTop}" x2="${x}" y2="${padTop+gridH}" stroke="var(--line)" stroke-width="1"/>`;}
+  for(let j=0;j<=F;j++){const y=padTop+j*fy;s+=`<line x1="${padX}" y1="${y}" x2="${padX+gridW}" y2="${y}" stroke="var(--line)" stroke-width="${j===0&&pos.baseFret===1?2.6:1}"/>`;}
+  if(pos.baseFret>1)s+=`<text x="${padX-2}" y="${padTop+fy-3}" text-anchor="end" font-size="7.5" fill="var(--muted)">${pos.baseFret}fr</text>`;
+  if(pos.barres&&pos.barres.length)pos.barres.forEach(bf=>{let lo=-1,hi=-1;pos.frets.forEach((v,i)=>{if(v===bf){if(lo<0)lo=i;hi=i;}});if(lo>=0){const y=padTop+(bf-0.5)*fy;s+=`<line x1="${padX+lo*sx}" y1="${y}" x2="${padX+hi*sx}" y2="${y}" stroke="var(--accent)" stroke-width="6.5" stroke-linecap="round" opacity="0.8"/>`;}});
+  pos.frets.forEach((v,i)=>{ const x=padX+i*sx;
+    if(v===-1) s+=`<text x="${x}" y="${padTop-5}" text-anchor="middle" font-size="9" fill="var(--muted)">×</text>`;
+    else if(v===0) s+=`<circle cx="${x}" cy="${padTop-8}" r="3" fill="none" stroke="var(--ink)" stroke-width="1.2"/>`;
+    else { const y=padTop+(v-0.5)*fy; s+=`<circle cx="${x}" cy="${y}" r="4.6" fill="var(--accent)"/>`; if(pos.fingers&&pos.fingers[i]>0) s+=`<text x="${x}" y="${y+2.8}" text-anchor="middle" font-size="7" fill="#1a1407" font-weight="700">${pos.fingers[i]}</text>`; }
+  });
+  return s+`</svg>`;
+}
+function drawShapes(dia){ const host=$('shapes'); if(!window.__gchords){ host.innerHTML='<div class="muted2">Loading guitar shapes…</div>'; return; }
+  host.innerHTML = dia.map(c=>{ const pos=findVoicing(c.root,c.q); return `<div class="shape"><div class="slbl"><b>${c.rn}</b> ${c.name}</div>${pos?diagramSVG(pos):'<div class="nodia">—</div>'}</div>`; }).join(''); }
+window.onDiagramsReady=()=>{ if(lastDia) drawShapes(lastDia); };
+
+// ==== DEGREE MAP: where the diatonic chords live from a barre anchor ====
+// The lattice he uses: anchor the tonic barre on E (or A); the 1-2-3 degrees walk
+// UP that string, the 4-5-6-7 sit ACROSS on the other string starting at the SAME
+// fret (crossing strings = +5 semitones = a fourth = the IV/anchor-A's V).
+let dmAnchor=Stats.getPref(TOOL_ID,'degAnchor','E');
+let dmDrill=null;   // {target:rn, left:n} while a drill runs
+const DM_Q_COLOR={maj:'hsl(38 88% 54%)',min:'hsl(210 34% 56%)',dim:'hsl(8 52% 50%)'};
+function dmPositions(dia,tonic){
+  const anchorPc=dmAnchor==='E'?4:9;                       // open-string pitch class
+  let anchorFret=((tonic-anchorPc)%12+12)%12; if(anchorFret===0)anchorFret=12;
+  const otherStr=dmAnchor==='E'?'A':'E';
+  const chips=[];
+  dia.forEach(c=>{
+    const off=((c.root-tonic)%12+12)%12;                   // semitones above the tonic
+    const onAnchor=off<5;                                  // degrees 1-2-3 live on the root string
+    chips.push({ rn:c.rn, name:c.name, q:c.q, root:c.root,
+      str:onAnchor?dmAnchor:otherStr,
+      fret:anchorFret+(onAnchor?off:off-5), alt:false });
+    // the SAME degree also lives on the other string (cross-string = ±5 semitones):
+    // e.g. A major's iii sits at E9 AND at A4, one fret below the IV. Ghost it.
+    chips.push({ rn:c.rn, name:c.name, q:c.q, root:c.root,
+      str:onAnchor?otherStr:dmAnchor,
+      fret:anchorFret+(onAnchor?off-5:off), alt:true });
+  });
+  return { anchorFret, chips };
+}
+function renderDegreeMap(dia){
+  const host=$('degMap'); if(!host)return;
+  // mid-drill the map may show a DIFFERENT mode than the wheel (mixed-mode questions)
+  const mode=(dmDrill&&dmDrill.qMode)||selMode;
+  if(dmDrill&&dmDrill.qMode&&dmDrill.qMode!==selMode)dia=diatonic(selPos,dmDrill.qMode);
+  const tonic=mode==='maj'?KEYS[selPos].pc:minRoot(selPos);
+  const {anchorFret,chips}=dmPositions(dia,tonic);
+  const f0=Math.max(0,anchorFret-2), f1=anchorFret+7;      // visible fret window
+  const W=760,H=190,padL=34,padR=10,top=30,rowE=150,rowA=118,rowGap=32;
+  const fw=(W-padL-padR)/(f1-f0);
+  const fx=f=>padL+(f-f0)*fw;                              // x of the fret WIRE
+  const cx=f=>fx(f)-fw/2;                                  // x of the fret CELL center
+  let g='';
+  // strings: all six faint for context, E+A carrying the map
+  for(let s=0;s<6;s++){ const y=rowE-s*((rowE-38)/5);
+    g+=`<line x1="${padL-fw*0.6}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="var(--line)" stroke-width="${s<2?2:1}" opacity="${s<2?0.9:0.28}"/>`; }
+  // fret wires + numbers + inlay dots
+  for(let f=f0;f<=f1;f++){ g+=`<line x1="${fx(f)}" y1="30" x2="${fx(f)}" y2="${rowE+8}" stroke="var(--line)" stroke-width="${f===0?4:1}"/>`;
+    if(f>f0)g+=`<text x="${cx(f)}" y="${rowE+26}" text-anchor="middle" font-size="10" fill="var(--muted)">${f}</text>`;
+    if(f>f0&&[3,5,7,9,12,15,17,19].includes(f))g+=`<circle cx="${cx(f)}" cy="84" r="3.5" fill="var(--line)"/>`; }
+  g+=`<text x="${padL-24}" y="${rowE+4}" font-size="11" fill="var(--muted)" font-weight="650">E</text>`;
+  g+=`<text x="${padL-24}" y="${rowA+4}" font-size="11" fill="var(--muted)" font-weight="650">A</text>`;
+  // chips — solid primaries first, then the ghost alternates (same degree, other string)
+  chips.filter(c=>c.fret>=Math.max(1,f0)&&c.fret<=f1)
+    .sort((a,b)=>(a.alt?1:0)-(b.alt?1:0))
+    .forEach(c=>{
+    const y=c.str==='E'?rowE:rowA, x=cx(c.fret);
+    const col=DM_Q_COLOR[c.q]||DM_Q_COLOR.maj;
+    const hide=dmDrill&&dmDrill.target;                    // drill: unlabeled dots
+    if(c.alt){
+      g+=`<g class="dm-chip dm-alt" data-rn="${c.rn}" data-root="${c.root}" data-q="${c.q}" data-str="${c.str}" data-fret="${c.fret}" style="cursor:pointer" opacity="0.5">`+
+        `<circle cx="${x}" cy="${y}" r="10.5" fill="none" stroke="${col}" stroke-width="1.8" stroke-dasharray="3 2.4"/>`+
+        (hide?'':`<text x="${x}" y="${y+3.5}" text-anchor="middle" font-size="9" font-weight="650" fill="${col}">${c.rn}</text>`)+
+        `<title>${c.name} — same chord, alternate position</title></g>`;
+    } else {
+      g+=`<g class="dm-chip" data-rn="${c.rn}" data-root="${c.root}" data-q="${c.q}" data-str="${c.str}" data-fret="${c.fret}" style="cursor:pointer">`+
+        `<circle cx="${x}" cy="${y}" r="13.5" fill="${col}" opacity="${hide?0.55:0.92}" stroke="var(--panel)" stroke-width="2"/>`+
+        (hide?'':`<text x="${x}" y="${y+4}" text-anchor="middle" font-size="10.5" font-weight="700" fill="hsl(26 30% 10%)">${c.rn}</text>`)+
+        (hide?'':`<text x="${x}" y="${y-19}" text-anchor="middle" font-size="10" fill="var(--muted)">${c.name}</text>`)+
+      `</g>`;
+    }
+  });
+  host.innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="display:block;width:100%;min-width:0" aria-label="Barre-chord degree map">${g}</svg>`;
+  // the one-line rule, mode-aware (dashed rings = the same chord's second home)
+  $('degRule').innerHTML = (mode==='maj'
+    ? `<b>The lattice:</b> same fret, next string over = <b>IV</b> · two frets up on that string = <b>V</b> · the root string walks <b>I → ii → iii</b> (+2, +4). vi sits at +4 across, vii° at +6.`
+    : `<b>Minor pulls the 3rd in a fret:</b> same fret across = <b>iv</b> · +2 across = <b>v</b> · the root string walks <b>i → ii° → III</b> (+2, <b>+3</b>). VI at +3 across, VII at +5 — everything one fret snugger than major.`)
+    + ` Dashed rings are the <b>same chords in their second home</b> — e.g. the 3-chord lives up the root string AND one fret below the 4-chord.`;
+  // interactions
+  host.querySelectorAll('.dm-chip').forEach(ch=>ch.addEventListener('click',()=>dmChipClick(ch)));
+  $('dmAnchorE').classList.toggle('sel',dmAnchor==='E');
+  $('dmAnchorA').classList.toggle('sel',dmAnchor==='A');
+  $('dmAnchorE').setAttribute('aria-pressed',String(dmAnchor==='E'));
+  $('dmAnchorA').setAttribute('aria-pressed',String(dmAnchor==='A'));
+}
+// a real barre voicing at the chip's fret (E- or A-shape), dim = tight stack
+function dmPlay(str,fret,q,root){
+  const a=ac(); if(a.resume)a.resume();
+  let notes;
+  if(q==='dim'){ const r=(str==='E'?40:45)+ +fret; notes=[r,r+3,r+6,r+12]; }
+  else if(str==='E') notes=(q==='min'?[0,7,12,15,19,24]:[0,7,12,16,19,24]).map(iv=>40+ +fret+iv);
+  else notes=(q==='min'?[0,7,12,15,19]:[0,7,12,16,19]).map(iv=>45+ +fret+iv);
+  notes.forEach((m,i)=>tone(m,i*0.028,1.25,0.16));
+}
+function dmChipClick(ch){
+  const rn=ch.dataset.rn;
+  dmPlay(ch.dataset.str,ch.dataset.fret,ch.dataset.q,+ch.dataset.root);
+  if(!dmDrill||!dmDrill.target)return;
+  const ok=rn===dmDrill.target;
+  Stats.record(TOOL_ID,{correct:ok,key:'deg:'+(dmDrill.qMode||selMode)+':'+dmDrill.target});
+  const circ=ch.querySelector('circle');
+  circ.setAttribute('stroke',ok?'hsl(140 55% 45%)':'hsl(8 60% 50%)');
+  circ.setAttribute('stroke-width','3.5');
+  if(!ok){ // reveal the right one briefly
+    const right=[...document.querySelectorAll('.dm-chip')].find(c=>c.dataset.rn===dmDrill.target);
+    if(right){ right.querySelector('circle').setAttribute('stroke','hsl(140 55% 45%)'); right.querySelector('circle').setAttribute('stroke-width','3.5'); }
+  }
+  dmDrill.left--; dmDrill.score+=ok?1:0;
+  setTimeout(()=>{ if(dmDrill&&dmDrill.left>0) dmNextQuestion(); else dmEndDrill(); },900);
+}
+function dmNextQuestion(){
+  // mixed-mode: half the questions flip to the parallel-position minor (or major),
+  // so the snugger minor lattice gets drilled even when the wheel sits on a major key
+  dmDrill.qMode=Math.random()<0.5?'maj':'min';
+  const dia=diatonic(selPos,dmDrill.qMode);
+  const pool=dia.filter(c=>c.rn!==dia[0].rn);             // never ask the tonic — it's the anchor
+  dmDrill.target=pool[Math.floor(Math.random()*pool.length)].rn;
+  renderDegreeMap(dia);
+  const k=KEYS[selPos];
+  const keyName=dmDrill.qMode==='maj'?k.maj+' major':k.min.slice(0,-1)+' minor';
+  $('dmQ').hidden=false;
+  $('dmQ').innerHTML=`In <b>${keyName}</b> — tap the <b>${dmDrill.target}</b> · ${dmDrill.left} left`;
+}
+function dmEndDrill(){
+  const s=dmDrill?dmDrill.score:0,n=dmDrill?dmDrill.total:0;
+  dmDrill=null;
+  $('dmQ').innerHTML=`${s}/${n} — ${s===n?'the lattice is yours.':s>=n*0.7?'nearly there.':'run it again — it clicks fast.'}`;
+  $('dmDrill').textContent='Drill me';
+  renderDegreeMap(diatonic(selPos,selMode));
+  setTimeout(()=>{ if(!dmDrill)$('dmQ').hidden=true; },5000);
+}
+$('dmDrill').addEventListener('click',()=>{
+  if(dmDrill){ dmEndDrill(); return; }
+  dmDrill={target:null,left:8,total:8,score:0};
+  $('dmDrill').textContent='Stop';
+  dmNextQuestion();
+});
+$('dmAnchorE').addEventListener('click',()=>{ dmAnchor='E'; Stats.setPref(TOOL_ID,'degAnchor','E'); renderDegreeMap(diatonic(selPos,selMode)); });
+$('dmAnchorA').addEventListener('click',()=>{ dmAnchor='A'; Stats.setPref(TOOL_ID,'degAnchor','A'); renderDegreeMap(diatonic(selPos,selMode)); });
+
+function select(pos,mode){ stopProg(); selPos=pos; selMode=mode; savePrefs(); render(); playTonic(); }
+
+// ---- events ----
+$('wheel').addEventListener('click',e=>{ const p=e.target.closest('path'); if(!p)return; select(+p.dataset.pos, p.dataset.ring==='maj'?'maj':'min'); });
+$('chords').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; playChord(+b.dataset.root,b.dataset.q); });
+$('related').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; select(+b.dataset.pos,b.dataset.mode); });
+['palDia','palSec','palBor'].forEach(id=>$(id).addEventListener('click',e=>{ const b=e.target.closest('.pal'); if(!b)return; appendChord(b.dataset.lbl,+b.dataset.semis,b.dataset.q); }));
+$('presets').addEventListener('click',e=>{ const b=e.target.closest('.preset'); if(!b)return;
+  const i=+b.dataset.i; prog=curPresets[i].c.map(([label,semis,q])=>({label,semis,q})); stopProg(); setActivePreset(i); renderProg(); });
+$('progStrip').addEventListener('click',e=>{ const b=e.target.closest('.pchip'); if(!b)return; prog.splice(+b.dataset.i,1); stopProg(); clearActivePreset(); renderProg(); });
+$('progPlay').onclick=()=>{ pPlaying?stopProg():playProg(); };
+$('progClear').onclick=()=>{ prog=[]; stopProg(); clearActivePreset(); renderProg(); };
+$('progLoop').onclick=()=>{ loop=!loop; $('progLoop').classList.toggle('on',loop); savePrefs(); };
+$('progDrums').onclick=()=>{ drumsOn=!drumsOn; $('progDrums').classList.toggle('on',drumsOn); Stats.setPref(TOOL_ID,'drums',drumsOn);
+  if(!drumsOn){ Drums.stop(); }
+  else{ if(!loop){ loop=true; $('progLoop').classList.add('on'); savePrefs(); } // drums imply a looping groove — default loop on
+        if(pPlaying){ Drums.setVol(+$('drVol').value/100); Drums.start(tempo,$('drPat').value,1,ac().currentTime+0.06); } }
+  setPlayFace(); };  // reflect the EQ face when drums flip while playing
+$('drPat').onchange=()=>{ Stats.setPref(TOOL_ID,'drPat',$('drPat').value); if(drumsOn&&pPlaying){ Drums.start(tempo,$('drPat').value,1,ac().currentTime+0.06); } };
+$('drVol').oninput=e=>{ Drums.setVol(+e.target.value/100); };
+$('drVol').onchange=e=>{ Stats.setPref(TOOL_ID,'drVol',+e.target.value); };
+$('progTempo').oninput=e=>{ $('tempoVal').textContent=+e.target.value; }; // display only while dragging
+$('progTempo').onchange=e=>{ tempo=+e.target.value; $('tempoVal').textContent=tempo; savePrefs(); if(pPlaying) playProg(); };
+$('playTonic').onclick=playTonic; $('playCad').onclick=playCadence; $('playScale').onclick=playScale;
+document.querySelectorAll('#labels button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#labels button').forEach(x=>x.classList.remove('sel'));
+  b.classList.add('sel'); labelMode=b.dataset.l; savePrefs(); render();
+});
+// restore label mode button active state
+(function(){ const lBtn=document.querySelector(`#labels button[data-l="${labelMode}"]`); if(lBtn){ document.querySelectorAll('#labels button').forEach(x=>x.classList.remove('sel')); lBtn.classList.add('sel'); } })();
+$('wheel').addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'){e.preventDefault();select((selPos+1)%12,selMode);}
+  else if(e.key==='ArrowLeft'){e.preventDefault();select((selPos+11)%12,selMode);}
+  else if(e.key==='ArrowUp'){e.preventDefault();select(selPos,'maj');}
+  else if(e.key==='ArrowDown'){e.preventDefault();select(selPos,'min');}
+});
+// Audio lifecycle: silence progression + drums when the tab is hidden or the page
+// unloads, so no scheduled hits keep ringing into a backgrounded tab.
+function haltAudio(){ if(pPlaying) stopProg(); else Drums.stop(); stopTones(); }
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) haltAudio(); });
+window.addEventListener('pagehide',haltAudio);
+render();
+</script>
+<script type="module">
+  import guitarDb from '@tombatossals/chords-db/lib/guitar.json';
+  window.__gchords = guitarDb.chords;
+  window.onDiagramsReady && window.onDiagramsReady();
+</script>
+</body>
+</html>

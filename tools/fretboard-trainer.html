@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="header.js" defer></script>
+<script src="theory.js"></script><script src="audio.js"></script><script src="stats.js"></script><script src="pitch.js"></script>
+<title>Fretboard Trainer · The Woodshed</title>
+<style>
+  :root{--accent2:#7e95b3;--oct:#7a6a3a}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);padding:24px;display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+  .wrap{width:100%;max-width:940px}
+  a.back{color:var(--muted);text-decoration:none;font-size:14px}a.back:hover{color:var(--ink)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .controls{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  .controls label{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center}
+  select,button.ctrl{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{background:var(--panel2);color:var(--muted);border:none;padding:8px 12px;cursor:pointer;font-size:13px;border-right:1px solid var(--line)}
+  .seg button:last-child{border-right:none}
+  .seg button.sel{background:var(--panel);color:var(--ink);border:1px solid var(--line);box-shadow:0 1px 2px hsl(26 30% 8%/.12);font-weight:600}
+  .board-wrap{overflow-x:auto}
+  svg{display:block;min-width:760px;width:100%}
+  .prompt{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:14px}
+  .prompt .q{font-size:19px}.prompt .q b{color:var(--accent)}
+  .timerbar{height:6px;background:var(--panel2);border-radius:3px;overflow:hidden;flex:1;min-width:120px;max-width:240px}
+  .timerbar>div{height:100%;background:var(--accent2);width:100%}
+  .choices{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .choices button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:17px;font-weight:600;cursor:pointer;min-width:54px;transition:.1s}
+  .choices button:hover{border-color:var(--accent)}
+  .choices button.right{background:var(--good);border-color:var(--good);color:#06140b}
+  .choices button.wrong{background:var(--bad);border-color:var(--bad);color:#fff}
+  .stats{display:flex;gap:26px;flex-wrap:wrap}
+  .stat .n{font-size:30px;font-weight:700;line-height:1.1}
+  .stat .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .stat .n.good{color:var(--good)}.stat .n.warn{color:var(--accent)}
+  .hint{font-size:13px;color:var(--muted);line-height:1.5;margin-top:6px}
+  .hist-line{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6}
+  .legend{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:8px}
+  .legend span{display:inline-flex;gap:6px;align-items:center}.sw{width:12px;height:12px;border-radius:50%}
+  .big-start{padding:14px 26px;font-size:17px;font-weight:600;border:none;border-radius:10px;background:var(--accent);color:#1a1407;cursor:pointer}
+  .big-start.running{background:var(--bad);color:#fff}
+  label.cb{display:inline-flex;gap:6px;align-items:center}
+  /* play-it mic panel */
+  .play-row{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .play-live{display:flex;align-items:baseline;gap:10px;min-height:40px}
+  .play-live .pl-note{font-family:var(--font-display);font-size:34px;font-weight:600;line-height:1}
+  .play-live .pl-cents{font-size:14px;color:var(--muted);font-variant-numeric:lining-nums}
+  .play-status{font-size:13px;color:var(--muted);margin-top:10px;min-height:18px}
+  .play-status.err{color:var(--bad)}
+  svg.li{display:inline-block;width:1em;height:1em;min-width:0;max-width:none;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em;flex:none}
+  /* review banner */
+  .review-banner{display:none;align-items:center;gap:12px;padding:11px 16px;border-radius:10px;background:hsl(var(--brand)/.12);border:1px solid hsl(var(--brand)/.35);margin-bottom:14px;font-size:13.5px;flex-wrap:wrap}
+  .review-banner.show{display:flex}
+  .review-banner strong{color:hsl(var(--brand-strong))}
+  .review-banner .rb-chip{font-size:11px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:hsl(var(--brand-strong));background:hsl(var(--brand)/.18);border:1px solid hsl(var(--brand)/.4);border-radius:5px;padding:2px 7px}
+  .review-banner .rb-notes{color:var(--ink);font-weight:600}
+  .review-banner .rb-dismiss{margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;padding:2px 6px;font-size:15px;line-height:1;border-radius:4px}
+  .review-banner .rb-dismiss:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead"><img class="masthead-plate" src="../assets/plates/plate-fretboard.png" alt="">
+    <div class="kicker">The Woodshed · Fretboard</div>
+    <h1>Fretboard Trainer</h1>
+    <p class="sub">Know every note, and hear it — name it, find it, or find the note you hear.</p>
+  </div>
+  <hr class="fretline">
+
+  <!-- sleep-aware review banner: shown when notes are due for re-test -->
+  <div class="review-banner" id="reviewBanner">
+    <span class="rb-chip">Review due</span>
+    <span>Re-test <span class="rb-notes" id="reviewNotes"></span> from yesterday.</span>
+    <span id="reviewDue30" style="font-size:12px;color:var(--muted)"></span>
+    <button class="rb-dismiss" id="reviewDismiss" title="Dismiss until next visit" aria-label="Dismiss">
+      <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <div class="panel">
+    <div class="controls">
+      <label>Mode
+        <div class="seg" id="mode">
+          <button data-m="name" class="sel">Name the dot</button>
+          <button data-m="find">Find the note</button>
+          <button data-m="hear">Hear &amp; find</button>
+          <button data-m="play">Play it</button>
+          <button data-m="explore">Explore</button>
+        </div>
+      </label>
+      <label>Strings
+        <select id="strings"><option value="all">All 6</option><option value="64">Low E + A</option><option value="0">Low E (6)</option><option value="1">A (5)</option><option value="2">D (4)</option><option value="3">G (3)</option><option value="4">B (2)</option><option value="5">High E (1)</option></select>
+      </label>
+      <label>Frets
+        <select id="frets"><option value="3,5,7,10">PD ref: 3,5,7,10</option><option value="0-5">0–5</option><option value="0-12" selected>0–12</option><option value="5-12">5–12</option></select>
+      </label>
+      <label><input type="checkbox" id="naturals"> Naturals only</label>
+      <label class="cb"><input type="checkbox" id="audio" checked> <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Audio</label>
+      <label class="cb"><input type="checkbox" id="octaves" checked> Show octaves on answer</label>
+      <label class="cb" id="exactOctWrap" style="display:none"><input type="checkbox" id="exactOct"> Exact octave</label>
+      <label class="cb"><input type="checkbox" id="autoadv"> Auto-continue</label>
+      <button class="ctrl" id="restart">Restart</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="prompt">
+      <div class="q" id="question">Press start to begin.</div>
+      <div class="timerbar" id="tb" style="display:none"><div></div></div>
+      <button class="ctrl" id="replay" style="display:none"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Replay note</button>
+    </div>
+    <div class="board-wrap"><svg id="board" viewBox="0 0 780 220"></svg></div>
+    <div class="choices" id="choices"></div>
+    <div id="playPanel" style="display:none;margin-top:6px">
+      <div class="play-row">
+        <button class="big-start" id="micStart"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg> Start mic</button>
+        <div class="play-live" id="playLive"><span class="pl-note" id="plNote">—</span><span class="pl-cents" id="plCents"></span></div>
+      </div>
+      <div class="play-status" id="playStatus">Tap “Start mic”, then play the note on your guitar.</div>
+    </div>
+    <div id="contWrap" style="display:none;margin-top:12px">
+      <button class="big-start" id="continue">Continue →</button>
+    </div>
+    <div class="legend"><span><span class="sw" style="background:var(--accent2)"></span> the note</span><span><span class="sw" style="background:var(--oct)"></span> same note elsewhere (octaves)</span></div>
+    <div style="margin-top:14px">
+      <button class="big-start" id="start">Start</button>
+      <button class="ctrl" id="skipActiveBtn" style="display:none;margin-left:10px">Skip</button>
+    </div>
+  </div>
+
+  <div class="panel" id="statsPanel">
+    <div class="stats">
+      <div class="stat"><div class="n display-num" id="sCount">0</div><div class="l">Answered</div></div>
+      <div class="stat"><div class="n good display-num" id="sAcc">—</div><div class="l">Accuracy</div></div>
+      <div class="stat"><div class="n display-num" id="sAvg">—</div><div class="l">Avg time</div></div>
+      <div class="stat"><div class="n display-num" id="sStreak">0</div><div class="l">Streak</div></div>
+      <div class="stat"><div class="n display-num" id="sBest">0</div><div class="l">Best streak</div></div>
+    </div>
+    <div class="hist-line tab-num" id="histLine"></div>
+    <div class="hint" id="hint">Drill one fret or string set until you're under 2s (PD 1.1). In <b>Hear &amp; find</b>, you train ear + location together. Log your avg time in <code>student/PROGRESS-LOG.md</code>.</div>
+  </div>
+</div>
+<!-- ============ PURE note-stability matcher (mirror of scratch note-match.js) ============ -->
+<script>
+window.PlayMatch=(function(root){
+  'use strict';
+  function median(a){
+    if(!a.length)return null;
+    var s=a.slice().sort(function(x,y){return x-y;});
+    var m=s.length>>1;
+    return s.length%2?s[m]:(s[m-1]+s[m])/2;
+  }
+  // judge(frames,targetPc,opts) — frames chronological {t,midi,cents} (voiced: midi!=null).
+  // Verdict 'correct' | 'wrong' | 'pending'. See note-match.js for full contract.
+  function judge(frames,targetPc,opts){
+    opts=opts||{};
+    var windowN=opts.window==null?5:opts.window;
+    var centsTol=opts.centsTol==null?35:opts.centsTol;
+    var stabilityMs=opts.stabilityMs==null?500:opts.stabilityMs;
+    var exactOctave=!!opts.exactOctave;
+    var targetMidi=opts.targetMidi;
+    if(!frames||frames.length<windowN)return{verdict:'pending'};
+    var win=frames.slice(frames.length-windowN);
+    for(var i=0;i<win.length;i++){if(win[i].midi==null)return{verdict:'pending'};}
+    var span=(win[win.length-1].t-win[0].t)*1000;
+    if(span<stabilityMs)return{verdict:'pending'};
+    var m0=win[0].midi;
+    for(var j=1;j<win.length;j++){if(win[j].midi!==m0)return{verdict:'pending'};}
+    var centsArr=win.map(function(f){return f.cents;});
+    var medCents=median(centsArr);
+    if(Math.abs(medCents)>centsTol)return{verdict:'pending'};
+    var midi=m0,pc=((midi%12)+12)%12;
+    var NAMES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    var note=NAMES[pc]+(Math.floor(midi/12)-1);
+    var isMatch=exactOctave?(midi===targetMidi):(pc===(((targetPc%12)+12)%12));
+    return{verdict:isMatch?'correct':'wrong',midi:midi,note:note,cents:medCents};
+  }
+  return{judge:judge,median:median};
+})(window);
+</script>
+
+<script>
+const $=id=>document.getElementById(id);
+// NOTES · OPEN_SEMI · OPEN_MIDI · STR_NAMES · noteAt() · midiAt() come from theory.js · ac()/tone() from audio.js · Stats/DOMAINS from stats.js · WoodshedPitch from pitch.js
+const TOOL='fretboard-trainer';
+const STR_LABELS=['Low E','A','D','G','B','High E']; // verbose string names for question prompts
+
+// --- load persisted settings ---
+// backward-compat: seed autoadv pref from old fbAutoAdv key once
+(function migrateLegacy(){
+  if(Stats.getPref(TOOL,'_migrated',false))return;
+  const old=localStorage.getItem('fbAutoAdv');
+  if(old==='1')Stats.setPref(TOOL,'autoadv',true);
+  Stats.setPref(TOOL,'_migrated',true);
+})();
+
+let mode=Stats.getPref(TOOL,'mode','name');
+let stringSel=Stats.getPref(TOOL,'strings','all');
+let fretSelVal=Stats.getPref(TOOL,'frets','0-12');
+let naturalsOnly=Stats.getPref(TOOL,'naturals',false);
+let exactOctave=Stats.getPref(TOOL,'exactOct',false);
+let fretRange=[0,12],fretList=null;
+let cur=null,t0=0,rafTimer=null,answered=true,count=0,correct=0,totalTime=0,streak=0,best=0;
+// guided-session continuity: resume this encounter's tally after a refresh/nav
+// (streak restarts — it's a run; count + accuracy carry over). Runs at boot AND
+// on Stats.onSync — the baseline is snapped against the merged device view.
+function hydrateSessionTally(){ try{
+  const s=Stats.session&&Stats.session(TOOL);
+  if(s&&s.answered>count){                 // only ever move forward
+    count=s.answered; correct=Math.max(correct,s.correct);
+    $('sCount').textContent=count;
+    const acc=Math.round(correct/count*100);
+    $('sAcc').textContent=acc+'%';
+    $('sAcc').className='n display-num '+(acc>=90?'good':acc>=70?'warn':'');
+  }
+}catch(e){} }
+hydrateSessionTally();
+Stats.onSync(hydrateSessionTally);
+// --- play-mode (mic) state ---
+const PM=window.PlayMatch, WP=window.WoodshedPitch;
+let playMic=null;          // active mic handle ({stop}) or null
+let playFrames=[];         // rolling voiced frames {t,midi,cents} for the current question
+let playJudged=false;      // guard so we judge each question once
+let wrongSinceT=null;      // first time we saw a stable wrong note (for the 2s wrong-hold gate)
+const PLAY_STAB_MS=500;    // require ~500ms of stable pitch before any verdict
+const PLAY_WRONG_HOLD_MS=2000; // a wrong note must persist this long to count as incorrect
+
+// apply loaded settings to controls
+(function applyPrefs(){
+  // mode
+  document.querySelectorAll('#mode button').forEach(b=>{b.classList.toggle('sel',b.dataset.m===mode);});
+  // strings
+  const sEl=$('strings'); if(sEl)sEl.value=stringSel;
+  // frets
+  const fEl=$('frets'); if(fEl)fEl.value=fretSelVal;
+  // naturals
+  $('naturals').checked=naturalsOnly;
+  // exact-octave (play mode)
+  $('exactOct').checked=exactOctave;
+  $('exactOctWrap').style.display=mode==='play'?'inline-flex':'none';
+  // autoadv
+  const saved=Stats.getPref(TOOL,'autoadv',false);
+  $('autoadv').checked=saved;
+  // mode-dependent UI state
+  if(mode==='explore'){
+    $('statsPanel').style.display='none';
+    $('start').textContent='Open Explore';
+    $('question').textContent='Press "Open Explore".';
+  }
+})();
+
+function parseFrets(){const v=$('frets').value;if(v.includes('-')){const[a,b]=v.split('-').map(Number);fretRange=[a,b];fretList=null;}else{fretList=v.split(',').map(Number);fretRange=null;}}
+function activeStrings(){if(stringSel==='all')return[0,1,2,3,4,5];if(stringSel==='64')return[0,1];return[+stringSel];}
+function activeFrets(){if(fretList)return fretList.slice();const a=[];for(let f=fretRange[0];f<=fretRange[1];f++)a.push(f);return a;}
+function rnd(a){return a[Math.floor(Math.random()*a.length)];}
+
+// --- adaptive note selection: due reviews first (60%), then weak keys (40% of remainder) ---
+function pickNote(){
+  const strs=activeStrings(),frs=activeFrets();
+  // build candidate positions inside current filter
+  const allCandidates=[];
+  strs.forEach(s=>frs.forEach(f=>{
+    const n=noteAt(s,f);
+    if(naturalsOnly&&n.includes('#'))return;
+    allCandidates.push({s,f,n});
+  }));
+  if(!allCandidates.length)return null;
+  // 1. due review notes (scheduler, pillar 3): prefer these first at 60%
+  const dueItems=Stats.review.due().filter(it=>it.tool===TOOL); // items due today for THIS tool
+  const dueNotes=new Set(dueItems.map(it=>it.key));
+  const dueCandidates=allCandidates.filter(c=>dueNotes.has(c.n));
+  if(dueCandidates.length>0&&Math.random()<0.60){
+    const chosen=rnd(dueCandidates);
+    return{str:chosen.s,fret:chosen.f,note:chosen.n};
+  }
+  // 2. weak keys (<60% accuracy on >=6 attempts): bias 40%
+  const weak=Stats.weakKeys(TOOL,{min:6,below:0.60,worst:5});
+  const weakSet=new Set(weak.map(w=>w.key));
+  const weakCandidates=allCandidates.filter(c=>weakSet.has(c.n));
+  if(weakCandidates.length>0&&Math.random()<0.40){
+    const chosen=rnd(weakCandidates);
+    return{str:chosen.s,fret:chosen.f,note:chosen.n};
+  }
+  // 3. random from all candidates
+  const chosen=rnd(allCandidates);
+  return{str:chosen.s,fret:chosen.f,note:chosen.n};
+}
+
+const NUT=46,FRET_W=58,STR_GAP=30,TOP=30,MAXF=12;
+function drawBoard(marks,clickable){
+  const svg=$('board');svg.innerHTML='';const ns='http://www.w3.org/2000/svg';const boardW=NUT+FRET_W*MAXF;
+  const bg=document.createElementNS(ns,'rect');bg.setAttribute('x',NUT);bg.setAttribute('y',TOP-8);bg.setAttribute('width',FRET_W*MAXF);bg.setAttribute('height',STR_GAP*5+16);bg.setAttribute('fill','#241a10');bg.setAttribute('rx',4);svg.appendChild(bg);
+  [3,5,7,9].forEach(f=>{const c=document.createElementNS(ns,'circle');c.setAttribute('cx',NUT+FRET_W*(f-0.5));c.setAttribute('cy',TOP+STR_GAP*2.5);c.setAttribute('r',6);c.setAttribute('fill','#3c3020');svg.appendChild(c);});
+  [12].forEach(f=>[1.5,3.5].forEach(s=>{const c=document.createElementNS(ns,'circle');c.setAttribute('cx',NUT+FRET_W*(f-0.5));c.setAttribute('cy',TOP+STR_GAP*s);c.setAttribute('r',6);c.setAttribute('fill','#3c3020');svg.appendChild(c);}));
+  for(let f=0;f<=MAXF;f++){const x=NUT+FRET_W*f;const l=document.createElementNS(ns,'line');l.setAttribute('x1',x);l.setAttribute('x2',x);l.setAttribute('y1',TOP-8);l.setAttribute('y2',TOP+STR_GAP*5+8);l.setAttribute('stroke',f===0?'#cfd3da':'#5a5043');l.setAttribute('stroke-width',f===0?5:2);svg.appendChild(l);if(f>0){const t=document.createElementNS(ns,'text');t.setAttribute('x',x-FRET_W/2);t.setAttribute('y',TOP+STR_GAP*5+26);t.setAttribute('fill','#6b7280');t.setAttribute('font-size','12');t.setAttribute('text-anchor','middle');t.textContent=f;svg.appendChild(t);}}
+  for(let s=0;s<6;s++){const y=TOP+STR_GAP*(5-s);const l=document.createElementNS(ns,'line');l.setAttribute('x1',NUT);l.setAttribute('x2',boardW);l.setAttribute('y1',y);l.setAttribute('y2',y);l.setAttribute('stroke','#9aa0aa');l.setAttribute('stroke-width',0.6+s*0.35);svg.appendChild(l);const t=document.createElementNS(ns,'text');t.setAttribute('x',NUT-12);t.setAttribute('y',y+4);t.setAttribute('fill','#6b7280');t.setAttribute('font-size','11');t.setAttribute('text-anchor','end');t.textContent=STR_NAMES[s];svg.appendChild(t);}
+  (marks||[]).forEach(m=>{
+    const x=m.fret===0?NUT-22:NUT+FRET_W*(m.fret-0.5),y=TOP+STR_GAP*(5-m.str);
+    const c=document.createElementNS(ns,'circle');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',m.r||13);c.setAttribute('fill',m.color);c.setAttribute('stroke','#0f1115');c.setAttribute('stroke-width',2);if(m.dash)c.setAttribute('stroke-dasharray','3 3');svg.appendChild(c);
+    if(m.label){const t=document.createElementNS(ns,'text');t.setAttribute('x',x);t.setAttribute('y',y+5);t.setAttribute('fill',m.tcolor||'#06140b');t.setAttribute('font-size','14');t.setAttribute('font-weight','700');t.setAttribute('text-anchor','middle');t.textContent=m.label;svg.appendChild(t);}
+  });
+  if(clickable){
+    activeStrings().forEach(str=>activeFrets().forEach(fret=>{
+      const x=fret===0?NUT-22:NUT+FRET_W*(fret-0.5),y=TOP+STR_GAP*(5-str);
+      const c=document.createElementNS(ns,'circle');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',13);c.setAttribute('fill','transparent');c.setAttribute('stroke','#3a4150');c.setAttribute('stroke-dasharray','3 3');c.style.cursor='pointer';c.addEventListener('click',()=>clickable(str,fret));svg.appendChild(c);
+    }));
+  }
+}
+function octaveMarks(pc,exceptStr,exceptFret){const m=[];activeStrings().forEach(s=>activeFrets().forEach(f=>{if((OPEN_SEMI[s]+f)%12===pc&&!(s===exceptStr&&f===exceptFret))m.push({str:s,fret:f,color:'var(--oct)',label:NOTES[pc],tcolor:'#fff',r:11});}));return m;}
+
+function nextQ(){
+  answered=false;$('replay').style.display='none';$('contWrap').style.display='none';$('start').style.display='';
+  $('skipActiveBtn').style.display='inline-block';
+  const picked=pickNote();
+  if(!picked)return; // no candidates (shouldn't happen)
+  cur=picked;
+  const{str,fret,note}=cur;
+  if(mode!=='play')$('playPanel').style.display='none';
+  if(mode==='name'){drawBoard([{str,fret,label:'?',color:'var(--accent2)'}]);$('question').innerHTML=`Name the highlighted note on the <b>${STR_LABELS[str]}</b> string.`;buildChoices(note);startTimer();}
+  else if(mode==='find'){drawBoard([],(s,f)=>answerFind(s,f));$('question').innerHTML=`Click <b>${note}</b> on the <b>${STR_LABELS[str]}</b> string.`;$('choices').innerHTML='';startTimer();}
+  else if(mode==='hear'){drawBoard([],(s,f)=>answerHear(s,f));$('question').innerHTML=`🔊 <b>Find the note you hear</b>. Click anywhere it lives. (Replay if needed.)`;$('choices').innerHTML='';$('replay').style.display='inline-block';tone(midiAt(str,fret));startTimer();}
+  else if(mode==='play'){startPlayQuestion();}
+}
+function buildChoices(note){const ch=$('choices');ch.innerHTML='';let opts=new Set([note]);while(opts.size<5){let n=rnd(NOTES);if(!(naturalsOnly&&n.includes('#')))opts.add(n);}[...opts].sort(()=>Math.random()-0.5).forEach(n=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>answerName(n,b);ch.appendChild(b);});}
+function startTimer(){t0=performance.now();$('tb').style.display='block';const bar=$('tb').firstElementChild;cancelAnimationFrame(rafTimer);const LIMIT=8000;(function tick(){const el=performance.now()-t0;bar.style.width=Math.max(0,100-(el/LIMIT*100))+'%';bar.style.background=el<2000?'var(--good)':el<5000?'var(--accent)':'var(--bad)';if(!answered)rafTimer=requestAnimationFrame(tick);})();}
+
+function recordAnswer(ok){
+  const ms=Math.round(performance.now()-t0);
+  count++;totalTime+=ms/1000;
+  if(ok){correct++;streak++;best=Math.max(best,streak);}else streak=0;
+  // persist to Stats
+  Stats.record(TOOL,{correct:ok,key:cur.note,ms,streak});
+  // scheduler: resolve due item or check if note should be enqueued / completed
+  schedulerCheck(cur.note,ok);
+  // update session UI
+  $('sCount').textContent=count;
+  const acc=Math.round(correct/count*100);
+  $('sAcc').textContent=acc+'%';$('sAcc').className='n display-num '+(acc>=90?'good':acc>=70?'warn':'');
+  const avg=totalTime/count;
+  $('sAvg').textContent=avg.toFixed(1)+'s';$('sAvg').className='n display-num '+(avg<2?'good':avg<5?'warn':'');
+  $('sStreak').textContent=streak;$('sBest').textContent=best;
+  // refresh 30-day panel and banner
+  updateHistLine();
+  updateReviewBanner();
+}
+
+// --- scheduler integration (pillar 3) ---
+// Weak threshold: <60% accuracy on >=6 attempts (30-day window).
+// Recovery threshold: >=80% accuracy on >=10 attempts in the same window.
+const WEAK_MIN=6,WEAK_BELOW=0.60,RECOVER_MIN=10,RECOVER_AT=0.80;
+
+function schedulerCheck(note,ok){
+  const pending=Stats.review.pending(TOOL,note);
+  if(pending){
+    // this note has a queued review — resolve it if due today
+    const due=Stats.review.due().filter(it=>it.tool===TOOL); // items due today for THIS tool
+    const isDue=due.some(it=>it.key===note);
+    if(isDue){
+      Stats.review.complete(TOOL,note,ok);
+      return; // done — don't also re-enqueue
+    }
+    // not yet due: still check for recovery to complete early
+    const kStats=Stats.byKey(TOOL,30)[note]||{a:0,c:0};
+    if(kStats.a>=RECOVER_MIN&&kStats.c/kStats.a>=RECOVER_AT){
+      Stats.review.complete(TOOL,note,true); // recovered early
+    }
+    return;
+  }
+  // no pending review — check if note is now weak enough to enqueue
+  const kStats=Stats.byKey(TOOL,30)[note]||{a:0,c:0};
+  if(kStats.a>=WEAK_MIN&&kStats.c/kStats.a<WEAK_BELOW){
+    Stats.review.add(TOOL,note,{note:note+' — fretboard location'}); // enqueue for tomorrow
+  }
+}
+
+// --- review banner ---
+// Show due notes near the 30-day mark. Dismiss hides until next page load.
+let bannerDismissed=false;
+function updateReviewBanner(){
+  if(bannerDismissed){$('reviewBanner').classList.remove('show');return;}
+  const due=Stats.review.due(Stats.today());
+  const fretDue=due.filter(it=>it.tool===TOOL);
+  if(!fretDue.length){$('reviewBanner').classList.remove('show');return;}
+  // build note list (unique, up to 6 shown)
+  const notes=[...new Set(fretDue.map(it=>it.key))].slice(0,6);
+  $('reviewNotes').textContent=notes.join(', ');
+  // how many total due across all tools (for context)
+  const totalDue=due.length;
+  const extra=totalDue>fretDue.length?` · ${totalDue} total due across tools`:'';
+  $('reviewDue30').textContent=extra;
+  $('reviewBanner').classList.add('show');
+}
+$('reviewDismiss').onclick=()=>{bannerDismissed=true;$('reviewBanner').classList.remove('show');};
+
+function updateHistLine(){
+  const t=Stats.totals(TOOL,30);
+  const weak=Stats.weakKeys(TOOL,{min:4,worst:3});
+  let html='<b>Last 30 days:</b> ';
+  if(!t.answered){html+='no data yet.';$('histLine').innerHTML=html;return;}
+  const acc30=t.answered?Math.round(t.correct/t.answered*100):0;
+  // msSum/msCount live on each day's rec — totals() doesn't aggregate them, so read recentDays
+  let msSum=0,msCount=0;
+  Stats.recentDays(30).forEach(({data})=>{const r=data[TOOL];if(!r)return;msSum+=(r.msSum||0);msCount+=(r.msCount||0);});
+  const avgMs=msCount?Math.round(msSum/msCount):0;
+  html+=`${t.answered} answered · ${acc30}% accuracy`;
+  if(avgMs)html+=` · avg ${(avgMs/1000).toFixed(1)}s`;
+  if(weak.length){html+=' · weak: '+weak.map(w=>`${w.key} (${Math.round(w.acc*100)}%)`).join(', ');}
+  $('histLine').innerHTML=html;
+}
+
+function doSkip(){
+  if(answered)return;
+  answered=true;
+  cancelAnimationFrame(rafTimer);
+  Stats.skip(TOOL);
+  $('skipActiveBtn').style.display='none';
+  nextQ();
+}
+
+function afterAnswer(ok){ $('skipActiveBtn').style.display='none'; if($('autoadv').checked){setTimeout(nextQ,ok?700:1400);} else {$('contWrap').style.display='block';$('continue').focus();$('start').style.display='none';} }
+function reveal(ok,clickedStr,clickedFret){
+  const pc=(OPEN_SEMI[cur.str]+cur.fret)%12;
+  const marks=[{str:cur.str,fret:cur.fret,label:cur.note,color:ok?'var(--good)':'var(--bad)'}];
+  if($('octaves').checked)marks.push(...octaveMarks(pc,cur.str,cur.fret));
+  if(clickedStr!=null&&!(clickedStr===cur.str&&clickedFret===cur.fret))marks.push({str:clickedStr,fret:clickedFret,label:'✗',color:'var(--bad)',r:11});
+  drawBoard(marks);tone(midiAt(cur.str,cur.fret));
+}
+function answerName(n,btn){if(answered)return;answered=true;cancelAnimationFrame(rafTimer);const ok=n===cur.note;btn.classList.add(ok?'right':'wrong');if(!ok)[...$('choices').children].find(b=>b.textContent===cur.note)?.classList.add('right');reveal(ok);recordAnswer(ok);afterAnswer(ok);}
+function answerFind(s,f){if(answered)return;const ok=noteAt(s,f)===cur.note&&s===cur.str;answered=true;cancelAnimationFrame(rafTimer);reveal(ok,s,f);recordAnswer(ok);afterAnswer(ok);}
+function answerHear(s,f){if(answered)return;const ok=(OPEN_SEMI[s]+f)%12===(OPEN_SEMI[cur.str]+cur.fret)%12;answered=true;cancelAnimationFrame(rafTimer);
+  // accept any location of the same pitch class
+  const marks=[{str:cur.str,fret:cur.fret,label:cur.note,color:'var(--good)'}];
+  if(!ok)marks.push({str:s,fret:f,label:'✗',color:'var(--bad)',r:11});
+  if($('octaves').checked)marks.push(...octaveMarks((OPEN_SEMI[cur.str]+cur.fret)%12,cur.str,cur.fret));
+  drawBoard(marks);tone(midiAt(cur.str,cur.fret));$('question').innerHTML=ok?`✓ That's <b>${cur.note}</b>.`:`✗ You heard <b>${cur.note}</b>.`;recordAnswer(ok);afterAnswer(ok);}
+
+// --- play-it (mic) mode ---
+function startPlayQuestion(){
+  const{str,fret,note}=cur;
+  // reset per-question judging state
+  playFrames=[];playJudged=false;wrongSinceT=null;
+  $('choices').innerHTML='';$('playPanel').style.display='block';
+  drawBoard([{str,fret,label:note,color:'var(--accent2)'}]);
+  const octMidi=midiAt(str,fret);
+  const where=exactOctave?` (${P_name(octMidi)}, ${STR_LABELS[str]} string, fret ${fret})`:'';
+  $('question').innerHTML=`🎸 <b>Play ${note}</b> on your guitar${where}.`;
+  $('plNote').textContent='—';$('plCents').textContent='';
+  if(playMic){
+    $('playStatus').textContent='Listening — play '+note+'…';$('playStatus').className='play-status';
+    $('micStart').style.display='none';
+    startTimer();
+  }else{
+    $('playStatus').textContent='Tap “Start mic”, then play '+note+' on your guitar.';$('playStatus').className='play-status';
+    $('micStart').style.display='';$('micStart').classList.remove('running');
+    $('micStart').innerHTML='<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg> Start mic';
+    // timer starts when the mic actually begins (see startPlayMic)
+  }
+}
+function P_name(m){return WP.midiToNoteName(m);}
+
+function startPlayMic(){
+  if(playMic)return; // already running
+  $('playStatus').textContent='Requesting microphone…';$('playStatus').className='play-status';
+  playMic=WP.createMic({
+    onFrame:onPlayFrame,
+    onError:err=>{ playMicFailed(); }
+  });
+  $('micStart').style.display='none';
+  if(cur){$('playStatus').textContent='Listening — play '+cur.note+'…';}
+  startTimer(); // begin response timer once we're actually listening
+}
+function playMicFailed(){
+  if(playMic){try{playMic.stop();}catch(e){}playMic=null;}
+  $('playStatus').textContent='Mic blocked — allow microphone access and tap “Start mic” again, or switch to another mode to answer by clicking.';
+  $('playStatus').className='play-status err';
+  $('micStart').style.display='';
+  $('micStart').innerHTML='<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg> Start mic';
+}
+function stopPlayMic(){
+  if(playMic){try{playMic.stop();}catch(e){}playMic=null;}
+  playFrames=[];playJudged=false;wrongSinceT=null;
+}
+function onPlayFrame(f){
+  if(mode!=='play'||answered)return;
+  // live readout
+  if(f.freq==null){ $('plNote').textContent='—';$('plCents').textContent=''; return; }
+  $('plNote').textContent=f.note;
+  const c=Math.round(f.cents);
+  $('plCents').textContent=(c>0?'+':'')+c+'¢';
+  // collect voiced frames; keep enough to span the stability window (last ~1.5s)
+  playFrames.push({t:f.t,midi:f.midi,cents:f.cents});
+  const cutoff=f.t-1.5;
+  while(playFrames.length&&playFrames[0].t<cutoff)playFrames.shift();
+  judgePlay(f.t);
+}
+function judgePlay(nowT){
+  if(playJudged)return;
+  // window = frames spanning the last PLAY_STAB_MS (at ~40ms hop that's ~13 frames)
+  const win=playFrames.filter(fr=>fr.t>=nowT-PLAY_STAB_MS/1000-0.001);
+  if(win.length<3)return;
+  const tgtPc=(OPEN_SEMI[cur.str]+cur.fret)%12;
+  const r=PM.judge(win,tgtPc,{window:win.length,stabilityMs:PLAY_STAB_MS,centsTol:35,
+    exactOctave:exactOctave,targetMidi:midiAt(cur.str,cur.fret)});
+  if(r.verdict==='correct'){
+    wrongSinceT=null;
+    playJudged=true;
+    answerPlay(true,r);
+  }else if(r.verdict==='wrong'){
+    // require a sustained wrong note (~2s) before punishing — ignore transients/harmonics
+    if(wrongSinceT===null)wrongSinceT=nowT;
+    $('playStatus').textContent='Heard '+r.note+' — keep going, that’s not it.';$('playStatus').className='play-status';
+    if((nowT-wrongSinceT)*1000>=PLAY_WRONG_HOLD_MS){
+      playJudged=true;
+      answerPlay(false,r);
+    }
+  }else{
+    // pending: settle in progress; clear a stale wrong timer if the note is no longer stable-wrong
+    wrongSinceT=null;
+  }
+}
+function answerPlay(ok,r){
+  if(answered)return;answered=true;cancelAnimationFrame(rafTimer);
+  const heard=r&&r.note?r.note:'';
+  // reveal on the board (same path as other modes), then narrate what we heard
+  reveal(ok);
+  $('question').innerHTML=ok
+    ?`✓ <b>${cur.note}</b> — heard <b>${heard}</b>.`
+    :`✗ You played <b>${heard}</b>; the note was <b>${cur.note}</b>.`;
+  $('playStatus').textContent=ok?'Nice — that’s '+cur.note+'.':'That was '+heard+', not '+cur.note+'.';
+  $('playStatus').className='play-status';
+  recordAnswer(ok);
+  afterAnswer(ok);
+}
+
+function explore(){
+  $('question').innerHTML='<b>Explore</b>. Click any note to hear it and see its octaves light up.';$('choices').innerHTML='';$('tb').style.display='none';$('replay').style.display='none';
+  const all=[];activeStrings().forEach(s=>activeFrets().forEach(f=>{if(naturalsOnly&&noteAt(s,f).includes('#'))return;all.push({str:s,fret:f,label:noteAt(s,f),color:'#566173',tcolor:'#e5e7eb',r:12});}));
+  drawBoard(all);
+  // attach clicks by redraw with handler: simplest is overlay clickable
+  drawBoard(all,(s,f)=>{const pc=(OPEN_SEMI[s]+f)%12;const marks=all.map(m=>({...m}));const hit=marks.find(m=>m.str===s&&m.fret===f);marks.forEach(m=>{if((OPEN_SEMI[m.str]+m.fret)%12===pc){m.color='var(--oct)';m.tcolor='#fff';}});if(hit){hit.color='var(--accent2)';hit.tcolor='#06140b';hit.r=13;}drawBoard(marks,null);tone(midiAt(s,f));});
+}
+
+function start(){if(mode==='explore'){explore();return;}$('start').textContent='Skip →';if(!answered){doSkip();return;}nextQ();}
+$('start').onclick=start;
+$('continue').onclick=()=>{$('contWrap').style.display='none';nextQ();};
+$('skipActiveBtn').onclick=doSkip;
+document.addEventListener('keydown',e=>{ if((e.code==='Space'||e.code==='Enter')&&$('contWrap').style.display!=='none'){e.preventDefault();$('continue').click();} });
+
+// autoadv — pref-backed (already migrated above)
+$('autoadv').onchange=e=>{Stats.setPref(TOOL,'autoadv',e.target.checked); if(e.target.checked&&$('contWrap').style.display!=='none')$('continue').click();};
+$('replay').onclick=()=>{if(cur)tone(midiAt(cur.str,cur.fret));};
+$('restart').onclick=()=>{count=correct=totalTime=streak=best=0;['sCount','sStreak','sBest'].forEach(i=>$(i).textContent='0');$('sAcc').textContent='—';$('sAvg').textContent='—';$('sAcc').className='n display-num good';$('sAvg').className='n display-num';answered=true;$('skipActiveBtn').style.display='none';drawBoard([]);$('question').textContent='Press start to begin.';$('choices').innerHTML='';$('contWrap').style.display='none';};
+document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');
+  const prevMode=mode;
+  mode=b.dataset.m;Stats.setPref(TOOL,'mode',mode);
+  if(prevMode==='play'&&mode!=='play')stopPlayMic(); // release the mic when leaving play mode
+  answered=true;$('statsPanel').style.display=mode==='explore'?'none':'block';$('start').textContent=mode==='explore'?'Open Explore':'Start';
+  $('choices').innerHTML='';$('tb').style.display='none';$('replay').style.display='none';$('contWrap').style.display='none';$('skipActiveBtn').style.display='none';
+  $('playPanel').style.display='none';
+  $('exactOctWrap').style.display=mode==='play'?'inline-flex':'none';
+  $('question').textContent=mode==='explore'?'Press "Open Explore".':'Press start to begin.';drawBoard([]);});
+$('strings').onchange=e=>{stringSel=e.target.value;Stats.setPref(TOOL,'strings',stringSel);if(mode==='explore')explore();};
+$('frets').onchange=()=>{fretSelVal=$('frets').value;Stats.setPref(TOOL,'frets',fretSelVal);parseFrets();if(mode==='explore')explore();};
+$('naturals').onchange=e=>{naturalsOnly=e.target.checked;Stats.setPref(TOOL,'naturals',naturalsOnly);if(mode==='explore')explore();};
+$('exactOct').onchange=e=>{exactOctave=e.target.checked;Stats.setPref(TOOL,'exactOct',exactOctave);};
+$('micStart').onclick=startPlayMic;
+parseFrets();drawBoard([]);
+// populate 30-day line and review banner on load
+updateHistLine();
+updateReviewBanner();
+Stats.activity(TOOL); // count the visit toward practice minutes
+
+// surface the site-wide mic-input picker in the header (mic.js loads async via header.js)
+(function sp(){ if(window.WoodshedMic)WoodshedMic.showPicker(); else setTimeout(sp,150); })();
+</script>
+</body>
+</html>

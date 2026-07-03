@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="stats.js"></script>
+<script src="header.js" defer></script>
+<script src="pitch.js"></script>
+<title>Tuner · The Woodshed</title>
+<style>
+  :root{--steel:#7e95b3}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);
+    -webkit-font-smoothing:antialiased;padding:24px;display:flex;justify-content:center}
+  .wrap{width:100%;max-width:560px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:16px}
+  .display{display:flex;flex-direction:column;align-items:center;gap:2px;margin-bottom:6px}
+  .note{font-family:var(--font-display);font-weight:560;font-size:88px;line-height:1;letter-spacing:-.02em}
+  .note.flat{color:var(--steel)}.note.sharp{color:var(--accent)}.note.intune{color:var(--good)}
+  .note small{font-size:30px;color:var(--muted);font-weight:500;vertical-align:.35em}
+  .cents-num{font-family:var(--font-display);font-size:22px;color:var(--muted);font-variant-numeric:lining-nums}
+  .cents-num b{color:var(--ink)}
+  .freq{font-size:13px;color:var(--muted);margin-top:2px}
+  .gauge-wrap{display:flex;justify-content:center;margin:6px 0 2px}
+  svg.gauge{width:100%;max-width:440px;height:auto;display:block}
+  .strings{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:4px}
+  .schip{min-width:52px;text-align:center;padding:10px 4px;border-radius:10px;background:var(--panel2);
+    border:1px solid var(--line);font-weight:600;font-size:15px;transition:.12s;cursor:default}
+  .schip .hz{display:block;font-size:10.5px;color:var(--muted);font-weight:500;margin-top:2px}
+  .schip.lit{background:var(--good);border-color:var(--good);color:#06140b}
+  .schip.lit .hz{color:#06140b}
+  .schip.near{border-color:var(--accent)}
+  /* a string proven in-tune this session keeps a quiet check */
+  .schip.done{border-color:var(--good)}
+  .schip .tick{display:none;color:var(--good);font-weight:700;margin-left:3px}
+  .schip.done .tick{display:inline}
+  .schip.lit .tick{color:#06140b}
+  .all-true{font-size:12.5px;color:var(--good);text-align:center;margin-top:8px;min-height:16px;font-weight:600;
+    opacity:0;transition:opacity .4s ease}
+  .all-true.show{opacity:1}
+  /* the settle glow — the gauge zone breathes green when you sit in tune */
+  #inTuneZone{transition:stroke-width .3s ease,filter .3s ease}
+  #inTuneZone.settled{stroke-width:14;filter:drop-shadow(0 0 6px var(--good))}
+  @media(prefers-reduced-motion:reduce){#inTuneZone{transition:none}}
+  .start{width:100%;padding:16px;font-size:18px;font-weight:600;border:none;border-radius:10px;cursor:pointer;
+    background:var(--accent);color:#1a1407;margin-top:12px}
+  .start.running{background:var(--bad);color:#fff}
+  .status{font-size:13px;color:var(--muted);text-align:center;margin-top:10px;min-height:18px}
+  .status.err{color:var(--bad)}
+  .hint{font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:8px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:0 0 12px}
+  svg.li{display:inline-block;width:1em;height:1em;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead"><img class="masthead-plate" src="../assets/plates/plate-ear.png" alt="">
+    <div class="kicker">The Woodshed · Tune</div>
+    <h1>Tuner</h1>
+    <p class="sub">A chromatic tuner that listens. Pluck one string, let it ring, and land the needle in the green.</p>
+  </div>
+  <hr class="fretline">
+
+  <div class="panel">
+    <div class="display">
+      <div class="note" id="note">—</div>
+      <div class="cents-num" id="centsNum">play a note</div>
+      <div class="freq" id="freq"></div>
+    </div>
+    <div class="gauge-wrap">
+      <svg class="gauge" id="gauge" viewBox="0 0 440 210" aria-hidden="true"></svg>
+    </div>
+    <div class="strings" id="strings"></div>
+    <div class="all-true" id="allTrue" role="status" aria-live="polite"></div>
+    <button class="start" id="startBtn"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg> Start tuner</button>
+    <div class="status" id="status">Mic starts on click — the browser needs a tap first.</div>
+  </div>
+
+  <div class="panel">
+    <h2>How to use it</h2>
+    <div class="hint">
+      Standard tuning is <b>E A D G B E</b> (low to high). Pluck one string and let it ring — pick a clean,
+      sustained note, not a strum. The big letter is the nearest note; the needle shows how many cents you're
+      <em>off</em>. Green zone is within ±5 cents. Blue letter = flat (tune up), amber = sharp (tune down).
+      Tune <em>up</em> to the note when you can — it holds better. The reading is smoothed over the last few
+      frames so it won't chatter.
+    </div>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const TOOL='tuner';
+const P=window.WoodshedPitch;
+
+// E-standard strings, low to high (MIDI + freq)
+const STRINGS=[
+  {name:'E2',midi:40},{name:'A2',midi:45},{name:'D3',midi:50},
+  {name:'G3',midi:55},{name:'B3',midi:59},{name:'E4',midi:64}
+];
+
+// ---- build string chips ----
+(function(){
+  const row=$('strings');
+  STRINGS.forEach(s=>{
+    const d=document.createElement('div');d.className='schip';d.dataset.midi=s.midi;
+    d.innerHTML=s.name+'<span class="tick" aria-hidden="true">✓</span><span class="hz">'+P.midiToFreq(s.midi).toFixed(1)+' Hz</span>';
+    row.appendChild(d);
+  });
+})();
+
+// ---- gauge geometry: a semicircular arc from -50 (left) to +50 (right) cents ----
+const GA={cx:220,cy:190,r:150,start:200,end:340}; // start/end angles in degrees (upper arc)
+function polar(cx,cy,r,deg){const a=(deg-90)*Math.PI/180;return{x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)};}
+function arcPath(r,d0,d1){const p0=polar(GA.cx,GA.cy,r,d0),p1=polar(GA.cx,GA.cy,r,d1);const large=Math.abs(d1-d0)>180?1:0;const sweep=d1>d0?1:0;return`M${p0.x.toFixed(1)} ${p0.y.toFixed(1)} A${r} ${r} 0 ${large} ${sweep} ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`;}
+function centsToDeg(c){c=Math.max(-50,Math.min(50,c));return GA.start+((c+50)/100)*(GA.end-GA.start);}
+
+function buildGauge(){
+  const g=$('gauge');const ns='http://www.w3.org/2000/svg';g.innerHTML='';
+  // full track
+  const track=document.createElementNS(ns,'path');
+  track.setAttribute('d',arcPath(GA.r,GA.start,GA.end));
+  track.setAttribute('stroke','var(--line)');track.setAttribute('stroke-width','10');
+  track.setAttribute('fill','none');track.setAttribute('stroke-linecap','round');g.appendChild(track);
+  // green in-tune zone +-5 cents
+  const zone=document.createElementNS(ns,'path');
+  zone.setAttribute('id','inTuneZone');
+  zone.setAttribute('d',arcPath(GA.r,centsToDeg(-5),centsToDeg(5)));
+  zone.setAttribute('stroke','var(--good)');zone.setAttribute('stroke-width','10');
+  zone.setAttribute('fill','none');zone.setAttribute('stroke-linecap','round');g.appendChild(zone);
+  // tick marks at -50,-25,0,+25,+50
+  [-50,-25,0,25,50].forEach(c=>{
+    const d=centsToDeg(c);const o=polar(GA.cx,GA.cy,GA.r-16,d),i=polar(GA.cx,GA.cy,GA.r-4,d);
+    const ln=document.createElementNS(ns,'line');ln.setAttribute('x1',o.x);ln.setAttribute('y1',o.y);
+    ln.setAttribute('x2',i.x);ln.setAttribute('y2',i.y);ln.setAttribute('stroke','var(--muted)');
+    ln.setAttribute('stroke-width',c===0?2:1);ln.setAttribute('opacity',c===0?0.9:0.5);g.appendChild(ln);
+    const lp=polar(GA.cx,GA.cy,GA.r-30,d);const tx=document.createElementNS(ns,'text');
+    tx.setAttribute('x',lp.x);tx.setAttribute('y',lp.y+4);tx.setAttribute('fill','var(--muted)');
+    tx.setAttribute('font-size','11');tx.setAttribute('text-anchor','middle');
+    tx.textContent=(c>0?'+':'')+c;g.appendChild(tx);
+  });
+  // needle (updated live)
+  const needle=document.createElementNS(ns,'line');needle.setAttribute('id','needle');
+  needle.setAttribute('x1',GA.cx);needle.setAttribute('y1',GA.cy);
+  const tip=polar(GA.cx,GA.cy,GA.r-10,centsToDeg(0));
+  needle.setAttribute('x2',tip.x);needle.setAttribute('y2',tip.y);
+  needle.setAttribute('stroke','var(--accent)');needle.setAttribute('stroke-width','3.5');
+  needle.setAttribute('stroke-linecap','round');needle.setAttribute('opacity','0.35');g.appendChild(needle);
+  const hub=document.createElementNS(ns,'circle');hub.setAttribute('cx',GA.cx);hub.setAttribute('cy',GA.cy);
+  hub.setAttribute('r','7');hub.setAttribute('fill','var(--accent)');g.appendChild(hub);
+}
+function setNeedle(cents,active){
+  const n=$('needle');if(!n)return;
+  const tip=polar(GA.cx,GA.cy,GA.r-10,centsToDeg(cents));
+  n.setAttribute('x2',tip.x);n.setAttribute('y2',tip.y);
+  n.setAttribute('opacity',active?'1':'0.35');
+  n.setAttribute('stroke',Math.abs(cents)<=5?'var(--good)':'var(--accent)');
+}
+buildGauge();
+
+// ---- smoothing: median of last 5 cents readings for the needle ----
+let centsBuf=[];
+function median(a){const s=[...a].sort((x,y)=>x-y);const m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;}
+
+let mic=null,running=false,starting=false;
+
+// ---- "in the pocket" settle: |cents|<5 held ~1s on a matched string earns a ✓ ----
+const SETTLE_MS=1000;
+let settleMidi=null, settleSince=0;          // which string we're currently settling, and when it began
+const strungTrue=new Set();                   // midis proven in tune this session (persists until page reload)
+function setSettled(on){ const z=$('inTuneZone'); if(z)z.classList.toggle('settled',on); }
+function markTrue(midi){
+  if(strungTrue.has(midi))return;
+  strungTrue.add(midi);
+  const chip=document.querySelector('.schip[data-midi="'+midi+'"]');
+  if(chip)chip.classList.add('done');
+  if(strungTrue.size===STRINGS.length){
+    const el=$('allTrue'); el.textContent='All six strings true — you’re in tune.'; el.classList.add('show');
+  }
+}
+
+function onFrame(f){
+  if(f.freq==null){
+    // no clear pitch — drop out of any settle we were building
+    settleMidi=null; setSettled(false);
+    return;
+  }
+  centsBuf.push(f.cents);if(centsBuf.length>5)centsBuf.shift();
+  const smooth=median(centsBuf);
+  // note letter + octave
+  const nm=f.note.replace(/(\d+)$/,'');const oct=f.note.match(/(\d+)$/);
+  $('note').innerHTML=nm+(oct?'<small>'+oct[1]+'</small>':'');
+  const cls=Math.abs(smooth)<=5?'intune':smooth<0?'flat':'sharp';
+  $('note').className='note '+cls;
+  const rounded=Math.round(smooth);
+  $('centsNum').innerHTML=Math.abs(smooth)<=5?'<b style="color:var(--good)">in tune</b>':
+    '<b>'+(rounded>0?'+':'')+rounded+'</b> cents '+(smooth<0?'flat — tune up':'sharp — tune down');
+  $('freq').textContent=f.freq.toFixed(1)+' Hz';
+  setNeedle(smooth,true);
+  // light matching string chip
+  document.querySelectorAll('.schip').forEach(c=>{
+    c.classList.remove('lit','near');
+    const md=+c.dataset.midi;
+    if(md===f.midi){ if(Math.abs(smooth)<=5)c.classList.add('lit'); else c.classList.add('near'); }
+  });
+  // settle tracking: sit inside ±5 cents on a real string for ~1s → glow + earn the ✓
+  const onString=STRINGS.some(s=>s.midi===f.midi);
+  if(onString && Math.abs(smooth)<=5){
+    if(settleMidi!==f.midi){ settleMidi=f.midi; settleSince=f.t; }
+    setSettled(true);
+    if((f.t-settleSince)*1000>=SETTLE_MS) markTrue(f.midi);
+  }else{
+    settleMidi=null; setSettled(false);
+  }
+}
+
+function start(){
+  if(running||starting)return;            // guard rapid double-taps while the mic is opening
+  starting=true; running=true;
+  $('status').textContent='Listening — pluck a string…';$('status').className='status';
+  $('startBtn').classList.add('running');
+  $('startBtn').innerHTML='Stop';
+  const m=P.createMic({
+    onFrame:onFrame,
+    onError:err=>{
+      starting=false;
+      if(mic){mic.stop();mic=null;}
+      running=false;$('startBtn').classList.remove('running');
+      $('startBtn').innerHTML='<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg> Start tuner';
+      $('status').textContent='Mic blocked — allow microphone access, then tap Start again.';
+      $('status').className='status err';
+    }
+  });
+  // if stop() already ran during the async open, release immediately; else keep the handle
+  if(!running){ m.stop(); starting=false; return; }
+  mic=m; starting=false;
+  Stats.activity(TOOL);
+}
+function stop(){
+  if(mic){mic.stop();mic=null;}
+  running=false;centsBuf=[];
+  settleMidi=null; setSettled(false);
+  $('startBtn').classList.remove('running');
+  $('startBtn').innerHTML='<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg> Start tuner';
+  $('note').textContent='—';$('note').className='note';
+  $('centsNum').textContent='play a note';$('freq').textContent='';
+  setNeedle(0,false);
+  document.querySelectorAll('.schip').forEach(c=>c.classList.remove('lit','near'));
+  $('status').textContent='Stopped.';$('status').className='status';
+}
+$('startBtn').onclick=()=>running?stop():start();
+// release the mic if the tab is hidden or the page is torn down mid-listen
+window.addEventListener('pagehide',()=>{ if(running)stop(); });
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'&&running)stop(); });
+
+// surface the site-wide mic-input picker in the header (mic.js loads async via header.js)
+(function sp(){ if(window.WoodshedMic)WoodshedMic.showPicker(); else setTimeout(sp,150); })();
+</script>
+</body>
+</html>

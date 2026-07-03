@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="stats.js"></script>
+<script src="header.js" defer></script>
+<title>The Woodshed · Coach</title>
+<style>
+  /* This page is an APP, not a document: the chat fills the viewport and the
+     log scrolls internally — the page itself never scrolls. */
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);
+    -webkit-font-smoothing:antialiased;display:flex;flex-direction:column;overflow:hidden}
+  .app-shell{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;width:100%;
+    max-width:1280px;margin:0 auto;padding:12px 20px 16px}
+  /* slim one-line masthead — the tall version belongs on documents, not apps */
+  .coach-mast{flex:none;display:flex;align-items:baseline;gap:14px;padding:2px 4px 10px}
+  .coach-mast .kicker{margin:0}
+  .coach-mast h1{font-size:1.25rem;font-weight:580;margin:0;line-height:1.1}
+  .coach-mast .sub{color:var(--muted);font-size:.82rem;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  @media(max-width:700px){.coach-mast .sub{display:none}}
+  /* the coach mount fills all remaining height; coach.js lays out sidebar+chat inside */
+  #coachFullPage{flex:1 1 auto;min-height:0;display:flex;border:1px solid var(--line);
+    border-radius:14px;overflow:hidden;background:var(--panel);box-shadow:var(--shadow-sm)}
+  /* the chat column reads at a comfortable measure, centered in the fluid pane */
+  #coachFullPage .wsc-log{width:100%;max-width:900px;margin:0 auto;padding:24px clamp(18px,3vw,40px)}
+  /* cap bubble width on the WRAPPER (sized vs the turn row), not .wsc-msg — a %
+     max-width on the msg is circular against the shrink-to-fit wrapper and broke
+     one-word replies mid-word ("PO/NG") */
+  #coachFullPage .wsc-bwrap{max-width:78%}
+  #coachFullPage .wsc-foot{width:100%;max-width:900px;margin:0 auto;padding:14px clamp(18px,3vw,40px) 16px;border-top:none}
+  #coachFullPage .wsc-main{border-top:none}
+  #coachFullPage .wsc-foot-wrap{border-top:1px solid var(--line)}
+  /* keep the injected site header compact on this page */
+  .site-header{flex:none;max-width:1280px;width:100%;margin:10px auto 0;padding:0 20px}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <div class="coach-mast">
+    <div>
+      <p class="kicker">The Woodshed · Coach</p>
+      <h1>The Instructor</h1>
+    </div>
+    <p class="sub">Diagnoses before prescribing — reads your files, stats, and takes.</p>
+  </div>
+  <div id="coachFullPage"></div>
+</div>
+<script src="coach.js" defer></script>
+</body>
+</html>

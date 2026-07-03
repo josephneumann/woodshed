@@ -1,0 +1,29 @@
+node_modules/
+dist/
+.vite/
+*.log
+.env
+student/coach-history.json
+student/coach-archive.json
+student/coach-sessions/
+student/recordings/
+student/uploads/
+student/song-audio/
+student/charts/
+.sessions.json
+student/coach-history.migrated.json
+
+# ---- personal practice data: LOCAL ONLY, never published ----
+# Fresh clones get a blank slate from seed/ (scripts/init-student.mjs, runs on
+# npm install). Your real practice lives in these paths, untracked.
+/student/*.md
+/student/*.json
+/student/practice-plans/
+/curriculum/
+/Resources/
+reference/paul-davids-next-level-playing.md
+reference/justinguitar-guitar-grades.md
+reference/justinguitar-practical-music-theory.md
+reference/andrew-clarke-connected-guitar.md
+reference/supplementary-resources.md
+reference/resource-library.json

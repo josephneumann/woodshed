@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="header.js" defer></script>
+<script src="stats.js"></script><script src="audio.js"></script>
+<title>Chord Lab · The Woodshed</title>
+<style>
+  :root{--accent2:#7e95b3;--dot:var(--accent)}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);padding:24px;display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+  .wrap{width:100%;max-width:940px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:0 0 12px}
+  .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  button.ctrl{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 14px;font-size:14px;cursor:pointer}
+  button.ctrl:hover{border-color:var(--accent)}
+  button.ctrl:disabled{opacity:.5;cursor:default}
+  label.cb{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer}
+  .board-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  svg#board{display:block;min-width:720px;width:100%;touch-action:manipulation;outline:none}
+  svg#board:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+  .hint{font-size:13px;color:var(--muted);line-height:1.55;margin-top:8px}
+  /* quick-shape chips: one tap loads a classic open voicing */
+  .shape-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+  .shape{font-size:13px;font-weight:600;padding:5px 12px;border-radius:20px;cursor:pointer;
+    border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-family:inherit;font-variant-numeric:lining-nums}
+  .shape:hover{border-color:var(--accent)}
+  .shape:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  svg.li{display:inline-block;width:1em;height:1em;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em}
+  /* readout */
+  .readout{display:flex;gap:22px;flex-wrap:wrap;align-items:baseline;margin-top:12px;font-variant-numeric:lining-nums}
+  .readout .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:2px}
+  .readout .tab{font-family:var(--font-display);font-size:22px;letter-spacing:.06em}
+  .readout .names{font-size:15px;color:var(--ink)}
+  /* name card */
+  .name-card{text-align:center;padding:22px 18px}
+  .chord-name{font-family:var(--font-display);font-weight:560;font-size:64px;line-height:1;letter-spacing:-.01em;font-variant-numeric:lining-nums}
+  .chord-name.none{color:var(--muted);font-size:44px}
+  .intervals{margin-top:10px;font-size:15px;color:var(--accent2);letter-spacing:.04em;min-height:20px}
+  .intervals .iv{display:inline-block;margin:0 5px}
+  .alts{margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;min-height:0}
+  .alts .altlbl{font-size:12px;color:var(--muted);align-self:center}
+  .chip{font-size:13px;padding:5px 11px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);color:var(--ink);font-variant-numeric:lining-nums}
+  .none-hint{font-size:13px;color:var(--muted);margin-top:8px}
+  /* heard card */
+  .heard-name{font-family:var(--font-display);font-weight:560;font-size:42px;line-height:1.05;font-variant-numeric:lining-nums}
+  .heard-name.none{color:var(--muted);font-size:30px}
+  .heard-notes{font-size:15px;color:var(--ink);margin-top:6px}
+  .caveat{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:10px;font-style:italic}
+  .status{font-size:13px;color:var(--muted);margin-top:10px;min-height:18px}
+  .status.err{color:var(--bad)}
+  .status.live{color:var(--accent)}
+  .big{padding:13px 22px;font-size:16px;font-weight:600;border:none;border-radius:10px;background:var(--accent);color:#1a1407;cursor:pointer}
+  .big.running{background:var(--bad);color:#fff}
+  .big:disabled{opacity:.55;cursor:default}
+  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .legend{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:10px;flex-wrap:wrap}
+  .legend span{display:inline-flex;gap:6px;align-items:center}.sw{width:12px;height:12px;border-radius:50%;border:1px solid var(--line)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead"><img class="masthead-plate" src="../assets/plates/plate-fretboard.png" alt="">
+    <div class="kicker">The Woodshed · Fretboard</div>
+    <h1>Chord Lab</h1>
+    <p class="sub">Two ways in. Build a voicing on the board, hear it, and get it named — or strum into the mic and let the machine tell you what you played.</p>
+  </div>
+  <hr class="fretline">
+
+  <!-- ===== BUILD: interactive fretboard ===== -->
+  <div class="panel">
+    <div class="controls">
+      <button class="ctrl" id="clearBtn">Clear board</button>
+      <button class="ctrl" id="strumBtn"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Strum</button>
+      <button class="ctrl" id="arpBtn">Arpeggio</button>
+      <label class="cb"><input type="checkbox" id="autoplay" checked> Auto-play on change</label>
+    </div>
+    <div class="shape-row" id="shapeRow" aria-label="Load a classic open voicing"></div>
+    <div class="board-wrap">
+      <svg id="board" viewBox="0 0 760 250" tabindex="0" role="application" aria-label="Interactive fretboard — click a string and fret to build a chord"></svg>
+    </div>
+    <div class="readout">
+      <div><span class="lbl">Voicing (tab)</span><span class="tab" id="tabOut">— — — — — —</span></div>
+      <div><span class="lbl">Notes low → high</span><span class="names" id="namesOut">click the board to fret notes</span></div>
+    </div>
+    <div class="legend">
+      <span><span class="sw" style="background:var(--accent)"></span> fretted</span>
+      <span><span class="sw" style="background:transparent"></span> O = open · X = muted (click the nut gutter to cycle)</span>
+    </div>
+    <div class="hint">Click a fret to sound a note on that string (one per string — clicking again clears it back to muted). The gutter left of the nut cycles each string between <b>open (O)</b> and <b>muted (X)</b>. Keyboard: focus the board, arrow keys move the cursor, Enter frets/clears.</div>
+  </div>
+
+  <!-- ===== NAME: identification ===== -->
+  <div class="panel name-card">
+    <div class="chord-name none" id="chordName">—</div>
+    <div class="intervals" id="intervals"></div>
+    <div class="alts" id="alts"></div>
+    <div class="none-hint" id="noneHint">Fret at least two different notes to get a chord name.</div>
+  </div>
+
+  <!-- ===== HEARD: mic ===== -->
+  <div class="panel">
+    <h2>Strum it — let the machine name it</h2>
+    <div class="row">
+      <button class="big" id="micBtn"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg> Strum it</button>
+      <div>
+        <div class="heard-name none" id="heardName">—</div>
+        <div class="heard-notes" id="heardNotes"></div>
+      </div>
+    </div>
+    <div class="status" id="micStatus">Give it one clean strum. First use downloads a ~900&nbsp;KB listening model, so the first analysis takes a moment.</div>
+    <div id="heardExtra" style="display:none">
+      <div class="intervals" id="heardIntervals" style="text-align:left"></div>
+      <div class="caveat">Basic Pitch hears pitches, not strings — mapping them to a fingering is a guess.</div>
+      <button class="ctrl" id="showBoardBtn" style="margin-top:10px">Show on the fretboard</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= PURE ChordId (unit-tested; parity with scratch test suite) ================= -->
+<script>
+window.ChordId=(function(root){
+  'use strict';
+  var SHARP=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  // interval name by semitone distance from root (0..11)
+  var IVL=['R','b9','9','b3','3','11','b5','5','#5','13','b7','7'];
+
+  // Template set — intervals (semitones from root). Array order = simplicity preference (earlier = simpler).
+  var TEMPLATES=[
+    {q:'',      pcs:[0,4,7]},            // major
+    {q:'m',     pcs:[0,3,7]},            // minor
+    {q:'7',     pcs:[0,4,7,10]},
+    {q:'m7',    pcs:[0,3,7,10]},
+    {q:'maj7',  pcs:[0,4,7,11]},
+    {q:'5',     pcs:[0,7]},              // power chord
+    {q:'sus4',  pcs:[0,5,7]},
+    {q:'sus2',  pcs:[0,2,7]},
+    {q:'6',     pcs:[0,4,7,9]},
+    {q:'m6',    pcs:[0,3,7,9]},
+    {q:'dim',   pcs:[0,3,6]},
+    {q:'aug',   pcs:[0,4,8]},
+    {q:'mMaj7', pcs:[0,3,7,11]},
+    {q:'dim7',  pcs:[0,3,6,9]},
+    {q:'m7b5',  pcs:[0,3,6,10]},
+    {q:'7sus4', pcs:[0,5,7,10]},
+    {q:'add9',  pcs:[0,2,4,7]},
+    {q:'madd9', pcs:[0,2,3,7]},
+    {q:'6/9',   pcs:[0,2,4,7,9]},
+    {q:'9',     pcs:[0,2,4,7,10]},
+    {q:'maj9',  pcs:[0,2,4,7,11]},
+    {q:'m9',    pcs:[0,2,3,7,10]},
+    {q:'7#9',   pcs:[0,3,4,7,10]},
+    {q:'7b9',   pcs:[0,1,4,7,10]},
+    {q:'m11',   pcs:[0,2,3,5,7,10]},
+    {q:'13',    pcs:[0,2,4,7,9,10]}
+  ];
+  var RANK={}; TEMPLATES.forEach(function(t,i){RANK[t.q]=i;});
+
+  function pcOf(m){return ((m%12)+12)%12;}
+  function uniqSorted(a){var s={},o=[];a.forEach(function(x){if(!s[x]){s[x]=1;o.push(x);}});return o.sort(function(x,y){return x-y;});}
+
+  // nameInterval(rootPc, pc) -> 'R','b3','5','b7', ...
+  function nameInterval(rootPc,pc){ return IVL[(((pc-rootPc)%12)+12)%12]; }
+
+  // Score one (root, template) hypothesis. Returns null if played set ⊄ template.
+  function scoreHypothesis(root,tmpl,playedPcs,bassPc){
+    var tset=tmpl.pcs.map(function(iv){return (root+iv)%12;});
+    var tsetS={}; tset.forEach(function(p){tsetS[p]=1;});
+    for(var i=0;i<playedPcs.length;i++){ if(!tsetS[playedPcs[i]]) return null; } // chord must contain every played pc
+    var playedSet={}; playedPcs.forEach(function(p){playedSet[p]=1;});
+    var hasRoot=!!playedSet[root];
+
+    // weighted coverage — missing root expensive, 3rd moderate, 5th cheap.
+    var totalW=0,gotW=0,missThird=false;
+    for(var j=0;j<tmpl.pcs.length;j++){
+      var iv=tmpl.pcs[j], pc=(root+iv)%12, w=1.0;
+      if(iv===0) w=3.0;                    // root
+      else if(iv===3||iv===4) w=2.0;       // 3rd
+      else if(iv===7) w=0.6;               // 5th — cheap to omit
+      else if(iv===6||iv===8) w=1.4;       // altered 5th (dim/aug) — identity-bearing
+      else w=1.0;                          // extensions / color
+      totalW+=w;
+      if(playedSet[pc]) gotW+=w;
+      else if(iv===3||iv===4) missThird=true;
+    }
+    var coverage=gotW/totalW;
+    var score=coverage*100;
+
+    // exactness bonus: played set == template set
+    var exact=true, pk=Object.keys(playedSet).length, tk=tset.length;
+    if(pk!==tk) exact=false; else { for(var v=0;v<tset.length;v++){ if(!playedSet[tset[v]]){exact=false;break;} } }
+    if(exact) score+=22;
+
+    if(!hasRoot) score-=40;                 // stiff rootless penalty
+    if(bassPc===root) score+=18;            // big root-in-bass bonus
+    score-=(RANK[tmpl.q]||0)*0.35;          // prefer simpler qualities on ties
+    if(missThird && tmpl.pcs.indexOf(3)<0 && tmpl.pcs.indexOf(4)>=0) score-=4;
+
+    return {score:score,coverage:coverage,root:root,quality:tmpl.q};
+  }
+
+  function buildName(root,quality,bassPc){
+    var base=SHARP[root]+quality;
+    return (bassPc!==root)?base+'/'+SHARP[bassPc]:base;
+  }
+  function intervalsFor(root,tmpl,playedSet){
+    var out=[];
+    tmpl.pcs.forEach(function(iv){ if(playedSet[(root+iv)%12]) out.push(IVL[iv]); });
+    return out;
+  }
+
+  function identify(midis){
+    if(!midis||!midis.length) return [];
+    var sorted=midis.slice().sort(function(a,b){return a-b;});
+    var bassPc=pcOf(sorted[0]);
+    var playedPcs=uniqSorted(midis.map(pcOf));
+    if(playedPcs.length<2) return [];
+    var playedSet={}; playedPcs.forEach(function(p){playedSet[p]=1;});
+
+    var cands=[];
+    for(var root=0;root<12;root++){
+      for(var t=0;t<TEMPLATES.length;t++){
+        var h=scoreHypothesis(root,TEMPLATES[t],playedPcs,bassPc);
+        if(!h) continue;
+        cands.push({
+          name:buildName(h.root,h.quality,bassPc),
+          root:SHARP[h.root], quality:h.quality, bass:SHARP[bassPc],
+          slash:(bassPc!==h.root),
+          coverage:+h.coverage.toFixed(3),
+          score:+h.score.toFixed(2),
+          intervals:intervalsFor(h.root,TEMPLATES[t],playedSet)
+        });
+      }
+    }
+    cands.sort(function(a,b){
+      if(b.score!==a.score) return b.score-a.score;
+      var ra=RANK[a.quality]||0, rb=RANK[b.quality]||0;
+      return ra-rb;
+    });
+    var seen={},out=[];
+    for(var i=0;i<cands.length;i++){ if(seen[cands[i].name])continue; seen[cands[i].name]=1; out.push(cands[i]); }
+    return out.slice(0,3);
+  }
+
+  return { identify:identify, nameInterval:nameInterval, SHARP:SHARP, TEMPLATES:TEMPLATES };
+})(window);
+
+// ---- clusterStrum: pure mic post-processing (unit-tested) ----
+window.clusterStrum=function(notes,opts){
+  opts=opts||{};
+  var minDur=opts.minDur==null?0.1:opts.minDur;
+  var win=opts.window==null?0.35:opts.window;
+  var kept=(notes||[]).filter(function(n){return (n.dur==null?0:n.dur)>=minDur;});
+  if(!kept.length) return {midis:[],cluster:[]};
+  kept=kept.slice().sort(function(a,b){return a.start-b.start;});
+  var t0=kept[0].start;
+  var cluster=kept.filter(function(n){return n.start-t0<=win;});
+  var byPc={};
+  cluster.forEach(function(n){ var pc=((n.midi%12)+12)%12; if(byPc[pc]==null||n.midi<byPc[pc]) byPc[pc]=n.midi; });
+  var midis=Object.keys(byPc).map(function(k){return byPc[k];}).sort(function(a,b){return a-b;});
+  return {midis:midis,cluster:cluster};
+};
+</script>
+
+<!-- ================= page controller ================= -->
+<script>
+const $=id=>document.getElementById(id);
+const TOOL='chord-lab';
+const SHARP=window.ChordId.SHARP;
+
+// Strings low→high: 6th..1st. index 0 = low E. E2 A2 D3 G3 B3 E4.
+const OPEN_MIDI=[40,45,50,55,59,64];
+const STR_LABELS=['E','A','D','G','B','e']; // nut labels
+const MAXF=15, INLAYS=[3,5,7,9,15], DOUBLE=[12];
+
+// per-string state: null = muted (X), -1 = open (O), 0..15 = fret number
+let strings=[null,null,null,null,null,null];
+let cursor={str:5,fret:0}; // keyboard cursor (starts high-e nut)
+
+// ---- geometry ----
+const NUT=54, FRET_W=44, STR_GAP=32, TOP=34;
+const BOARD_W=NUT+FRET_W*MAXF;
+
+function midiAt(str,fret){ return OPEN_MIDI[str]+fret; }
+function noteName(m){ return SHARP[((m%12)+12)%12]; }
+
+function fretX(fret){ return fret===0?NUT-26:NUT+FRET_W*(fret-0.5); }
+function strY(str){ return TOP+STR_GAP*(5-str); } // str 0 (low E) at bottom
+
+function drawBoard(){
+  const svg=$('board'); const ns='http://www.w3.org/2000/svg'; svg.innerHTML='';
+  // board fill
+  const bg=document.createElementNS(ns,'rect');
+  bg.setAttribute('x',NUT); bg.setAttribute('y',TOP-9); bg.setAttribute('width',FRET_W*MAXF);
+  bg.setAttribute('height',STR_GAP*5+18); bg.setAttribute('fill','#241a10'); bg.setAttribute('rx',4);
+  svg.appendChild(bg);
+  // inlay dots
+  INLAYS.forEach(f=>{ const c=document.createElementNS(ns,'circle');
+    c.setAttribute('cx',NUT+FRET_W*(f-0.5)); c.setAttribute('cy',TOP+STR_GAP*2.5);
+    c.setAttribute('r',6); c.setAttribute('fill','#3c3020'); svg.appendChild(c); });
+  DOUBLE.forEach(f=>[1.5,3.5].forEach(s=>{ const c=document.createElementNS(ns,'circle');
+    c.setAttribute('cx',NUT+FRET_W*(f-0.5)); c.setAttribute('cy',TOP+STR_GAP*s);
+    c.setAttribute('r',6); c.setAttribute('fill','#3c3020'); svg.appendChild(c); }));
+  // frets + numbers
+  for(let f=0;f<=MAXF;f++){ const x=NUT+FRET_W*f;
+    const l=document.createElementNS(ns,'line'); l.setAttribute('x1',x); l.setAttribute('x2',x);
+    l.setAttribute('y1',TOP-9); l.setAttribute('y2',TOP+STR_GAP*5+9);
+    l.setAttribute('stroke',f===0?'#cfd3da':'#5a5043'); l.setAttribute('stroke-width',f===0?5:2); svg.appendChild(l);
+    if(f>0){ const t=document.createElementNS(ns,'text'); t.setAttribute('x',x-FRET_W/2);
+      t.setAttribute('y',TOP+STR_GAP*5+28); t.setAttribute('fill','#6b7280'); t.setAttribute('font-size','12');
+      t.setAttribute('text-anchor','middle'); t.textContent=f; svg.appendChild(t); } }
+  // strings + open/muted markers at the nut gutter
+  for(let s=0;s<6;s++){ const y=strY(s);
+    const l=document.createElementNS(ns,'line'); l.setAttribute('x1',NUT); l.setAttribute('x2',BOARD_W);
+    l.setAttribute('y1',y); l.setAttribute('y2',y); l.setAttribute('stroke','#9aa0aa');
+    l.setAttribute('stroke-width',0.6+s*0.32); svg.appendChild(l);
+    // string name left of gutter
+    const t=document.createElementNS(ns,'text'); t.setAttribute('x',12); t.setAttribute('y',y+4);
+    t.setAttribute('fill','#6b7280'); t.setAttribute('font-size','12'); t.setAttribute('text-anchor','start');
+    t.textContent=STR_LABELS[s]; svg.appendChild(t);
+    // nut gutter O/X toggle (a real interactive target)
+    const gx=NUT-26;
+    const g=document.createElementNS(ns,'circle'); g.setAttribute('cx',gx); g.setAttribute('cy',y);
+    g.setAttribute('r',12); g.setAttribute('fill','transparent'); g.style.cursor='pointer';
+    g.addEventListener('click',()=>cycleNut(s)); svg.appendChild(g);
+    const st=strings[s];
+    const mark=document.createElementNS(ns,'text'); mark.setAttribute('x',gx); mark.setAttribute('y',y+5);
+    mark.setAttribute('text-anchor','middle'); mark.setAttribute('font-size','15'); mark.setAttribute('font-weight','700');
+    if(st===-1){ mark.textContent='O'; mark.setAttribute('fill','#cfd3da'); }
+    else if(st===null){ mark.textContent='✕'; mark.setAttribute('fill','#7a6a5a'); }
+    else { mark.textContent=''; }
+    mark.style.pointerEvents='none';
+    svg.appendChild(mark);
+  }
+  // clickable fret targets (frets 1..15 on every string)
+  for(let s=0;s<6;s++) for(let f=1;f<=MAXF;f++){
+    const x=NUT+FRET_W*(f-0.5), y=strY(s);
+    const hit=document.createElementNS(ns,'circle');
+    hit.setAttribute('cx',x); hit.setAttribute('cy',y); hit.setAttribute('r',13);
+    hit.setAttribute('fill','transparent'); hit.style.cursor='pointer';
+    hit.addEventListener('click',()=>toggleFret(s,f));
+    svg.appendChild(hit);
+  }
+  // fretted-note dots
+  for(let s=0;s<6;s++){ const st=strings[s];
+    if(st!=null && st>0){ const x=fretX(st), y=strY(s);
+      const c=document.createElementNS(ns,'circle'); c.setAttribute('cx',x); c.setAttribute('cy',y);
+      c.setAttribute('r',13); c.setAttribute('fill','var(--accent)'); c.setAttribute('stroke','#0f1115');
+      c.setAttribute('stroke-width',2); c.style.pointerEvents='none'; svg.appendChild(c);
+      const t=document.createElementNS(ns,'text'); t.setAttribute('x',x); t.setAttribute('y',y+5);
+      t.setAttribute('fill','#1a1407'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','700');
+      t.setAttribute('text-anchor','middle'); t.style.pointerEvents='none';
+      t.textContent=noteName(midiAt(s,st)); svg.appendChild(t); }
+  }
+  // keyboard cursor ring
+  if(document.activeElement===svg){
+    const cx=cursor.fret===0?NUT-26:NUT+FRET_W*(cursor.fret-0.5), cy=strY(cursor.str);
+    const ring=document.createElementNS(ns,'circle'); ring.setAttribute('cx',cx); ring.setAttribute('cy',cy);
+    ring.setAttribute('r',16); ring.setAttribute('fill','none'); ring.setAttribute('stroke','var(--accent)');
+    ring.setAttribute('stroke-width',2.5); ring.setAttribute('stroke-dasharray','4 3'); ring.style.pointerEvents='none';
+    svg.appendChild(ring);
+  }
+}
+
+// ---- state edits ----
+function toggleFret(s,f){
+  strings[s]=(strings[s]===f)?null:f; // click same fret again → muted
+  onVoicingChange(s);
+}
+function cycleNut(s){
+  // OPEN (-1) <-> MUTED (null); if currently a fretted note, go to muted first
+  strings[s]=(strings[s]===-1)?null:-1;
+  onVoicingChange(s);
+}
+function currentMidis(){
+  const out=[];
+  for(let s=0;s<6;s++){ const st=strings[s]; if(st===-1)out.push(OPEN_MIDI[s]); else if(st!=null&&st>=0)out.push(midiAt(s,st)); }
+  return out; // already low→high by string order
+}
+function tabString(){
+  return strings.map(st=> st===null?'x':(st===-1?'0':String(st))).join('-');
+}
+
+function onVoicingChange(changedStr){
+  drawBoard();
+  updateReadout();
+  updateName();
+  if($('autoplay').checked && changedStr!=null){
+    const st=strings[changedStr];
+    if(st!=null){ const m=(st===-1)?OPEN_MIDI[changedStr]:midiAt(changedStr,st); tone(m,0,0.9); }
+  }
+}
+
+function updateReadout(){
+  $('tabOut').textContent=tabString();
+  const ms=currentMidis();
+  $('namesOut').textContent= ms.length ? ms.map(noteName).join('  ') : 'click the board to fret notes';
+}
+
+function updateName(){
+  const ms=currentMidis();
+  const cands=window.ChordId.identify(ms);
+  const nameEl=$('chordName'), ivEl=$('intervals'), altsEl=$('alts'), hintEl=$('noneHint');
+  const distinct=new Set(ms.map(m=>((m%12)+12)%12)).size;
+  if(!cands.length){
+    nameEl.textContent='—'; nameEl.className='chord-name none';
+    ivEl.innerHTML=''; altsEl.innerHTML='';
+    hintEl.style.display='block';
+    hintEl.textContent = distinct>=2 ? "Those notes don't settle on a familiar chord — try a standard voicing."
+      : (distinct===1 ? 'Just one note — add more to make a chord (or a power-chord needs two).'
+      : 'Fret at least two different notes to get a chord name.');
+    return;
+  }
+  hintEl.style.display='none';
+  const top=cands[0];
+  nameEl.textContent=top.name; nameEl.className='chord-name';
+  // intervals line
+  ivEl.innerHTML = top.intervals.map(iv=>`<span class="iv">${iv}</span>`).join('<span style="color:var(--muted)">·</span>');
+  // up to 2 alternates
+  const alts=cands.slice(1,3);
+  if(alts.length){
+    altsEl.innerHTML='<span class="altlbl">also reads as</span>'+alts.map(a=>`<span class="chip">${a.name}</span>`).join('');
+  }else altsEl.innerHTML='';
+}
+
+// ---- keyboard ----
+$('board').addEventListener('keydown',e=>{
+  let handled=true;
+  if(e.key==='ArrowUp') cursor.str=Math.min(5,cursor.str+1);
+  else if(e.key==='ArrowDown') cursor.str=Math.max(0,cursor.str-1);
+  else if(e.key==='ArrowLeft') cursor.fret=Math.max(0,cursor.fret-1);
+  else if(e.key==='ArrowRight') cursor.fret=Math.min(MAXF,cursor.fret+1);
+  else if(e.key==='Enter'||e.key===' '){ if(cursor.fret===0)cycleNut(cursor.str); else toggleFret(cursor.str,cursor.fret); }
+  else handled=false;
+  if(handled){ e.preventDefault(); drawBoard(); }
+});
+$('board').addEventListener('focus',drawBoard);
+$('board').addEventListener('blur',drawBoard);
+
+// ---- sound: strum / arpeggio ----
+function playSpread(stagger){
+  const ms=currentMidis();
+  if(!ms.length)return;
+  if(typeof stopTones==='function')stopTones();
+  ms.forEach((m,i)=>tone(m, i*stagger/1000, 1.2));
+}
+$('strumBtn').onclick=()=>playSpread(45);
+$('arpBtn').onclick=()=>playSpread(220);
+function clearBoard(){ if(typeof stopTones==='function')stopTones(); strings=[null,null,null,null,null,null]; drawBoard(); updateReadout(); updateName(); }
+$('clearBtn').onclick=clearBoard;
+// Esc clears the board from anywhere on the page
+document.addEventListener('keydown',e=>{ if(e.key==='Escape')clearBoard(); });
+
+// ---- quick-shape chips: classic open voicings, low→high (null=muted, -1=open, n=fret) ----
+const SHAPES=[
+  ['C',  [null,3,2,-1,1,-1]],
+  ['G',  [3,2,-1,-1,-1,3]],
+  ['D',  [null,null,-1,2,3,2]],
+  ['A',  [null,-1,2,2,2,-1]],
+  ['E',  [-1,2,2,1,-1,-1]],
+  ['Em', [-1,2,2,-1,-1,-1]],
+  ['Am', [null,-1,2,2,1,-1]],
+  ['F',  [1,3,3,2,1,1]]
+];
+function loadShape(voicing){
+  if(typeof stopTones==='function')stopTones();
+  strings=voicing.slice();
+  drawBoard(); updateReadout(); updateName();
+  playSpread(45);                              // one tap: see it and hear it
+}
+(function(){
+  const row=$('shapeRow');
+  SHAPES.forEach(([label,voicing])=>{
+    const b=document.createElement('button');
+    b.className='shape'; b.type='button'; b.textContent=label;
+    b.title='Load '+label+(label==='F'?' barre':'')+' — open voicing';
+    b.onclick=()=>loadShape(voicing);
+    row.appendChild(b);
+  });
+})();
+$('autoplay').onchange=()=>Stats.setPref(TOOL,'autoplay',$('autoplay').checked);
+
+// restore autoplay pref
+(function(){ const v=Stats.getPref(TOOL,'autoplay',true); $('autoplay').checked=v; })();
+
+// ================= MIC — polyphonic "Strum it" =================
+let recording=false, starting=false, recorder=null, recStream=null, recChunks=[], lastHeardMidis=[], recTimer=null;
+const REC_MS=1600;
+
+$('micBtn').onclick=()=>{ if(recording||starting)return; startCapture(); };
+
+function setMicStatus(msg,cls){ const s=$('micStatus'); s.textContent=msg; s.className='status'+(cls?' '+cls:''); }
+
+function startCapture(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    setMicStatus('This browser can’t open the mic here — recording needs localhost or HTTPS. The build side works without it.','err'); return;
+  }
+  starting=true;                              // set synchronously so a second tap can't open a 2nd stream
+  (window.WoodshedMic&&WoodshedMic.getStream?WoodshedMic.getStream()
+    :navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}})).then(stream=>{
+    starting=false;
+    recStream=stream; recChunks=[];
+    try{ recorder=new MediaRecorder(stream); }
+    catch(e){ try{ recorder=new MediaRecorder(stream,{mimeType:'audio/webm'}); }catch(e2){ setMicStatus('Couldn’t start recording on this browser.','err'); stopStream(); return; } }
+    recorder.ondataavailable=e=>{ if(e.data&&e.data.size)recChunks.push(e.data); };
+    recorder.onstop=onCaptureStopped;
+    recorder.start();
+    recording=true;
+    $('micBtn').classList.add('running');
+    $('micBtn').innerHTML='<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg> Listening…';
+    setMicStatus('Listening — one clean strum…','live');
+    recTimer=setTimeout(()=>{ recTimer=null; if(recorder&&recorder.state!=='inactive'){ try{recorder.stop();}catch(e){} } }, REC_MS);
+  }).catch(e=>{
+    starting=false;
+    const name=(e&&e.name)||'';
+    if(name==='NotAllowedError'||name==='SecurityError') setMicStatus('Mic access was blocked. Allow the microphone for this page, then tap “Strum it” again.','err');
+    else setMicStatus('Couldn’t open the mic ('+(name||'error')+'). This page still works — build chords on the board above.','err');
+    resetMicBtn();
+  });
+}
+function stopStream(){ if(recStream){ try{recStream.getTracks().forEach(t=>t.stop());}catch(e){} recStream=null; } }
+// release the recorder + mic if the page is torn down or hidden mid-capture
+function teardownCapture(){
+  if(recTimer){ clearTimeout(recTimer); recTimer=null; }
+  if(recorder&&recorder.state!=='inactive'){ try{recorder.stop();}catch(e){} }
+  recorder=null; recChunks=[]; recording=false; starting=false;
+  stopStream(); resetMicBtn();
+}
+window.addEventListener('pagehide',teardownCapture);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'&&(recording||starting))teardownCapture(); });
+function resetMicBtn(){
+  recording=false; $('micBtn').classList.remove('running');
+  $('micBtn').innerHTML='<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg> Strum it';
+}
+function onCaptureStopped(){
+  stopStream();
+  const type=(recorder&&recorder.mimeType)||'audio/webm';
+  const blob=new Blob(recChunks,{type}); recorder=null; recChunks=[];
+  resetMicBtn();
+  if(!blob.size){ setMicStatus('That take was empty — nothing was captured. Try again, a bit louder.','err'); return; }
+  setMicStatus('Thinking… (first run loads the ~900 KB model)','live');
+  import('./analyze.js').then(mod=>mod.analyzeBlob(blob)).then(res=>{
+    renderHeard(res);
+  }).catch(e=>{
+    setMicStatus('Couldn’t analyze that take ('+((e&&e.message)||'error')+'). The build side still works.','err');
+  });
+}
+function renderHeard(res){
+  const notes=(res&&res.notes)||[];
+  const {midis}=window.clusterStrum(notes);
+  lastHeardMidis=midis;
+  const nameEl=$('heardName'), notesEl=$('heardNotes'), extra=$('heardExtra'), ivEl=$('heardIntervals');
+  if(!midis.length){
+    nameEl.textContent='—'; nameEl.className='heard-name none';
+    notesEl.textContent=''; extra.style.display='none';
+    setMicStatus('Didn’t catch a clear chord — give it one firm, ringing strum close to the mic.','');
+    return;
+  }
+  const cands=window.ChordId.identify(midis);
+  const noteStr=midis.map(m=>SHARP[((m%12)+12)%12]+(Math.floor(m/12)-1)).join('  ');
+  notesEl.textContent='Heard: '+noteStr;
+  if(cands.length){
+    nameEl.textContent=cands[0].name; nameEl.className='heard-name';
+    ivEl.innerHTML=cands[0].intervals.map(iv=>`<span class="iv">${iv}</span>`).join('<span style="color:var(--muted)">·</span>');
+  }else{
+    nameEl.textContent='—'; nameEl.className='heard-name none';
+    ivEl.innerHTML='<span style="color:var(--muted)">no familiar chord — those pitches don’t line up</span>';
+  }
+  extra.style.display='block';
+  setMicStatus('Heard '+midis.length+' distinct pitch'+(midis.length===1?'':'es')+'. '+(res.durationSec?res.durationSec.toFixed(1)+'s take.':''),'');
+}
+// map detected midis onto plausible string/fret positions, greedy from the low string
+$('showBoardBtn').onclick=()=>{
+  const taken=[false,false,false,false,false,false];
+  const next=[null,null,null,null,null,null];
+  lastHeardMidis.slice().sort((a,b)=>a-b).forEach(m=>{
+    for(let s=0;s<6;s++){
+      if(taken[s])continue;
+      const fret=m-OPEN_MIDI[s];
+      if(fret>=0&&fret<=MAXF){ next[s]=(fret===0?-1:fret); taken[s]=true; break; }
+    }
+  });
+  strings=next;
+  drawBoard(); updateReadout(); updateName();
+  $('board').scrollIntoView({behavior:'smooth',block:'center'});
+};
+
+// ---- boot ----
+drawBoard(); updateReadout(); updateName();
+Stats.activity(TOOL);
+
+// surface the site-wide mic-input picker in the header (mic.js loads async via header.js)
+(function sp(){ if(window.WoodshedMic)WoodshedMic.showPicker(); else setTimeout(sp,150); })();
+</script>
+</body>
+</html>

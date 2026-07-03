@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="header.js" defer></script>
+<title>Gear Library · The Woodshed</title>
+<style>
+  :root{--accent2:#7e95b3}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);padding:24px;display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+  .wrap{width:100%;max-width:1040px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:16px}
+  .filters{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  input[type=search],input[type=text],select,textarea{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-size:14px;font-family:inherit}
+  input[type=search]{min-width:220px;flex:1}
+  textarea{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+  .chip{background:var(--panel2);color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-size:12.5px;cursor:pointer}
+  .chip.sel{background:var(--panel);color:var(--ink);border:1px solid var(--line);font-weight:600;box-shadow:0 1px 2px hsl(26 30% 8%/.12)}
+  .counts{font-size:12.5px;color:var(--muted);margin-left:auto}
+  .btn{background:var(--accent);color:#1a1407;border:none;border-radius:8px;padding:9px 14px;font-size:13.5px;font-weight:600;cursor:pointer}
+  .btn.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line);font-weight:500}
+  .btn.ghost:hover{border-color:var(--accent)}
+  .btn.paste{background:color-mix(in srgb,var(--accent) 20%,var(--panel2));color:var(--ink);border:1px solid var(--accent);font-weight:600}
+  .btn.paste:hover{background:color-mix(in srgb,var(--accent) 30%,var(--panel2))}
+  .actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;align-items:center}
+
+  /* save indicator */
+  .saver{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:6px;min-height:18px}
+  .saver .dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none}
+  .saver.saving .dot{background:var(--accent)}
+  .saver.saved .dot{background:var(--good)}
+  .saver.error .dot{background:var(--bad)}
+  .saver.readonly .dot{background:var(--muted)}
+  .saver.error{color:var(--bad)}
+
+  /* table */
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  thead th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  thead th.sortable{cursor:pointer;user-select:none}
+  thead th.sortable:hover{color:var(--ink)}
+  thead th .arrow{opacity:.5;font-size:10px;margin-left:3px}
+  thead th.activesort{color:var(--accent)}
+  tbody td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  tbody tr:hover{background:var(--panel2)}
+  tbody tr.current{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+  tbody tr.current:hover{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+  .ico{font-size:20px;line-height:1;display:inline-flex;align-items:center}
+  .nm{font-weight:600}
+  .nm .badge-cur{font-size:10px;color:#1a1407;background:var(--accent);border-radius:20px;padding:1px 8px;margin-left:7px;font-weight:700;vertical-align:middle}
+  .bm{color:var(--muted);font-size:12.5px;margin-top:2px}
+  /* full Instructor notes hide behind a quiet "details" toggle under the blurb */
+  .notestoggle{background:none;border:0;padding:0;margin-top:3px;font:inherit;font-size:11.5px;color:hsl(var(--brand-strong));cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}
+  .notesfull{color:var(--muted);font-size:12.5px;line-height:1.55;margin-top:5px;padding:8px 10px;background:hsl(var(--secondary));border-left:2px solid hsl(var(--brand)/.45);border-radius:0 6px 6px 0;max-width:52ch}
+  .kindcell{text-transform:capitalize}
+  .specs{color:var(--ink);font-size:13px;line-height:1.5}
+  .specs .k{color:var(--muted)}
+  .tags{display:flex;gap:4px;flex-wrap:wrap}
+  .tag{font-size:10.5px;color:var(--accent2);border:1px solid var(--line);border-radius:20px;padding:1px 8px}
+  .rowctl{display:flex;gap:4px;align-items:center;justify-content:flex-end}
+  .iconbtn{background:none;border:1px solid var(--line);border-radius:7px;color:var(--muted);cursor:pointer;font-size:13px;padding:4px 8px;white-space:nowrap}
+  .iconbtn:hover{border-color:var(--accent);color:var(--ink)}
+  .iconbtn.on{color:var(--accent);border-color:var(--accent)}
+  .empty{color:var(--muted);font-size:13px;padding:18px 4px;text-align:center}
+  /* guitar portrait thumbs (assets/guitars/<id>.png, generated — BRAND.md Style C) */
+  .gthumb{width:48px;height:64px;object-fit:cover;border-radius:5px;border:1px solid var(--line);cursor:zoom-in;display:block;background:#f1e7d3;box-shadow:var(--shadow-sm)}
+  .gthumb:hover{border-color:hsl(var(--brand)/.6)}
+  /* dark mode shows the blueprint-plate variants (<id>-dark.png): espresso ground, brass edge */
+  .dark .gthumb{background:hsl(26 20% 7%);border-color:hsl(35 30% 26%);box-shadow:inset 0 0 0 1px hsl(38 40% 40%/.18),var(--shadow-sm)}
+  .dark .gthumb:hover{border-color:hsl(38 60% 45%)}
+  .dark .glight{background:hsl(26 30% 3%/.85)}
+  .glight{position:fixed;inset:0;background:hsl(26 30% 5%/.78);display:flex;align-items:center;justify-content:center;z-index:100;cursor:zoom-out;padding:24px}
+  .glight img{max-height:88vh;max-width:min(88vw,640px);border-radius:12px;box-shadow:0 24px 70px -20px hsl(20 40% 2%/.9)}
+  svg.li{display:inline-block;width:1em;height:1em;min-width:0;max-width:none;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em;flex:none}
+
+  /* form */
+  .form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .form .full{grid-column:1/-1}
+  .form label{font-size:12px;color:var(--muted);display:block;margin-bottom:3px}
+  .form input,.form select,.form textarea{width:100%}
+  .specfields{display:none;grid-column:1/-1;grid-template-columns:1fr 1fr;gap:10px;border-top:1px dashed var(--line);padding-top:10px;margin-top:2px}
+  .specfields.on{display:grid}
+  .specfields h4{grid-column:1/-1;margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent)}
+  .hint{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:8px}
+
+  /* bulk-add panel */
+  .bulk label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
+  .bulk textarea{width:100%;font-size:13px;line-height:1.5}
+  .bulk-preview{font-size:12.5px;color:var(--muted);line-height:1.5;margin:10px 0 2px;min-height:18px}
+  .bulk-preview b{color:var(--ink)}
+  .bulk-preview .warn{color:var(--accent)}
+
+  /* toast */
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(12px);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 16px;font-size:13px;box-shadow:var(--shadow-md);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media(max-width:620px){
+    .form,.specfields.on{grid-template-columns:1fr}
+    body{padding:14px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead"><img class="masthead-plate" src="../assets/plates/plate-reference.png" alt="">
+    <div class="kicker">The Woodshed · Gear</div>
+    <h1>Gear Library</h1>
+    <p class="sub">Your guitars, amps &amp; pedals — with tunings and tone settings. Set your <b>current guitar</b> so The Instructor tunes the right instrument.</p>
+  </div>
+  <hr class="fretline">
+
+  <div class="panel">
+    <div class="filters">
+      <input type="search" id="search" placeholder="Search name, brand, model, tuning, settings, tags…">
+      <span class="counts tab-num" id="counts"></span>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="actions">
+      <button class="btn" id="addBtn">+ Add gear</button>
+      <button class="btn paste" id="bulkBtn"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg> Paste a list</button>
+      <button class="btn ghost" id="exportBtn"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> Export gear.json</button>
+      <button class="btn ghost" id="importBtn"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg> Import JSON</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none">
+      <span class="saver" id="saver"><span class="dot"></span><span id="saverText">Loading…</span></span>
+    </div>
+  </div>
+
+  <!-- add / edit form -->
+  <div class="panel" id="formPanel" style="display:none">
+    <div class="form">
+      <div><label>Kind</label><select id="f-kind">
+        <option value="guitar">Guitar / bass</option>
+        <option value="amp">Amp</option>
+        <option value="pedal">Pedal</option>
+      </select></div>
+      <div><label>Name / nickname</label><input type="text" id="f-name" placeholder="e.g. Main Strat"></div>
+      <div><label>Brand</label><input type="text" id="f-brand" placeholder="Fender"></div>
+      <div><label>Model</label><input type="text" id="f-model" placeholder="Player Stratocaster"></div>
+
+      <!-- guitar specs -->
+      <div class="specfields" data-kind="guitar">
+        <h4>Guitar specs</h4>
+        <div><label>Type</label><select id="g-type"><option value="electric">electric</option><option value="acoustic">acoustic</option><option value="classical">classical</option><option value="bass">bass</option></select></div>
+        <div><label>Tuning</label><input type="text" id="g-tuning" placeholder="E Standard / Drop D / Eb"></div>
+        <div><label>Strings (gauge)</label><input type="text" id="g-strings" placeholder=".010–.046"></div>
+        <div><label>Pickups</label><input type="text" id="g-pickups" placeholder="SSS / HH / P90"></div>
+        <div><label>Scale length</label><input type="text" id="g-scaleLength" placeholder="25.5&quot;"></div>
+        <div><label>Action</label><input type="text" id="g-action" placeholder="low / medium"></div>
+      </div>
+
+      <!-- amp specs (Blues Jr IV panel: Volume · Fat · Treble · Bass · Middle · Master · Reverb) -->
+      <div class="specfields" data-kind="amp">
+        <h4>Amp specs &amp; go-to setting</h4>
+        <div><label>Type</label><select id="a-type"><option value="tube">tube</option><option value="solid-state">solid-state</option><option value="modeling">modeling</option></select></div>
+        <div><label>Channel</label><input type="text" id="a-channel" placeholder="Clean / Drive"></div>
+        <div><label>Volume</label><input type="text" id="a-volume" placeholder="3"></div>
+        <div><label style="display:flex;align-items:center;gap:6px;margin-top:18px"><input type="checkbox" id="a-fat" style="width:auto"> Fat switch</label></div>
+        <div><label>Treble</label><input type="text" id="a-treble" placeholder="6"></div>
+        <div><label>Bass</label><input type="text" id="a-bass" placeholder="5"></div>
+        <div><label>Middle</label><input type="text" id="a-middle" placeholder="6"></div>
+        <div><label>Master</label><input type="text" id="a-master" placeholder="4"></div>
+        <div><label>Reverb</label><input type="text" id="a-reverb" placeholder="2"></div>
+        <div><label>Wattage</label><input type="text" id="a-wattage" placeholder="25W"></div>
+      </div>
+
+      <!-- pedal specs -->
+      <div class="specfields" data-kind="pedal">
+        <h4>Pedal specs &amp; setting</h4>
+        <div><label>Type</label><select id="p-type"><option value="overdrive">overdrive</option><option value="distortion">distortion</option><option value="fuzz">fuzz</option><option value="boost">boost</option><option value="compressor">compressor</option><option value="eq">eq</option><option value="modulation">modulation</option><option value="delay">delay</option><option value="reverb">reverb</option><option value="wah">wah</option><option value="octave">octave</option><option value="looper">looper</option><option value="gate">gate</option><option value="tuner">tuner</option><option value="other">other</option></select></div>
+        <div><label>Position in chain</label><input type="text" id="p-position" placeholder="front of amp, after tuner"></div>
+        <div class="full"><label>Settings (knob positions)</label><input type="text" id="p-settings" placeholder="Drive 9 o'clock, Tone 12, Level 1 o'clock"></div>
+      </div>
+
+      <div class="full"><label>Tags (comma-separated)</label><input type="text" id="f-tags" placeholder="blues, main, boost"></div>
+      <div class="full"><label>Short description</label><input id="f-blurb" placeholder="one line shown in the table — what it is in a breath"></div>
+      <div class="full"><label>Instructor notes</label><textarea id="f-notes" rows="4" placeholder="the deep background — how it works, its tone, how it's typically used; the Instructor reads this"></textarea></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="saveBtn">Save</button>
+      <button class="btn ghost" id="cancelBtn">Cancel</button>
+      <span id="editId" style="display:none"></span>
+    </div>
+    <div class="hint">Saved to <code>student/gear.json</code> on this server, so The Instructor sees your gear immediately.</div>
+  </div>
+
+  <!-- bulk-add ("paste a list") panel -->
+  <div class="panel bulk" id="bulkPanel" style="display:none">
+    <label for="bulkText">Paste your pedals / gear — one per line</label>
+    <textarea id="bulkText" rows="8" placeholder="Strymon Timeline&#10;Klon KTR — overdrive&#10;Boss TU-3, tuner&#10;EHX Big Muff (fuzz)&#10;Fender Blues Junior — amp"></textarea>
+    <div class="bulk-preview" id="bulkPreview">Paste some lines to see a preview.</div>
+    <div class="actions">
+      <button class="btn" id="bulkAddBtn">Add all</button>
+      <button class="btn ghost" id="bulkCancelBtn">Cancel</button>
+    </div>
+    <div class="hint">Each line becomes an item. Separators — em-dash, hyphen, comma or (parens) — split the name from a type hint; the type is guessed from keywords when absent. Names already in your library are skipped. Everything is a <b>pedal</b> unless the line names a guitar or amp.</div>
+  </div>
+
+  <div class="panel">
+    <div class="tablewrap">
+      <table>
+        <thead><tr id="head"></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="empty" style="display:none">No gear matches. Adjust the search/filter, or add some.</div>
+  </div>
+</div>
+<div id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);
+const KSVG={
+  guitar:'<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+  amp:'<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><rect width="16" height="20" x="4" y="2" rx="2"/><circle cx="12" cy="14" r="4"/><path d="M12 6h.01"/></svg>',
+  pedal:'<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>',
+};
+const KINDS=[['all','All'],['guitar','Guitars'],['amp','Amps'],['pedal','Pedals']];
+const COLS=[
+  {key:'icon',label:'',sort:false},
+  {key:'name',label:'Name',sort:true},
+  {key:'kind',label:'Kind',sort:true},
+  {key:'brand',label:'Brand / model',sort:true},
+  {key:'specs',label:'Key specs',sort:false},
+  {key:'tags',label:'Tags',sort:false},
+  {key:'ctl',label:'',sort:false},
+];
+
+// ---- server-backed state (student/gear.json is canonical) ----
+let gear=[];                 // in-memory gear array
+let currentGuitarId='';      // lives ONLY in the file
+let loaded=false, readOnly=false;
+let q='', kindFilter='all', sortKey='kind', sortDir=1;
+
+const API_URL='/api/gear';
+
+// ---- save indicator ----
+function setSaver(state,text){
+  const el=$('saver');if(!el)return;
+  el.className='saver'+(state?' '+state:'');
+  $('saverText').textContent=text;
+}
+function toast(msg){
+  const t=$('toast');if(!t)return;
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+// ---- debounced PUT of the whole file ----
+let saveTimer=null, saveInFlight=false, saveAgain=false;
+function scheduleSave(){
+  if(readOnly)return;
+  setSaver('saving','Saving…');
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(doSave,800);
+}
+async function doSave(){
+  if(readOnly)return;
+  if(saveInFlight){saveAgain=true;return;}
+  saveInFlight=true;
+  const body={updated:localDate(),currentGuitarId,gear};
+  try{
+    const r=await fetch(API_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.error||('HTTP '+r.status));}
+    setSaver('saved','Saved');
+  }catch(err){
+    setSaver('error','Save failed — retry');
+    toast('Could not save: '+(err&&err.message?err.message:err));
+  }finally{
+    saveInFlight=false;
+    if(saveAgain){saveAgain=false;doSave();}
+  }
+}
+function localDate(){const d=new Date();const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
+
+// ---- current guitar ----
+function setCurrent(id){currentGuitarId=id;render();scheduleSave();}
+
+function esc(s){return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+// most tone-relevant spec summary per kind
+function keySpecs(r){
+  const s=r.specs||{};
+  if(r.kind==='guitar')return [['tuning',s.tuning],['strings',s.strings],['pickups',s.pickups]];
+  if(r.kind==='amp')return [['type',s.type],['vol',s.volume],['fat',s.fat?'on':null],['EQ (T/B/M)',[s.treble,s.bass,s.middle].filter(v=>v!=null&&v!=='').join('/')||null],['master',s.master],['rev',s.reverb],['ch',s.channel]];
+  if(r.kind==='pedal')return [['type',s.type],['set',s.settings]];
+  return Object.entries(s);
+}
+function specSearchText(r){return Object.entries(r.specs||{}).map(([k,v])=>k+' '+v).join(' ');}
+
+function visible(){
+  const list=gear.filter(r=>
+    (kindFilter==='all'||r.kind===kindFilter)&&
+    (!q||((r.name+' '+(r.brand||'')+' '+(r.model||'')+' '+r.kind+' '+specSearchText(r)+' '+(r.tags||[]).join(' ')+' '+(r.blurb||'')+' '+(r.notes||'')).toLowerCase().includes(q)))
+  );
+  const cur=currentGuitarId;
+  const val=r=>sortKey==='brand'?((r.brand||'')+' '+(r.model||'')):(sortKey==='name'?(r.name||''):(r.kind||''));
+  list.sort((a,b)=>{
+    if(a.id===cur&&b.id!==cur)return -1; if(b.id===cur&&a.id!==cur)return 1;
+    return val(a).toLowerCase().localeCompare(val(b).toLowerCase())*sortDir;
+  });
+  return list;
+}
+
+function renderChips(){
+  const wrap=$('chips');wrap.innerHTML='';
+  const counts={};gear.forEach(r=>counts[r.kind]=(counts[r.kind]||0)+1);
+  KINDS.forEach(([v,l])=>{
+    const n=v==='all'?gear.length:(counts[v]||0);
+    const c=document.createElement('div');c.className='chip'+(kindFilter===v?' sel':'');
+    c.textContent=`${l}${v==='all'?'':' '+n}`;
+    c.onclick=()=>{kindFilter=v;render();};
+    wrap.appendChild(c);
+  });
+}
+function renderHead(){
+  $('head').innerHTML=COLS.map(c=>{
+    if(!c.sort)return `<th></th>`;
+    const active=sortKey===c.key;
+    const arrow=active?(sortDir===1?'▲':'▼'):'';
+    return `<th class="sortable${active?' activesort':''}" data-sort="${c.key}">${esc(c.label)}<span class="arrow">${arrow}</span></th>`;
+  }).join('');
+  $('head').querySelectorAll('th.sortable').forEach(th=>th.onclick=()=>{
+    const k=th.dataset.sort;
+    if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=1;}
+    render();
+  });
+}
+function render(){
+  renderChips();renderHead();
+  const list=visible(),cur=currentGuitarId;
+  $('counts').innerHTML=`${list.length} shown · <b>${gear.length}</b> total`;
+  const tb=$('rows');tb.innerHTML='';
+  $('empty').style.display=list.length?'none':'block';
+  list.forEach(r=>{
+    const isCur=r.id===cur;
+    const tr=document.createElement('tr');if(isCur)tr.className='current';
+    const specHtml=keySpecs(r).filter(([k,v])=>v!=null&&v!=='').map(([k,v])=>`<span class="k">${esc(k)}</span> ${esc(v)}`).join(' · ')||'<span class="k">—</span>';
+    const canCurrent=r.kind==='guitar';
+    tr.innerHTML=`
+      <td><img class="gthumb" src="${portraitSrc(r,true)}" alt="${esc(r.name||r.kind)} portrait" decoding="async"><span class="ico gfall" title="${esc(r.kind)}" style="display:none">${KSVG[r.kind]||KSVG.guitar}</span></td>
+      <td><div class="nm">${esc(r.name||'(unnamed)')}${isCur?'<span class="badge-cur">current</span>':''}</div>${r.blurb?`<div class="bm">${esc(r.blurb)}</div>`:(r.notes?`<div class="bm">${esc(r.notes.slice(0,110))}${r.notes.length>110?'…':''}</div>`:'')}${r.notes&&r.blurb?`<button class="notestoggle" data-act="notes">details</button><div class="notesfull" hidden>${esc(r.notes)}</div>`:''}</td>
+      <td class="kindcell">${esc(r.kind)}</td>
+      <td>${esc(r.brand||'')}${r.model?`<div class="bm">${esc(r.model)}</div>`:''}</td>
+      <td class="specs">${specHtml}</td>
+      <td><div class="tags">${(r.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div></td>
+      <td><div class="rowctl">
+        ${canCurrent?`<button class="iconbtn ${isCur?'on':''}" data-act="cur" title="Set as current guitar"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"${isCur?' fill="currentColor"':''}/></svg> ${isCur?'current':'set'}</button>`:''}
+        <button class="iconbtn" data-act="edit" title="Edit"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="iconbtn" data-act="del" title="Delete"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+      </div></td>`;
+    const b=a=>tr.querySelector(`[data-act=${a}]`);
+    const nt=b('notes');
+    if(nt)nt.onclick=()=>{const f=tr.querySelector('.notesfull');f.hidden=!f.hidden;nt.textContent=f.hidden?'details':'less';};
+    if(canCurrent)b('cur').onclick=()=>setCurrent(isCur?'':r.id);
+    b('edit').onclick=()=>openForm(r);
+    b('del').onclick=()=>{if(confirm(`Delete “${r.name||'this item'}”?`))removeItem(r);};
+    // portrait: missing dark variant → try the light plate → then the line icon; click → lightbox
+    const th=tr.querySelector('.gthumb');
+    if(th){
+      th.addEventListener('error',()=>{
+        if(/-dark-thumb\.png$/.test(th.src)&&!th.dataset.retried){th.dataset.retried='1';th.src=th.src.replace(/-dark-thumb\.png$/,'-thumb.png');return;}
+        th.style.display='none';const f=tr.querySelector('.gfall');if(f)f.style.display='';
+      });
+      th.addEventListener('click',()=>openLightbox(portraitSrc(r,false),(r.name||r.kind)+' — engraved portrait'));
+    }
+    tb.appendChild(tr);
+  });
+}
+// engraved portrait path: guitars live in assets/guitars/, amp+pedals in assets/gear/;
+// dark mode swaps to the blueprint-plate variant (<id>-dark.png)
+function portraitSrc(r,thumb){
+  const dir=r.kind==='guitar'?'guitars':'gear';
+  const dark=document.documentElement.classList.contains('dark')?'-dark':'';
+  return `../assets/${dir}/${esc(r.id)}${dark}${thumb?'-thumb':''}.png`;
+}
+// theme toggle → re-render so every portrait swaps to the matching finish
+new MutationObserver(()=>render())
+  .observe(document.documentElement,{attributes:true,attributeFilter:['class']});
+function openLightbox(src,alt){
+  const o=document.createElement('div');o.className='glight';
+  o.innerHTML=`<img src="${src}" alt="${esc(alt)}">`;
+  const close=()=>{o.remove();document.removeEventListener('keydown',onKey);};
+  const onKey=e=>{if(e.key==='Escape')close();};
+  o.addEventListener('click',close);
+  document.addEventListener('keydown',onKey);
+  document.body.appendChild(o);
+}
+
+// ---- add / edit ----
+const SPEC_IDS={
+  guitar:{type:'g-type',tuning:'g-tuning',strings:'g-strings',pickups:'g-pickups',scaleLength:'g-scaleLength',action:'g-action'},
+  amp:{type:'a-type',channel:'a-channel',volume:'a-volume',fat:'a-fat',treble:'a-treble',bass:'a-bass',middle:'a-middle',master:'a-master',reverb:'a-reverb',wattage:'a-wattage'},
+  pedal:{type:'p-type',position:'p-position',settings:'p-settings'},
+};
+function showSpecFields(kind){document.querySelectorAll('.specfields').forEach(el=>el.classList.toggle('on',el.dataset.kind===kind));}
+function openForm(r){
+  $('bulkPanel').style.display='none';
+  $('formPanel').style.display='block';
+  const kind=r?r.kind:'guitar';
+  $('f-kind').value=kind;showSpecFields(kind);
+  $('f-name').value=r?r.name||'':'';$('f-brand').value=r?r.brand||'':'';$('f-model').value=r?r.model||'':'';
+  $('f-tags').value=r?(r.tags||[]).join(', '):'';$('f-blurb').value=r?r.blurb||'':'';$('f-notes').value=r?r.notes||'':'';
+  Object.values(SPEC_IDS).forEach(m=>Object.values(m).forEach(id=>{const el=$(id);if(!el)return;if(el.type==='checkbox')el.checked=false;else el.value=el.tagName==='SELECT'?el.options[0].value:'';}));
+  const m=SPEC_IDS[kind],s=(r&&r.specs)||{};
+  Object.entries(m).forEach(([k,id])=>{const el=$(id);if(!el||s[k]==null)return;if(el.type==='checkbox')el.checked=!!s[k]&&s[k]!=='false';else el.value=s[k];});
+  $('editId').textContent=r?r.id:'';
+  $('formPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function readSpecs(kind){const m=SPEC_IDS[kind],out={};Object.entries(m).forEach(([k,id])=>{const el=$(id);if(!el)return;if(el.type==='checkbox'){if(el.checked)out[k]=true;return;}const v=el.value.trim();if(v)out[k]=v;});return out;}
+function saveForm(){
+  const name=$('f-name').value.trim();
+  if(!name){alert('Give it a name.');return;}
+  const kind=$('f-kind').value;
+  const id=$('editId').textContent;
+  const item={id:id||slugId(name,kind),kind,name,brand:$('f-brand').value.trim(),model:$('f-model').value.trim(),
+    specs:readSpecs(kind),tags:$('f-tags').value.split(',').map(t=>t.trim()).filter(Boolean),blurb:$('f-blurb').value.trim(),notes:$('f-notes').value.trim()};
+  const i=gear.findIndex(x=>x.id===item.id);
+  if(i>=0)gear[i]=item;else gear.push(item);
+  $('formPanel').style.display='none';render();scheduleSave();
+}
+function removeItem(r){
+  gear=gear.filter(x=>x.id!==r.id);
+  if(currentGuitarId===r.id)currentGuitarId='';
+  render();scheduleSave();
+}
+
+// ---- id slug ----
+function slugId(name,kind){
+  const pfx=kind==='guitar'?'g':kind==='amp'?'a':'p';
+  const base=String(name).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,28)||'item';
+  let id=pfx+'-'+base,n=2;
+  while(gear.some(x=>x.id===id)){id=pfx+'-'+base+'-'+n;n++;}
+  return id;
+}
+
+// ============================================================
+//   BULK ADD — parse a pasted list of pedals/gear
+// ============================================================
+// keyword → pedal type. Order matters: earlier, more-specific wins.
+const TYPE_KEYWORDS=[
+  [/\btuner\b|polytune|\btu-?\d/i,'tuner'],
+  [/\bcomp(ressor)?\b|dyna\s?comp|philosopher/i,'compressor'],
+  [/\bfuzz\b|muff|fuzz\s?face|tone\s?bender/i,'fuzz'],
+  [/\brat\b|screamer|\bts-?\d|tubescreamer|klon|\bod\b|over\s?drive|overdrive|blues\s?breaker|morning\s?glory/i,'overdrive'],
+  [/\bdist(ortion)?\b|metal\s?zone|\bds-?\d/i,'distortion'],
+  [/\bboost(er)?\b|clean\s?boost|\blpb\b/i,'boost'],
+  [/\bdelay\b|\becho\b|timeline|carbon\s?copy|memory\s?man|el\s?cap|dd-?\d|boonar/i,'delay'],
+  [/\breverb\b|\bhall\b|\bspring\b|\bplate\b|shimmer|bluesky|big\s?sky|rv-?\d/i,'reverb'],
+  [/\bchorus\b|\bphaser\b|\bflanger\b|\bvibe\b|univibe|\btrem(olo)?\b|\brotary\b|small\s?stone|phase\s?90|modulation/i,'modulation'],
+  [/\beq\b|equali[sz]er|graphic|\bge-?\d/i,'eq'],
+  [/\bgate\b|noise\s?gate|smart\s?gate/i,'gate'],
+  [/\bwah\b|cry\s?baby|crybaby/i,'wah'],
+  [/\boctave\b|\bpitch\b|whammy|pog|octaver|\bpoly\b/i,'octave'],
+  [/\blooper\b|\bloop\b|ditto|infinity/i,'looper'],
+];
+// keyword → guitar/amp kind (else pedal)
+const GUITAR_RE=/\bstrat(ocaster)?\b|\btele(caster)?\b|les\s?paul|\blp\b|\bsg\b|\b335\b|\b355\b|jazzmaster|jaguar|mustang|prs|\bbass\b|precision|jazz\s?bass|acoustic|classical|dreadnought|\bguitar\b|nocaster|\bfirebird\b|explorer|gretsch|\begt\b/i;
+const AMP_RE=/\bamp\b|\bcombo\b|\bhead\b|\bcab(inet)?\b|deluxe\s?reverb|twin\s?reverb|princeton|blues\s?jr|blues\s?junior|\bac-?\d+\b|\bac30\b|plexi|jcm|dual\s?rectifier|\brectifier\b|bassman|champ|marshall|vox\b|mesa\b|orange\b|fender\s?(deluxe|twin|champ|hot\s?rod|blues)/i;
+
+function guessKind(line){
+  if(AMP_RE.test(line))return 'amp';
+  if(GUITAR_RE.test(line))return 'guitar';
+  return 'pedal';
+}
+function guessType(line){
+  for(const [re,type] of TYPE_KEYWORDS)if(re.test(line))return type;
+  return 'other';
+}
+// parse one raw line → {name, kind, type} or null
+function parseLine(raw){
+  let line=raw.trim();
+  if(!line)return null;
+  const full=line;                    // keep the whole line for keyword sniffing
+  // split off a type hint after a separator: em/en-dash, " - ", comma, or (parens)
+  let name=line, hint='';
+  const paren=line.match(/^(.*?)\s*\(([^)]*)\)\s*$/);
+  if(paren){name=paren[1].trim();hint=paren[2].trim();}
+  else{
+    const m=line.split(/\s+[—–-]\s+|\s*,\s*/);
+    if(m.length>1){name=m[0].trim();hint=m.slice(1).join(' ').trim();}
+  }
+  if(!name)return null;
+  const kind=guessKind(full);
+  // type: prefer an explicit hint if it maps to a known type, else sniff the whole line
+  let type='other';
+  if(kind==='pedal'){
+    type=hint?guessType(hint):'other';
+    if(type==='other')type=guessType(full);
+  }
+  return {name,kind,type};
+}
+function parseBulk(text){
+  return text.split(/\r?\n/).map(parseLine).filter(Boolean);
+}
+function updateBulkPreview(){
+  const text=$('bulkText').value;
+  const items=parseBulk(text);
+  if(!items.length){$('bulkPreview').textContent='Paste some lines to see a preview.';return;}
+  const existing=new Set(gear.map(g=>(g.name||'').toLowerCase()));
+  const seen=new Set();
+  let dupes=0;const fresh=[];
+  for(const it of items){
+    const key=it.name.toLowerCase();
+    if(existing.has(key)||seen.has(key)){dupes++;continue;}
+    seen.add(key);fresh.push(it);
+  }
+  const byType={};fresh.forEach(it=>{const t=it.kind==='pedal'?it.type:it.kind;byType[t]=(byType[t]||0)+1;});
+  const parts=Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`${n} ${t}`);
+  let html=`Parsed <b>${fresh.length}</b> item${fresh.length===1?'':'s'}`;
+  if(parts.length)html+=`: ${parts.join(', ')}`;
+  if(dupes)html+=` <span class="warn">· ${dupes} duplicate${dupes===1?'':'s'} will be skipped</span>`;
+  $('bulkPreview').innerHTML=html;
+}
+function bulkAdd(){
+  const items=parseBulk($('bulkText').value);
+  if(!items.length){toast('Nothing to add.');return;}
+  const existing=new Set(gear.map(g=>(g.name||'').toLowerCase()));
+  let added=0,skipped=0;
+  for(const it of items){
+    const key=it.name.toLowerCase();
+    if(existing.has(key)){skipped++;continue;}
+    existing.add(key);
+    const entry={id:slugId(it.name,it.kind),kind:it.kind,name:it.name,brand:'',model:''};
+    if(it.kind==='pedal'){entry.specs={type:it.type,settings:'',position:''};entry.tags=[it.type];}
+    else if(it.kind==='amp'){entry.specs={type:''};entry.tags=[];}
+    else{entry.specs={type:'electric',tuning:'E Standard',strings:'',pickups:'',scaleLength:'',action:''};entry.tags=[];}
+    entry.notes='';
+    gear.push(entry);added++;
+  }
+  $('bulkPanel').style.display='none';$('bulkText').value='';updateBulkPreview();
+  render();scheduleSave();
+  toast(`Added ${added} item${added===1?'':'s'}`+(skipped?` · skipped ${skipped} already in library`:''));
+}
+
+// ---- buttons ----
+$('f-kind').onchange=e=>showSpecFields(e.target.value);
+$('addBtn').onclick=()=>openForm(null);
+$('saveBtn').onclick=saveForm;
+$('cancelBtn').onclick=()=>$('formPanel').style.display='none';
+$('bulkBtn').onclick=()=>{
+  const p=$('bulkPanel');const open=p.style.display!=='none';
+  $('formPanel').style.display='none';
+  p.style.display=open?'none':'block';
+  if(!open){updateBulkPreview();$('bulkText').focus();p.scrollIntoView({behavior:'smooth',block:'nearest'});}
+};
+$('bulkText').oninput=updateBulkPreview;
+$('bulkAddBtn').onclick=bulkAdd;
+$('bulkCancelBtn').onclick=()=>{$('bulkPanel').style.display='none';};
+$('search').oninput=e=>{q=e.target.value.toLowerCase().trim();render();};
+
+// ---- export / import ----
+$('exportBtn').onclick=()=>{
+  const out={_comment:'Exported from tools/gear-library.html as a backup. student/gear.json on the server is canonical. kind: guitar|amp|pedal.',updated:localDate(),currentGuitarId,gear};
+  const blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='gear.json';a.click();
+};
+$('importBtn').onclick=()=>$('importFile').click();
+$('importFile').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;const rd=new FileReader();
+  rd.onload=()=>{try{
+    const data=JSON.parse(rd.result);const incoming=data.gear||(Array.isArray(data)?data:[]);
+    let added=0,merged=0;
+    incoming.forEach(r=>{
+      if(!r||!r.name)return;
+      // match by id first, then case-insensitive name
+      let i=r.id?gear.findIndex(x=>x.id===r.id):-1;
+      if(i<0)i=gear.findIndex(x=>(x.name||'').toLowerCase()===(r.name||'').toLowerCase());
+      const item={...r};
+      if(!item.id)item.id=slugId(item.name,item.kind||'pedal');
+      if(!item.kind)item.kind='pedal';
+      if(i>=0){gear[i]={...gear[i],...item,id:gear[i].id};merged++;}
+      else{gear.push(item);added++;}
+    });
+    if(data.currentGuitarId)currentGuitarId=data.currentGuitarId;
+    render();scheduleSave();
+    toast(`Imported: ${added} added, ${merged} merged.`);
+  }catch(err){toast('Invalid JSON file.');}};
+  rd.readAsText(f);
+  e.target.value='';
+};
+
+// ---- load ----
+// Migrate legacy amp specs (pre Blues Jr IV panel): gain→volume, mid→middle. Other keys pass through.
+function migrateAmps(arr){
+  (arr||[]).forEach(r=>{
+    if(r.kind!=='amp'||!r.specs)return;
+    const s=r.specs;
+    if(s.gain!=null&&s.volume==null)s.volume=s.gain;
+    if(s.mid!=null&&s.middle==null)s.middle=s.mid;
+    delete s.gain;delete s.mid;
+  });
+  return arr;
+}
+async function load(){
+  setSaver('','Loading…');
+  try{
+    const r=await fetch(API_URL,{headers:{'Accept':'application/json'}});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    gear=migrateAmps(Array.isArray(d.gear)?d.gear:[]);
+    currentGuitarId=d.currentGuitarId||'';
+    loaded=true;readOnly=false;
+    setSaver('saved','Saved');
+    render();
+  }catch(err){
+    // graceful read-only degradation — try the static file so the page still shows gear
+    try{
+      const r2=await fetch('../student/gear.json',{cache:'no-store'});
+      const d=await r2.json();
+      gear=migrateAmps(Array.isArray(d.gear)?d.gear:[]);
+      currentGuitarId=d.currentGuitarId||'';
+    }catch(e2){gear=[];currentGuitarId='';}
+    readOnly=true;loaded=true;
+    setSaver('readonly','Read-only — API offline');
+    render();
+    // hide mutation buttons that can't persist
+    $('addBtn').disabled=$('bulkBtn').disabled=false; // still allow local edits; they just won't save
+  }
+}
+load();
+</script>
+</body>
+</html>

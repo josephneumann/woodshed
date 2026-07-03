@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Woodshed</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="ui.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="stats.js"></script>
+<script src="header.js" defer></script>
+<style>
+  .hero{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.hero{grid-template-columns:1fr}}
+  .phase{font-size:1.4rem;font-weight:600;letter-spacing:-0.02em;margin:6px 0 4px}
+  .doms{display:flex;gap:6px;flex-wrap:wrap;margin-top:16px}
+  .domchip{border:1px solid hsl(var(--border));border-radius:calc(var(--radius) - 2px);padding:7px 0;text-align:center;flex:1;min-width:48px}
+  .domchip .v{font-size:1rem;font-weight:600}.domchip .v.empty{color:hsl(var(--muted-foreground));font-weight:400}
+  .domchip .k{font-size:.62rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:.04em;margin-top:1px}
+  .bar{margin-bottom:11px}
+  .bar .t{display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:4px}
+  .bar .t .p{color:hsl(var(--muted-foreground));font-variant-numeric:tabular-nums}
+  .cta{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;justify-content:space-between}
+  .cta .l{flex:1;min-width:280px}
+  .steps{margin:12px 0 0;padding-left:18px;color:hsl(var(--muted-foreground));font-size:.85rem;line-height:1.9}
+  .steps b{color:hsl(var(--foreground));font-weight:500}
+  .cmd{display:inline-flex;align-items:center;gap:10px;background:hsl(var(--secondary));border:1px solid hsl(var(--border));border-radius:calc(var(--radius) - 2px);padding:9px 12px;font-size:.95rem}
+  .pitem{display:flex;gap:13px;align-items:flex-start;padding:14px 0;border-top:1px solid hsl(var(--border))}
+  .pitem:first-child{border-top:0}
+  .pitem input{width:18px;height:18px;margin-top:2px;cursor:pointer;flex-shrink:0}
+  .pitem .nm{font-size:.95rem;font-weight:500}
+  .pitem.done .nm{text-decoration:line-through;color:hsl(var(--muted-foreground))}
+  .pitem .meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:.75rem;color:hsl(var(--muted-foreground));margin-top:5px}
+  .pitem .how{font-size:.82rem;color:hsl(var(--muted-foreground));margin-top:6px;line-height:1.5}
+  .pitem .how b{color:hsl(var(--foreground));font-weight:500}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:14px}
+  .toolcard{display:flex;flex-direction:column;gap:8px;background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:var(--radius);padding:18px;text-decoration:none;color:inherit;transition:.16s ease;box-shadow:var(--shadow-sm)}
+  .toolcard:hover{border-color:hsl(var(--brand)/.5);box-shadow:var(--shadow-md);transform:translateY(-2px)}
+  .titlewrap{display:flex;align-items:center;gap:12px;margin-bottom:2px}
+  .toolcard p{margin:0;color:hsl(var(--muted-foreground));font-size:.82rem;line-height:1.5;flex:1}
+  .toolcard .badge{align-self:flex-start;margin-top:4px}
+  .files a{display:flex;gap:12px;align-items:center;text-decoration:none;color:hsl(var(--foreground));padding:11px 14px;border-radius:calc(var(--radius) - 2px);font-size:.85rem}
+  .files a:hover{background:hsl(var(--secondary))}
+  .files a .k{color:hsl(var(--muted-foreground));margin-left:auto}
+  .files a .f{font-family:ui-monospace,Consolas,monospace;font-size:.8rem}
+  .synced{font-size:.72rem;color:hsl(var(--muted-foreground));margin-top:10px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .brandrow{display:flex;align-items:center;gap:11px}
+  .brandrow .name{font-weight:600;letter-spacing:-0.01em;font-size:.98rem}
+  .brandrow .name small{display:block;font-size:.66rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:hsl(var(--muted-foreground))}
+  /* Two hero moods: light mode = the luthier engraving (day at the bench);
+     dark mode = the photograph (night in the workshop). */
+  /* --- the front door: a little tweed amp with a lit tube + a swaying VU needle --- */
+  .session-cta{display:flex;flex-direction:column;align-items:center;gap:10px;margin:22px 0 28px}
+  .amp-row{position:relative;display:flex;align-items:center;justify-content:center}
+  .amp-cta{display:inline-flex;text-decoration:none;color:inherit}
+  .amp-cta-panel{display:inline-flex;align-items:center;gap:12px;padding:9px 13px;border-radius:11px;
+    background:repeating-linear-gradient(52deg,hsl(42 42% 66%/.9) 0 3px,hsl(38 38% 56%/.9) 3px 5px,hsl(44 45% 70%/.9) 5px 8px),hsl(40 42% 62%);
+    border:1px solid hsl(30 35% 24%);
+    box-shadow:inset 0 0 0 2px hsl(38 30% 45%/.5),inset 0 1px 0 hsl(46 50% 80%/.5),var(--shadow-md);
+    transition:transform .16s cubic-bezier(.34,1.56,.64,1),box-shadow .16s ease}
+  .amp-cta:hover .amp-cta-panel{transform:translateY(-2px);box-shadow:inset 0 0 0 2px hsl(38 30% 45%/.5),inset 0 1px 0 hsl(46 50% 80%/.5),0 8px 22px -6px hsl(38 90% 45%/.35),var(--shadow-md)}
+  .amp-cta:active .amp-cta-panel{transform:translateY(0) scale(.985);transition-duration:.08s}
+  /* knobs: a happy quarter-turn on hover */
+  .amp-cta-knobs{display:inline-flex;gap:6px}
+  .amp-cta-knobs i{width:12px;height:12px;border-radius:50%;position:relative;
+    background:radial-gradient(circle at 38% 32%,hsl(30 8% 34%),hsl(26 12% 10%) 70%);
+    box-shadow:inset 0 1px 1px hsl(40 20% 60%/.4),0 1px 2px rgba(0,0,0,.5);
+    transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
+  .amp-cta-knobs i::after{content:"";position:absolute;left:50%;top:1.5px;width:1.5px;height:4px;margin-left:-0.75px;border-radius:1px;background:hsl(40 25% 62%/.85)}
+  .amp-cta:hover .amp-cta-knobs i{transform:rotate(95deg)}
+  .amp-cta:hover .amp-cta-knobs i:nth-child(2){transform:rotate(140deg)}
+  .amp-cta:hover .amp-cta-knobs i:nth-child(3){transform:rotate(60deg)}
+  /* the dark control-panel nameplate — cream Fraunces text, sheen sweep on hover */
+  .amp-cta-plate{position:relative;overflow:hidden;
+    background:linear-gradient(180deg,hsl(26 14% 15%),hsl(26 16% 9%));color:hsl(40 45% 88%);
+    border:1px solid hsl(26 20% 5%);border-radius:6px;padding:8px 18px;
+    font-family:var(--font-display);font-weight:600;font-size:1.05rem;letter-spacing:.01em;white-space:nowrap;
+    box-shadow:inset 0 1px 0 hsl(40 30% 50%/.18),inset 0 -6px 14px -8px #000,0 1px 2px rgba(0,0,0,.4)}
+  .amp-cta-plate::after{content:"";position:absolute;top:0;bottom:0;left:-70%;width:45%;transform:skewX(-18deg);background:linear-gradient(90deg,transparent,hsl(46 90% 80%/.35),transparent);opacity:0}
+  .amp-cta:hover .amp-cta-plate::after{animation:plateSheen .7s ease-out 1}
+  @keyframes plateSheen{0%{left:-70%;opacity:1}100%{left:130%;opacity:1}}
+  /* the plate is a little recording meter: a quiet amber waveform breathes behind
+     the label. Each bar's height comes from --h (an envelope — tall mid, short
+     edges — set in the markup) so it reads as audio, not noise; the label floats
+     above it with a soft shadow. */
+  .plate-txt{position:relative;z-index:1;text-shadow:0 1px 8px hsl(26 40% 4%/.9),0 0 2px hsl(26 40% 4%/.9)}
+  .plate-wave{position:absolute;inset:0;display:flex;align-items:center;gap:3px;padding:0 10px;pointer-events:none;opacity:.17;transition:opacity .25s ease}
+  .plate-wave i{flex:1;height:var(--h,30%);border-radius:2px;background:hsl(36 92% 58%);animation:plateWave 1.15s ease-in-out infinite;transform-origin:center}
+  .plate-wave i:nth-child(2n){animation-delay:.14s;animation-duration:.95s}
+  .plate-wave i:nth-child(3n){animation-delay:.3s;animation-duration:1.3s}
+  .plate-wave i:nth-child(4n){animation-delay:.48s;animation-duration:.85s}
+  .plate-wave i:nth-child(5n){animation-delay:.07s;animation-duration:1.05s}
+  .plate-wave i:nth-child(7n){animation-delay:.6s;animation-duration:1.45s}
+  @keyframes plateWave{0%,100%{transform:scaleY(.45)}50%{transform:scaleY(1)}}
+  .amp-cta:hover .plate-wave{opacity:.32}
+  /* hover: a tweed speaker cab unfolds beneath the head and pulses like it's playing */
+  .amp-cta{position:relative}
+  .amp-cab{position:absolute;top:calc(100% + 6px);left:50%;width:100%;height:150px;z-index:5;pointer-events:none;
+    transform:translateX(-50%) scaleY(0);transform-origin:top;opacity:0;border-radius:11px;
+    background:repeating-linear-gradient(52deg,hsl(42 42% 66%/.9) 0 3px,hsl(38 38% 56%/.9) 3px 5px,hsl(44 45% 70%/.9) 5px 8px),hsl(40 42% 62%);
+    border:1px solid hsl(30 35% 24%);
+    box-shadow:inset 0 0 0 2px hsl(38 30% 45%/.5),inset 0 1px 0 hsl(46 50% 80%/.5),var(--shadow-md);
+    transition:transform .3s cubic-bezier(.34,1.35,.64,1) .1s,opacity .18s ease .1s}
+  .amp-cta:hover .amp-cab,.amp-cta:focus-visible .amp-cab{transform:translateX(-50%) scaleY(1);opacity:1}
+  /* oxblood woven grille filling the cab, the speaker owning it — 1x12 proportions */
+  .amp-cab .cab-grille{position:absolute;inset:8px;border-radius:7px;display:grid;place-items:center;overflow:hidden;
+    background:repeating-linear-gradient(45deg,hsl(12 34% 20%) 0 2px,hsl(16 30% 14%) 2px 4px),repeating-linear-gradient(-45deg,hsl(12 30% 18%/.5) 0 2px,transparent 2px 4px),hsl(14 32% 17%);
+    border:1px solid hsl(26 30% 12%);box-shadow:inset 0 2px 8px rgba(0,0,0,.55),inset 0 -8px 16px -10px rgba(0,0,0,.6)}
+  .amp-cab .spk{width:108px;height:108px;border-radius:50%;position:relative;flex:none;
+    background:radial-gradient(circle at 50% 50%,hsl(28 14% 30%) 0 15%,hsl(26 14% 9%) 16% 42%,hsl(26 10% 19%) 43% 56%,hsl(26 14% 7%) 57%);
+    box-shadow:0 0 0 3px hsl(38 28% 42%/.55),0 0 0 5px hsl(26 30% 9%),0 3px 10px rgba(0,0,0,.65);
+    animation:spkThump .62s ease-in-out infinite}
+  .amp-cab .spk::after{content:"";position:absolute;inset:-10px;border-radius:50%;border:2px solid hsl(36 90% 55%/.35);animation:spkRing .62s ease-out infinite}
+  @keyframes spkThump{0%,100%{transform:scale(1)}18%{transform:scale(1.055)}40%{transform:scale(.99)}}
+  @keyframes spkRing{0%{transform:scale(.82);opacity:.7}100%{transform:scale(1.16);opacity:0}}
+  @media(prefers-reduced-motion:reduce){.plate-wave i,.amp-cab .spk,.amp-cab .spk::after{animation:none}.plate-wave i{transform:scaleY(.55)}}
+  /* the glowing tube — a warm glass capsule, gently pulsing */
+  .amp-tube{width:13px;height:26px;border-radius:7px 7px 5px 5px;flex:none;position:relative;
+    background:linear-gradient(180deg,hsl(38 90% 72%/.6),hsl(34 90% 52%/.85) 55%,hsl(28 85% 34%/.9));
+    box-shadow:0 0 9px 2px hsl(36 95% 55%/.55),inset 0 0 5px hsl(45 100% 88%/.7),inset 0 -4px 5px hsl(26 60% 20%/.5);
+    animation:tubeGlow 3.4s ease-in-out infinite}
+  .amp-tube::before{content:"";position:absolute;left:50%;top:4px;bottom:4px;width:2px;margin-left:-1px;border-radius:2px;background:hsl(45 100% 90%/.85);box-shadow:0 0 5px hsl(45 100% 85%/.9)}
+  @keyframes tubeGlow{0%,100%{filter:brightness(.9)}50%{filter:brightness(1.28)}}
+  .amp-cta:hover .amp-tube{animation-duration:1.1s}
+  /* the VU meter — dark face, amber arc, a needle that sways idle and jumps on hover */
+  .amp-vu{width:34px;height:24px;border-radius:5px;flex:none;position:relative;overflow:hidden;
+    background:radial-gradient(120% 120% at 50% 120%,hsl(40 55% 62%),hsl(38 45% 50%) 70%);
+    border:1px solid hsl(26 30% 12%);box-shadow:inset 0 1px 2px hsl(20 40% 6%/.35)}
+  .amp-vu::before{content:"";position:absolute;left:6px;right:6px;top:5px;height:10px;border-top:1.5px solid hsl(26 40% 22%/.5);border-radius:50%/100% 100% 0 0}
+  .amp-vu-needle{position:absolute;left:50%;bottom:2px;width:1.5px;height:17px;margin-left:-0.75px;border-radius:1px;
+    background:linear-gradient(hsl(0 60% 42%),hsl(26 30% 18%));transform-origin:bottom center;transform:rotate(-24deg);
+    animation:vuSway 4.2s ease-in-out infinite}
+  @keyframes vuSway{0%{transform:rotate(-26deg)}30%{transform:rotate(-6deg)}45%{transform:rotate(-15deg)}70%{transform:rotate(14deg)}100%{transform:rotate(-26deg)}}
+  .amp-cta:hover .amp-vu-needle{animation-duration:.9s}
+  @media(prefers-reduced-motion:reduce){.amp-tube,.amp-vu-needle{animation:none}.amp-vu-needle{transform:rotate(-4deg)}}
+  .amp-sub{font-size:.72rem;color:hsl(var(--muted-foreground));text-align:center}
+  /* help: a quiet ? bubble floated just off the amp's right edge */
+  .cta-q{position:absolute;left:100%;margin-left:12px;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:none;color:hsl(var(--muted-foreground));font-size:.72rem;font-weight:650;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;transition:.15s;font-family:inherit}
+  .cta-q:hover,.cta-q[aria-expanded="true"]{border-color:hsl(var(--brand)/.6);color:hsl(var(--brand-strong))}
+  /* phones: the ? docks inline (its absolute float would poke past the viewport) */
+  @media(max-width:480px){
+    .cta-q{position:static;margin-left:10px}
+    .amp-cta-plate{font-size:.92rem;padding:7px 14px}
+    .amp-cta-panel{gap:9px;padding:10px 12px}
+  }
+  .cta-helppop{max-width:560px;text-align:center;font-size:.78rem;color:hsl(var(--muted-foreground));line-height:1.65;padding:4px 8px 0;animation:helpIn .18s ease-out}
+  @keyframes helpIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+  /* headline lives centered in the plate's open cream panel (left ~40%), not
+     crowded against the drawing's bottom edge */
+  .hero-banner{position:relative;border-radius:var(--radius);overflow:hidden;min-height:clamp(260px,36vw,360px);display:flex;align-items:center;padding:30px 36px;color:#2b2016;box-shadow:var(--shadow-md);border:1px solid var(--line);
+    background-color:#f1e7d3;
+    background-image:linear-gradient(90deg,rgba(241,231,211,.55) 0%,rgba(241,231,211,0) 45%),url("../assets/plates/hero-plate-2.png");
+    background-size:cover;background-position:center 40%}
+  .hero-banner>div{max-width:38%;min-width:240px}
+  @media(max-width:600px){.hero-banner{align-items:flex-end}.hero-banner>div{max-width:100%}}
+  .hero-banner .eyebrow{color:hsl(27 88% 38%)}
+  .hero-banner h1{font-family:var(--font-display);font-size:2.6rem;font-weight:560;letter-spacing:.005em;margin:8px 0 6px;color:#2b2016}
+  .hero-banner p{margin:0;color:#6b5946;font-size:.95rem;max-width:24ch}
+  /* dark mode: a moody night-workshop photograph. The left third is near-black, so
+     the headline sits in AMBER on that shadow — no paper panel, no scrim. A gradient
+     scrim deepens the left edge so the type always has contrast. */
+  .dark .hero-banner{border:1px solid hsl(30 20% 14%);
+    color:hsl(40 30% 92%);
+    background-color:#0f0b08;
+    background-image:linear-gradient(90deg,hsl(24 30% 4%/.92) 0%,hsl(24 30% 4%/.7) 26%,hsl(24 30% 4%/0) 52%),url("../assets/plates/hero-dark-moody.png");
+    background-size:cover;background-position:center 45%;
+    padding-left:40px}
+  .dark .hero-banner>div{max-width:44%;min-width:0}
+  .dark .hero-banner h1{font-size:clamp(1.8rem,4vw,2.7rem);color:hsl(40 92% 60%);text-shadow:0 2px 18px hsl(24 40% 3%/.8)}
+  .dark .hero-banner p{font-size:.95rem;color:hsl(38 24% 78%);text-shadow:0 1px 10px hsl(24 40% 3%/.7)}
+  .dark .hero-banner .eyebrow{color:hsl(38 88% 58%)}
+  @media(max-width:600px){
+    .dark .hero-banner{padding-left:24px;background-position:center 45%}
+    .dark .hero-banner>div{max-width:100%}
+    .dark .hero-banner h1{font-size:1.7rem}
+    .dark .hero-banner p{font-size:.9rem}
+  }
+  /* dark mode: a barely-there misted-woods texture behind the whole page — the
+     espresso ground reads first; the fog just adds depth. Fixed so it doesn't scroll. */
+  .dark body{
+    background-image:linear-gradient(hsl(26 12% 5.2%/.94),hsl(26 12% 5.2%/.985)),url("../assets/plates/bg-foggy-woods.png");
+    background-size:cover;background-position:center top;background-attachment:fixed}
+  .stage.dark body{background-image:linear-gradient(hsl(26 15% 3.5%/.965),hsl(26 15% 3.5%/.99)),url("../assets/plates/bg-foggy-woods.png")}
+  .hero-guitar{position:absolute;right:26px;top:50%;transform:translateY(-50%);opacity:.5;color:hsl(38 92% 60%)}
+  .hero-guitar svg{width:120px;height:120px}
+  @media(max-width:600px){.hero-guitar{display:none}.hero-banner h1{font-size:1.7rem}}
+  .planTheme{font-size:.82rem;line-height:1.55;color:hsl(var(--muted-foreground));margin-top:8px}
+  .wstrip{display:flex;gap:6px;margin:0 0 14px}
+  .wday{flex:1;text-align:center;border:1px solid hsl(var(--border));border-radius:calc(var(--radius) - 4px);padding:6px 0;color:hsl(var(--muted-foreground))}
+  .wday .dn{font-size:.6rem;text-transform:uppercase;letter-spacing:.04em}
+  .wday .dd{font-size:.92rem;font-weight:600;margin-top:1px}
+  .wday.on{background:hsl(var(--brand)/.14);border-color:hsl(var(--brand)/.5);color:hsl(var(--foreground))}
+  .wday.now{outline:2px solid hsl(var(--brand)/.55);outline-offset:1px}
+  .sessfoot{margin-top:18px;border-top:1px solid hsl(var(--border));padding-top:18px}
+  .sessrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .sessrow .streak{font-size:.8rem;color:hsl(var(--muted-foreground))}
+  .sessrow .streak b{color:hsl(var(--foreground))}
+  .logged{font-size:.85rem;color:hsl(var(--brand-strong));font-weight:500}
+  .noteln{width:100%;margin-top:10px;font:inherit;font-size:.85rem;padding:8px 10px;border:1px solid hsl(var(--border));border-radius:calc(var(--radius) - 3px);background:hsl(var(--background));color:hsl(var(--foreground))}
+  /* 14-day practice pattern calendar (law 4: no flame, no streak guilt) */
+  .pat-block{margin-top:14px;padding-top:12px;border-top:1px solid hsl(var(--border))}
+  .pat-label{font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:hsl(var(--muted-foreground));margin-bottom:7px}
+  .pat-grid{display:grid;grid-template-columns:repeat(14,1fr);gap:4px}
+  .pat-dot{width:100%;aspect-ratio:1;border-radius:50%;background:hsl(var(--border));position:relative}
+  .pat-dot.active{background:hsl(var(--brand)/.72)}
+  .pat-dot.today-ring{box-shadow:0 0 0 1.5px hsl(var(--brand)/.9);background:transparent}
+  .pat-dot.active.today-ring{background:hsl(var(--brand)/.72);box-shadow:0 0 0 1.5px hsl(var(--brand))}
+  /* improvements line (This week) */
+  .impr-line{margin-top:10px;font-size:.8rem;color:hsl(var(--muted-foreground));line-height:1.6}
+  .impr-line .impr-item{color:hsl(var(--foreground))}
+  .impr-line .impr-item .tab-num{color:hsl(var(--brand-strong));font-weight:600}
+  .impr-line .mins-note{font-size:.75rem;color:hsl(var(--muted-foreground));margin-top:3px}
+  /* Tomorrow's bench card */
+  .bench-list{margin:10px 0 0;padding:0;list-style:none}
+  .bench-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid hsl(var(--border));font-size:.85rem}
+  .bench-item:first-child{border-top:0;padding-top:0}
+  .bench-item .b-note{font-size:.75rem;color:hsl(var(--muted-foreground));margin-top:2px}
+  .bench-item a.b-link{margin-left:auto;flex-shrink:0}
+  .bench-empty{font-size:.85rem;color:hsl(var(--muted-foreground));padding:4px 0}
+  /* .h2-row carries the same vertical rhythm as a bare h2, so section spacing stays
+     uniform whether a heading sits alone or in a row (and when sections collapse) */
+  .h2-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:34px 0 14px}
+  .h2-row h2{margin:0}
+  svg.li{display:inline-block;width:1em;height:1em;min-width:0;max-width:none;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em;flex:none}
+  /* ---- Practice tools: view toggle (quiet segmented control) ---- */
+  .viewseg{display:inline-flex;border:1px solid hsl(var(--border));border-radius:calc(var(--radius) - 2px);background:hsl(var(--secondary));padding:2px;gap:2px}
+  .viewseg button{appearance:none;border:0;background:transparent;color:hsl(var(--muted-foreground));font:inherit;font-size:.78rem;font-weight:500;padding:5px 12px;border-radius:calc(var(--radius) - 5px);cursor:pointer;display:inline-flex;align-items:center;gap:6px;line-height:1}
+  .viewseg button svg{width:14px;height:14px}
+  .viewseg button:hover{color:hsl(var(--foreground))}
+  .viewseg button[aria-pressed="true"]{background:hsl(var(--card));color:hsl(var(--foreground));box-shadow:var(--shadow-sm)}
+  /* ---- Pedalboard view: the practice signal chain ----
+     Pedals + amp use the SHARED pedal component (theme.css: .wsd-pedal / fam-*).
+     Only the board surface, rails, input jack, cables and the amp HEAD live here. */
+  .board{position:relative;background:hsl(var(--secondary));border:1px solid hsl(var(--border));border-radius:var(--radius);padding:26px 22px 30px;overflow:hidden;box-shadow:var(--shadow-sm) inset}
+  /* board fades in 240ms on first render */
+  .board.board-in{animation:boardFade .24s ease-out both}
+  @keyframes boardFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  /* two horizontal rails as hairlines across the board surface */
+  .board::before,.board::after{content:"";position:absolute;left:16px;right:16px;height:1px;background:hsl(var(--border));pointer-events:none}
+  .board::before{top:33%}
+  .board::after{top:67%}
+  .board-cable{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+  /* signal pulse: hovering the board sends a slow flow down the patch cables */
+  .board:hover .board-cable path{stroke-dasharray:7 11;animation:cableFlow 1.1s linear infinite}
+  @keyframes cableFlow{to{stroke-dashoffset:-18}}
+  .chain{position:relative;z-index:1;display:flex;flex-direction:column}
+  /* rows like a real multi-row board: each family group on its own rail, subtly divided */
+  .chain-row{display:flex;flex-wrap:wrap;align-items:center;gap:22px 20px;padding:13px 0}
+  .chain-row+.chain-row{border-top:1px dashed hsl(var(--border)/.9)}
+  /* the group name is a strip of masking tape on the rail — cream even in dark (it's tape).
+     Fixed width so every rail's pedals start on the same left edge; long names wrap. */
+  .row-tape{flex:none;width:92px;text-align:center;font-size:.6rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;
+    color:hsl(28 32% 28%/.85);background:hsl(45 45% 87%/.92);padding:4px 8px;border-radius:2px;line-height:1.5;
+    transform:rotate(-1.6deg);box-shadow:0 1px 2px rgba(0,0,0,.18);align-self:center}
+  /* the Progress amp closes the board on its own centered row */
+  .chain-row.amp-out{justify-content:center}
+  /* status LEDs: dark until you practice with that tool today */
+  .board .wsd-pedal .wsd-pedal-led{opacity:.28;box-shadow:inset 0 0 2px rgba(0,0,0,.4)}
+  .board .wsd-pedal.lit .wsd-pedal-led{opacity:1;box-shadow:0 0 11px 2px var(--pedal-led),inset 0 0 2px rgba(0,0,0,.35)}
+  .board .wsd-pedal.lit:hover .wsd-pedal-led{box-shadow:0 0 14px 3px var(--pedal-led),inset 0 0 2px rgba(0,0,0,.35)}
+  .board-legend{position:relative;z-index:1;margin-top:16px;font-size:.68rem;color:hsl(var(--muted-foreground));display:flex;align-items:center;gap:7px;justify-content:center}
+  .board-legend .leg-led{width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0 10%,hsl(var(--brand)) 60%,hsl(30 90% 30%) 100%);box-shadow:0 0 6px 1px hsl(var(--brand)/.7)}
+  /* full-board day: the jewel breathes (reduced-motion users get the steady glow) */
+  .amplamp.full-board{animation:jewelBreathe 2.8s ease-in-out infinite}
+  @keyframes jewelBreathe{0%,100%{filter:brightness(1)}50%{filter:brightness(1.55)}}
+  /* input jack glyph at the chain start */
+  .jack{flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;color:hsl(var(--muted-foreground));width:56px;cursor:pointer;position:relative;user-select:none;border:0;background:none;font:inherit;padding:0}
+  .jack:hover{color:hsl(var(--foreground))}
+  /* the cable plug that drops into the jack on click */
+  .jack .jplug{position:absolute;left:50%;top:-14px;width:7px;height:20px;margin-left:-3.5px;border-radius:3px 3px 2px 2px;pointer-events:none;opacity:0;
+    background:linear-gradient(180deg,hsl(26 15% 22%) 0 55%,hsl(40 15% 65%) 55% 78%,hsl(38 90% 55%) 78%);
+    box-shadow:0 1px 2px rgba(0,0,0,.5)}
+  .jack.plugged .jplug{animation:plugIn .32s cubic-bezier(.34,1.4,.64,1) forwards}
+  @keyframes plugIn{0%{opacity:0;transform:translateY(-22px)}55%{opacity:1;transform:translateY(3px)}100%{opacity:1;transform:translateY(0)}}
+  .jack.plugged svg circle:last-of-type{fill:hsl(38 90% 55%)}
+  /* signal surge: while plugged, sound flows — pedals glow amber in chain order */
+  .wsd-pedal{transition:box-shadow .3s ease}
+  .wsd-pedal.surge{box-shadow:0 0 15px 2px hsl(30 92% 52%/.5)}
+  .wsd-pedal.surge .wsd-pedal-led{background:hsl(32 95% 55%)!important;opacity:1!important;box-shadow:0 0 8px 2px hsl(32 95% 55%/.8)!important}
+  .board-cable.hot path{stroke:hsl(30 90% 52%/.85);stroke-dasharray:7 11;animation:cableFlow .7s linear infinite}
+  .amp.surge .amplamp{opacity:1!important;box-shadow:0 0 16px 4px hsl(30 92% 52%/.85),inset 0 0 2px rgba(0,0,0,.4)!important}
+  @media(prefers-reduced-motion:reduce){.board-cable.hot path{animation:none}}
+  .jack svg{width:34px;height:34px}
+  .jack .jlabel{font-size:.58rem;font-weight:650;letter-spacing:.14em;text-transform:uppercase}
+  /* the amp head — the Progress dashboard at the chain's end. Wears the same
+     lacquered TWEED as the real Blues Jr IV in Tone Studio (one rig, one look):
+     tweed body, dark control strip with knobs + jewel, oxblood grille, cream plate. */
+  .amp{flex:none;width:300px;min-height:172px;display:flex;flex-direction:column;color:var(--ink);border-radius:10px;text-decoration:none;overflow:hidden;position:relative;
+    background:
+      repeating-linear-gradient(52deg,hsl(42 42% 66%/.85) 0 3px,hsl(38 38% 56%/.85) 3px 5px,hsl(44 45% 70%/.85) 5px 8px),
+      repeating-linear-gradient(-52deg,hsl(40 40% 62%/.5) 0 3px,hsl(36 34% 52%/.5) 3px 6px),
+      hsl(40 42% 62%);
+    border:1px solid hsl(30 35% 26%);
+    box-shadow:inset 0 0 0 2px hsl(38 30% 45%/.5),inset 0 1px 0 hsl(46 50% 80%/.5),var(--shadow-md);
+    transition:transform .18s ease-out,border-color .18s ease-out,box-shadow .18s ease-out}
+  /* lacquer sheen */
+  .amp::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(115deg,hsl(48 60% 92%/.2) 0 28%,transparent 42%),
+      linear-gradient(180deg,transparent 62%,hsl(28 40% 24%/.16))}
+  .amp:hover{transform:translateY(-2px);box-shadow:inset 0 0 0 2px hsl(38 30% 45%/.5),inset 0 1px 0 hsl(46 50% 80%/.5),var(--shadow-md)}
+  .amp:hover .amplamp{box-shadow:0 0 12px 2px hsl(var(--brand)/.8),inset 0 0 2px rgba(0,0,0,.4)}
+  /* oxblood grille cloth */
+  .amp .grille{height:46px;margin:0 10px;border-radius:5px;
+    background:repeating-linear-gradient(90deg,hsl(12 32% 24%) 0 1.5px,hsl(10 30% 13%) 1.5px 4px),
+      repeating-linear-gradient(0deg,hsl(14 30% 22%/.55) 0 1.5px,hsl(10 28% 12%/.55) 1.5px 4px);
+    box-shadow:inset 0 0 0 1px hsl(28 30% 30%),inset 0 2px 5px rgba(0,0,0,.4)}
+  /* dark control strip (knobs + jewel), like the real panel */
+  .amp .amprow{display:flex;align-items:center;gap:14px;padding:7px 12px;margin:9px 10px 8px;border-radius:6px;position:relative;z-index:1;
+    background:linear-gradient(180deg,hsl(26 12% 13%),hsl(26 14% 8%));border:1px solid hsl(26 14% 4%);
+    box-shadow:inset 0 1px 0 hsl(40 20% 40%/.14),0 1px 3px hsl(20 40% 2%/.4)}
+  .amp .ampknobs{display:flex;gap:12px}
+  .amp .ampknobs svg{width:15px;height:15px;min-width:0;max-width:none;flex:none;color:rgba(255,255,255,.72);filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+  .amp .ampknobs svg circle,.amp .ampknobs svg path{stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round}
+  /* jewel lamp with glossy dome */
+  .amp .amplamp{width:10px;height:10px;border-radius:50%;margin-left:auto;
+    background:radial-gradient(circle at 35% 30%,#fff 0 10%,hsl(var(--brand)) 60%,color-mix(in srgb,hsl(var(--brand)) 55%,#000) 100%);
+    box-shadow:0 0 6px 1px hsl(var(--brand)/.7),inset 0 0 2px rgba(0,0,0,.4);transition:box-shadow .18s ease-out}
+  .amp .picon{flex:1;display:flex;align-items:center;justify-content:center;color:hsl(26 30% 18%);position:relative;z-index:1}
+  .amp .picon svg{width:26px;height:26px;min-width:0;max-width:none;flex:none}
+  .amp .plate{margin:0 12px 12px;border-radius:6px;background:linear-gradient(180deg,#f3ead6,#efe6d2);color:#2b2016;font-family:var(--font-display);font-size:13px;text-align:center;padding:8px 6px;letter-spacing:.01em;
+    border:1px solid rgba(0,0,0,.28);box-shadow:inset 0 1px 2px rgba(0,0,0,.28),inset 0 -1px 0 rgba(255,255,255,.5)}
+  @media(max-width:640px){
+    .board{padding:20px 14px 22px}
+    .board-cable{display:none}
+    .chain-row{gap:16px 14px;justify-content:center;padding:11px 0}
+    .jack{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="hero-banner grain">
+    <div>
+      <h1>The Woodshed</h1>
+      <p>Tools for deliberate and focused learning of guitar.</p>
+    </div>
+  </div>
+  <!-- THE front door: a little amp, centered. Tap the plate: the session view opens
+       with the plan beside the Instructor and the coach counts you in. -->
+  <div class="session-cta">
+    <div class="amp-row">
+      <a class="amp-cta" href="session.html?autostart=1" id="ampCta">
+        <span class="amp-cta-panel">
+          <span class="amp-cta-knobs" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="amp-tube" aria-hidden="true"></span>
+          <span class="amp-cta-plate"><span class="plate-wave" aria-hidden="true"><i style="--h:14%"></i><i style="--h:22%"></i><i style="--h:32%"></i><i style="--h:26%"></i><i style="--h:44%"></i><i style="--h:38%"></i><i style="--h:58%"></i><i style="--h:48%"></i><i style="--h:70%"></i><i style="--h:56%"></i><i style="--h:78%"></i><i style="--h:64%"></i><i style="--h:72%"></i><i style="--h:80%"></i><i style="--h:62%"></i><i style="--h:74%"></i><i style="--h:54%"></i><i style="--h:66%"></i><i style="--h:46%"></i><i style="--h:52%"></i><i style="--h:34%"></i><i style="--h:40%"></i><i style="--h:24%"></i><i style="--h:16%"></i></span><span class="plate-txt">Start today&rsquo;s session</span></span>
+          <span class="amp-vu" aria-hidden="true"><span class="amp-vu-needle"></span></span>
+        </span>
+        <span class="amp-cab" aria-hidden="true"><span class="cab-grille"><span class="spk"></span></span></span>
+      </a>
+      <button class="cta-q" id="ctaHelpBtn" aria-expanded="false" aria-controls="ctaHelp" title="How this works">?</button>
+    </div>
+    <small class="amp-sub">~20 min &mdash; the plan and the Instructor, side by side</small>
+    <div class="cta-helppop" id="ctaHelp" hidden>The Instructor &mdash; the amber pick in the corner of every page &mdash; reads your plan, stats and files, and sees your practice as it lands. Say "practice with me" anywhere for a guided session strip; record takes in Transcribe and hit <b>Ask the Instructor</b> for one fixable thing; say "log today's session" when you're done. Deep rebuilds still happen in Claude Code via <span class="mono">/instructor</span>.</div>
+  </div>
+
+  <h2 data-collapse="status" data-collapse-target="sec-status">Where you are</h2>
+  <div id="sec-status">
+  <div class="hero">
+    <div class="card card-pad">
+      <div class="eyebrow">Current block</div>
+      <div class="phase" id="phase">—</div>
+      <div class="muted" id="target" style="font-size:.85rem;line-height:1.5"></div>
+      <div class="doms" id="doms"></div>
+      <div class="pat-block" id="practicePatternBlock" style="display:none">
+        <div class="pat-label">14-day pattern</div>
+        <div class="pat-grid" id="patGrid" aria-label="14-day practice pattern"></div>
+        <div class="impr-line" id="weekImprovements"></div>
+      </div>
+      <a class="link" href="dashboard.html" style="display:inline-block;margin-top:14px">Open full dashboard →</a>
+    </div>
+    <div class="card card-pad">
+      <div class="eyebrow" style="margin-bottom:12px">Course progress</div>
+      <div id="bars"></div>
+      <div class="synced" id="synced"></div>
+    </div>
+  </div>
+
+  <div class="card card-pad" id="benchCard" style="display:none;margin-top:14px">
+    <div class="between">
+      <div class="eyebrow">Tomorrow's bench</div>
+      <span class="badge badge-secondary" id="benchCnt" style="display:none"></span>
+    </div>
+    <div style="font-size:.78rem;color:hsl(var(--muted-foreground));margin-top:2px">Due for consolidation re-test — scheduled across sleep (law 3).</div>
+    <ul class="bench-list" id="benchList"></ul>
+  </div>
+  </div>
+
+
+  <hr class="fretline">
+  <div class="h2-row"><h2 data-collapse="tools" data-collapse-target="sec-tools">Practice tools</h2>
+    <div class="viewseg" role="group" aria-label="Practice tools view">
+      <button type="button" id="viewGrid" aria-pressed="true"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Grid</button>
+      <button type="button" id="viewPedal" aria-pressed="false"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="7" height="16" rx="1.5"/><rect x="14" y="4" width="7" height="16" rx="1.5"/><circle cx="6.5" cy="8" r="1"/><circle cx="17.5" cy="8" r="1"/></svg>Pedalboard</button>
+    </div>
+  </div>
+  <div id="sec-tools">
+  <div class="grid" id="toolgrid"></div>
+  <div class="board" id="toolboard" style="display:none" aria-label="Practice signal chain"></div>
+  </div>
+
+  <hr class="fretline">
+  <h2 data-collapse="gear" data-collapse-target="sec-gear">Your gear</h2>
+  <style>
+    /* current-guitar engraved portrait (falls back to the line icon) */
+    #gearChip:has(.gportrait){width:52px;height:70px;border-radius:7px;overflow:hidden;background:#f1e7d3;border:1px solid var(--line)}
+    .gportrait{width:100%;height:100%;object-fit:cover;object-position:center 30%;display:block}
+  </style>
+  <div id="sec-gear">
+  <div class="card card-pad">
+    <div class="between">
+      <div class="row" style="gap:13px;align-items:center">
+        <span class="ico-chip" id="gearChip"></span>
+        <div>
+          <div class="eyebrow">Current guitar</div>
+          <div class="card-title" id="curGuitarName">—</div>
+          <div class="muted" id="curGuitarSpecs" style="font-size:.82rem;margin-top:2px"></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <select class="select" id="curGuitarSel" aria-label="Current guitar"></select>
+        <a class="link" href="gear-library.html">Open Gear Library →</a>
+      </div>
+    </div>
+  </div>
+
+  </div>
+
+  <hr class="fretline">
+  <h2 data-collapse="files" data-collapse-target="sec-files">Coaching files</h2>
+  <div id="sec-files">
+  <div class="card" style="padding:6px 4px">
+    <div class="files">
+      <a href="../curriculum/MASTER-CURRICULUM.md"><span class="f">curriculum/MASTER-CURRICULUM.md</span><span class="k">your combined progression</span></a>
+      <hr class="sep">
+      <a href="../student/PROFILE.md"><span class="f">student/PROFILE.md</span><span class="k">profile + diagnosis</span></a>
+      <hr class="sep">
+      <a href="../student/PROGRESS-LOG.md"><span class="f">student/PROGRESS-LOG.md</span><span class="k">running record</span></a>
+      <hr class="sep">
+      <a href="../student/REPERTOIRE.md"><span class="f">student/REPERTOIRE.md</span><span class="k">pieces &amp; song pool</span></a>
+    </div>
+  </div>
+
+  <p class="muted" style="margin-top:32px;font-size:.78rem;line-height:1.6">The Instructor (console) writes your plan &amp; logs; this page shows them and holds the tools. Launch locally with <span class="mono">Open-Woodshed.bat</span> (or <span class="mono">npm run dev</span>) — that starts the Vite server so the plan, dashboard, and the audio Transcribe tool all work.</p>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+// Use DOMAINS/DOMAIN_SHORT from stats.js (single source of truth)
+// DOMS_PAIRS: [['A','Tech'],['B','Fret'],...] built from shared consts
+const DOMS_PAIRS=DOMAINS.map(([k])=>[k,DOMAIN_SHORT[k]]);
+const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const IC={
+  fork:'<path d="M12 3v18"/><path d="M8 6l4-3 4 3"/><path d="M8 18l4 3 4-3"/>',
+  bend:'<path d="M3 17c5 0 7-2 8-6l2 6c1-4 3-6 8-6"/><path d="M17 8l4 3-4 3"/>',
+  library:'<rect x="4" y="4" width="3.5" height="16" rx="1"/><rect x="10" y="4" width="3.5" height="16" rx="1"/><rect x="16" y="4" width="3.5" height="16" rx="1"/>',
+  activity:'<path d="M3 12h4l2.5 7 5-15 2.5 8H21"/>',
+  music:'<circle cx="6" cy="18" r="2.5"/><circle cx="17" cy="16" r="2.5"/><path d="M8.5 18V6l11-2v10"/>',
+  wave:'<path d="M2 12h2"/><path d="M6 8v8"/><path d="M10 5v14"/><path d="M14 8v8"/><path d="M18 6v12"/><path d="M22 11v2"/>',
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  target:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/>',
+  gauge:'<path d="M12 13l3.5-3.5"/><path d="M4.5 18a9 9 0 1 1 15 0"/>',
+  fret:'<path d="M4 4v16"/><path d="M20 4v16"/><path d="M4 12h16"/><circle cx="9" cy="8" r="1.2"/><circle cx="15" cy="8" r="1.2"/><circle cx="12" cy="16" r="1.2"/>',
+  chart:'<path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="5" rx="1"/><rect x="12" y="8" width="3" height="9" rx="1"/><rect x="17" y="5" width="3" height="12" rx="1"/>',
+  mic:'<rect x="9" y="3" width="6" height="10" rx="3"/><path d="M6 11a6 6 0 0 0 12 0"/><path d="M12 17v4"/><path d="M8 21h8"/>',
+  circle:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="M12 3v3.5M21 12h-3.5M12 21v-3.5M3 12h3.5"/>',
+  guitar:'<circle cx="8" cy="16" r="5"/><circle cx="8" cy="16" r="1.6"/><path d="M11.6 12.4 19 5"/><path d="M17.4 3.4 20.6 6.6"/>',
+  'sliders-horizontal':'<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>',
+  fingerprint:'<path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/><path d="M14 13.12c0 2.38 0 6.38-1 8.88"/><path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/><path d="M2 12a10 10 0 0 1 18-6"/><path d="M2 16h.01"/><path d="M21.8 16c.2-2 .131-5.354 0-6"/><path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/><path d="M8.65 22c.21-.66.45-1.32.57-2"/><path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>'
+};
+const icon=n=>`<svg class="lucide" viewBox="0 0 24 24">${IC[n]}</svg>`;
+
+// The dark hero's headline lives on the pinned sheet; wrapping between words is fine
+// but a word must never overflow the box or split. Measure and step the size down
+// until the longest word fits (scrollWidth > clientWidth exactly when one overflows).
+function fitHeroTitle(){
+  const h1=document.querySelector('.hero-banner h1');if(!h1)return;
+  h1.style.fontSize='';
+  let f=parseFloat(getComputedStyle(h1).fontSize);
+  for(let i=0;i<26&&h1.scrollWidth>h1.clientWidth+1&&f>13;i++){f-=1;h1.style.fontSize=f+'px';}
+}
+addEventListener('resize',()=>fitHeroTitle());
+new MutationObserver(()=>fitHeroTitle()).observe(document.documentElement,{attributes:true,attributeFilter:['class']});
+fitHeroTitle();
+const TOOLS=[
+  ['resource-library.html','library','Resource Library','Curated hub of courses, channels, tools, tabs & backing tracks: Paul Davids, JustinGuitar, Andrew Clarke and your own bookmarks.','Reference'],
+  ['technique-drills.html','activity','Technique & Drills','Filterable catalog of technique drills with how-to, rotation/mastery tracking, and a session builder.','A · Technique'],
+  ['scale-trainer.html','music','Scale Pattern Trainer','Major/minor/pentatonic shapes across the neck with animated playback, a degree drill, and mastery tracking.','B · Fretboard'],
+  ['ear-trainer.html','wave','Ear Trainer','Intervals, chord quality & degrees by ear: melodic then harmonic, with a fretboard reveal and song mnemonics.','C · Ear'],
+  ['intervals-reference.html','library','Interval Reference','All 12 intervals on one screen: a guitar riff you know, its sound colour, step formula & inversion — click to hear each. The companion cheat-sheet to the Ear Trainer.','C · Ear'],
+  ['transcribe.html','mic','Transcribe','Drop in a recording or play live; Spotify\'s Basic Pitch model turns audio into notes and chords — polyphonic, on your machine.','C · Ear'],
+  ['triad-trainer.html','grid','Triad & CAGED Trainer','Triads and their inversions across every string set, color-coded R/3/5, and now you hear each one.','B · Fretboard'],
+  ['target-tone-trainer.html','target','Target-Tone Trainer','See and hear chord tones & guide tones; play a progression to hear the guide-tone line move.','E · Improvisation'],
+  ['circle-of-fifths.html','circle','Circle of Fifths','Interactive wheel: click a key to light up its diatonic chords, see their guitar shapes, build & play a progression that transposes with the wheel, and find the closest keys to modulate to.','B · Fretboard'],
+  ['metronome.html','gauge','Metronome','Subdivisions, accent on 2&4, accuracy-gate stepper, and tap-along timing feedback.','D · Rhythm & Time'],
+  ['fretboard-trainer.html','fret','Fretboard Trainer','Name it, find it, or find the note you hear, with audio and an octave reveal on every answer.','B · Fretboard'],
+  ['gear-library.html','guitar','Gear Library','Your guitars, amps & pedals with tunings and tone settings — searchable & sortable. Set your current guitar so the Instructor tunes the right one.','Reference'],
+  ['repertoire.html','music','Repertoire','Your song library + learning queue — ordered like a playlist, synced with the Instructor.','F · Repertoire'],
+  ['tone-studio.html','sliders-horizontal','Tone Studio','Drag your real gear onto a virtual pedalboard, dial settings, and let the Instructor chase a target tone.','Reference'],
+  ['identity.html','fingerprint','My Sound','Your influences, tone words, and target identity — articulated with the Instructor and kept as living memory.','Reference'],
+  ['tuner.html','fork','Tuner','Chromatic tuner — the mic hears your string and the needle settles when you\'re within 5 cents.','Tune'],
+  ['bend-lab.html','bend','Bend & Vibrato Lab','Bend to pitch and see the curve: cents-over-time trace, graded peaks, vibrato rate & width. Built for Slow Dancing-style bends.','A · Technique'],
+  ['licks.html','music','Lick Library','Your vocabulary: phrases lifted in Transcribe, tagged by context, drilled with spaced repetition until they\'re yours.','E · Improvisation'],
+  ['chord-lab.html','grid','Chord Lab','A virtual guitar: fret any voicing to hear and NAME it — or strum into the mic and Basic Pitch names what you played.','B · Fretboard'],
+];
+$('toolgrid').innerHTML=TOOLS.map(([href,ic,t,d,b])=>`<a class="toolcard" href="${href}"><div class="titlewrap"><span class="ico-chip">${icon(ic)}</span><h3>${esc(t)}</h3></div><p>${esc(d)}</p><span class="badge badge-secondary">${esc(b)}</span></a>`).join('');
+
+// ---- Pedalboard view: the same TOOLS array drawn as a practice signal chain ----
+// Domain family (from the badge) → shared pedal family class (theme.css owns tints).
+// Ear→fam-ear · Fretboard→fam-fret · Technique→fam-tech · Time→fam-time ·
+// Improv→fam-improv · Reference/others→fam-ref.
+function pedalFamily(badge){
+  const b=String(badge||'').toLowerCase();
+  if(/tune/.test(b))return{key:'tune',cls:'fam-tuner'};   // the tuner goes FIRST, like a real board
+  if(/ear/.test(b))return{key:'ear',cls:'fam-ear'};
+  if(/fretboard/.test(b))return{key:'fretboard',cls:'fam-fret'};
+  if(/technique/.test(b))return{key:'technique',cls:'fam-tech'};
+  if(/time|rhythm/.test(b))return{key:'time',cls:'fam-time'};
+  if(/improv/.test(b))return{key:'improv',cls:'fam-improv'};
+  return{key:'reference',cls:'fam-ref'};
+}
+// Chain order: Ear → Fretboard → Technique → Time → Improv → Reference (+Repertoire tail).
+const CHAIN_ORDER=['tune','ear','fretboard','technique','time','improv','reference'];
+// href → unified stats key (null = page doesn't record practice)
+const STATS_KEY={
+  'ear-trainer.html':'ear-trainer','transcribe.html':'transcribe',
+  'scale-trainer.html':'scale-trainer','triad-trainer.html':'triad-trainer',
+  'circle-of-fifths.html':'circle-of-fifths','fretboard-trainer.html':'fretboard-trainer',
+  'technique-drills.html':'technique-drills','metronome.html':'metronome',
+  'target-tone-trainer.html':'target-tone','tone-studio.html':'tone','identity.html':'identity',
+  'tuner.html':'tuner','bend-lab.html':'bend-lab','licks.html':'licks','chord-lab.html':'chord-lab',
+};
+// today's practice: which tools were touched + total minutes (mirrors Stats.totals math)
+function todayPractice(){
+  // NB: Stats is a top-level const (lexical global), NOT window.Stats — typeof-guard it
+  const day=(typeof Stats!=='undefined'&&Stats.recentDays)?(Stats.recentDays(1)[0]||{}).data||{}:{};
+  let minutes=0;const touched=new Set();
+  for(const tool in day){const r=day[tool];if(!r)continue;touched.add(tool);
+    if(r.firstTs&&r.lastTs)minutes+=Math.max(1,Math.round((r.lastTs-r.firstTs)/60000));}
+  return{touched,minutes};
+}
+// mini knob-pot glyph for the shared .wsd-knob-mini slot
+const KNOB_MINI='<svg class="wsd-knob-mini" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="M10 10V4"/></svg>';
+// The board reads as a multi-row pedalboard: family groups on their own rails,
+// each labeled with a strip of tape. Order within a row keeps the chain order.
+const BOARD_ROWS=[
+  {label:'Tune & ear', keys:['tune','ear']},
+  {label:'Know the neck', keys:['fretboard']},
+  {label:'Hands, time & voice', keys:['technique','time','improv']},
+  {label:'Bench & library', keys:['reference']},
+];
+function renderBoard(){
+  const board=$('toolboard');
+  const pedals=TOOLS.map((t,i)=>({t:t,i:i,fam:pedalFamily(t[4])}))
+    .sort((a,b)=>(CHAIN_ORDER.indexOf(a.fam.key)-CHAIN_ORDER.indexOf(b.fam.key))||(a.i-b.i));
+  const jack=`<button type="button" class="jack" id="boardJack" aria-pressed="false" aria-label="Plug in — run the signal through the chain" title="Plug in"><span class="jplug" aria-hidden="true"></span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.4"/><path d="M12 4V1"/></svg><span class="jlabel">Input</span></button>`;
+  // the board is a status display too: a pedal's LED is ON if you practiced
+  // with that tool today; the amp jewel glows with today's total minutes
+  const prac=todayPractice();
+  const pedalOf=({t,fam})=>{
+    const[href,ic,name]=t;
+    const key=STATS_KEY[href];
+    const lit=key&&prac.touched.has(key);
+    return `<a class="wsd-pedal ${fam.cls}${lit?' lit':''}" href="${href}" role="link" aria-label="${esc(name)} — open tool${lit?' (practiced today)':''}"${lit?' title="Practiced today"':''}>
+      <div class="wsd-pedal-knobs" aria-hidden="true">${KNOB_MINI}${KNOB_MINI}</div>
+      <span class="wsd-pedal-led" aria-hidden="true"></span>
+      <div class="wsd-pedal-face" aria-hidden="true">${icon(ic)}</div>
+      <div class="wsd-pedal-label">${esc(name)}</div>
+      <span class="wsd-pedal-switch" aria-hidden="true"></span>
+    </a>`;
+  };
+  const ampKnob='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 12V5"/></svg>';
+  const amp=`<a class="amp" href="dashboard.html" aria-label="Progress dashboard — the amp at the end of the chain">
+    <div class="amprow"><div class="ampknobs" aria-hidden="true">${ampKnob}${ampKnob}${ampKnob}</div><span class="amplamp" aria-hidden="true"></span></div>
+    <div class="grille" aria-hidden="true"></div>
+    <div class="picon" aria-hidden="true">${icon('chart')}</div>
+    <div class="plate">Progress</div>
+  </a>`;
+  const rowsHtml=BOARD_ROWS.map((row,ri)=>{
+    const mine=pedals.filter(p=>row.keys.includes(p.fam.key));
+    if(!mine.length)return '';
+    return `<div class="chain-row"><span class="row-tape" aria-hidden="true">${esc(row.label)}</span>`+
+      (ri===0?jack:'')+mine.map(pedalOf).join('')+`</div>`;
+  }).join('')+`<div class="chain-row amp-out">${amp}</div>`;
+  board.innerHTML=`<svg class="board-cable" id="boardCable" aria-hidden="true" preserveAspectRatio="none"></svg><div class="chain">${rowsHtml}</div>
+    <div class="board-legend" aria-hidden="true"><span class="leg-led"></span> lit = practiced today · amp glow = today's minutes</div>`;
+  // amp jewel: glow scales with today's minutes (full glow ≈ 30 min)
+  const lamp=board.querySelector('.amplamp');
+  if(lamp){
+    const m=prac.minutes,k=Math.min(1,m/30);
+    lamp.style.opacity=m?String(.55+.45*k):'0.3';
+    lamp.style.boxShadow=m?`0 0 ${Math.round(5+11*k)}px ${(1+2.4*k).toFixed(1)}px hsl(var(--brand)/${(.35+.5*k).toFixed(2)}),inset 0 0 2px rgba(0,0,0,.4)`:'inset 0 0 2px rgba(0,0,0,.4)';
+    lamp.closest('.amp').title=m?`${m} min today`:'No practice logged today';
+  }
+  // front-door micro-joy: ? toggles the help line; the amp gives a tiny power-on
+// thunk before navigating (mute-respecting, never blocks longer than 160ms)
+$('ctaHelpBtn').addEventListener('click',()=>{
+  const pop=$('ctaHelp'),open=pop.hidden;
+  pop.hidden=!open;
+  $('ctaHelpBtn').setAttribute('aria-expanded',open?'true':'false');
+});
+$('ampCta').addEventListener('click',e=>{
+  const a=e.currentTarget;
+  if(a.dataset.armed)return;            // second pass: navigate for real
+  e.preventDefault(); a.dataset.armed='1';
+  try{
+    if(!(typeof getMuted==='function'&&getMuted())&&window.AudioContext){
+      const ctx=new AudioContext(),t=ctx.currentTime;
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.type='sine';o.frequency.setValueAtTime(160,t);o.frequency.exponentialRampToValueAtTime(70,t+0.09);
+      g.gain.setValueAtTime(0.12,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.12);
+      o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+0.13);
+    }
+  }catch(err){}
+  setTimeout(()=>{ location.href=a.href; },150);
+});
+
+// full-board day: every stats-keyed pedal lit → the jewel breathes and the
+  // legend says so. Rare by design — it should feel like something.
+  const keyed=pedals.filter(({t})=>STATS_KEY[t[0]]).length;
+  const litCount=board.querySelectorAll('.wsd-pedal.lit').length;
+  if(keyed>0&&litCount===keyed){
+    if(lamp)lamp.classList.add('full-board');
+    const leg=board.querySelector('.board-legend');
+    if(leg)leg.innerHTML='<span class="leg-led"></span> full board day — every tool touched';
+  }
+
+  // plug in: click the input jack → the cable drops in, then the signal surges
+  // through the chain in order — pedals glow amber, cables run hot. Click again
+  // to unplug and let the board go quiet.
+  const jackEl=board.querySelector('#boardJack');
+  let surgeTimers=[];
+  if(jackEl)jackEl.addEventListener('click',()=>{
+    const svg=$('boardCable');
+    const nodes=[...board.querySelectorAll('.wsd-pedal'),board.querySelector('.amp')].filter(Boolean);
+    surgeTimers.forEach(clearTimeout);surgeTimers=[];
+    const plugged=jackEl.classList.toggle('plugged');
+    jackEl.setAttribute('aria-pressed',String(plugged));
+    if(!plugged){
+      svg.classList.remove('hot');
+      nodes.forEach(el=>el.classList.remove('surge'));
+      return;
+    }
+    surgeTimers.push(setTimeout(()=>{
+      svg.classList.add('hot');
+      nodes.forEach((el,i)=>surgeTimers.push(setTimeout(()=>el.classList.add('surge'),110*i)));
+    },340)); // after the plug lands
+  });
+  drawCable();
+}
+// Cheap decorative patch cables: a gentle sag between each pedal center in a row.
+function drawCable(){
+  const svg=$('boardCable'); if(!svg)return;
+  if(window.matchMedia&&window.matchMedia('(max-width:640px)').matches){svg.innerHTML='';return;}
+  const board=$('toolboard'); if(!board.querySelector('.chain'))return;
+  const br=board.getBoundingClientRect();
+  let path='';
+  board.querySelectorAll('.chain-row').forEach(row=>{
+    // jack/pedals/amp only — the tape label isn't in the signal path
+    const nodes=Array.from(row.children).filter(el=>!el.classList.contains('row-tape'));
+    for(let i=0;i<nodes.length-1;i++){
+      const a=nodes[i].getBoundingClientRect(), b=nodes[i+1].getBoundingClientRect();
+      if(Math.abs(a.top-b.top)>40)continue; // skip flex-wrap breaks within a row
+      const x1=a.right-br.left, y1=a.top-br.top+a.height/2;
+      const x2=b.left-br.left, y2=b.top-br.top+b.height/2;
+      const mx=(x1+x2)/2, sag=Math.min(22,(x2-x1)*0.4+8);
+      path+=`M${x1.toFixed(1)} ${y1.toFixed(1)} Q${mx.toFixed(1)} ${(Math.max(y1,y2)+sag).toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)} `;
+    }
+  });
+  svg.setAttribute('viewBox',`0 0 ${Math.max(1,br.width)} ${Math.max(1,br.height)}`);
+  svg.innerHTML=path?`<path d="${path}" fill="none" stroke="color-mix(in srgb, hsl(var(--foreground)) 50%, transparent)" stroke-width="3" stroke-linecap="round"/>`:'';
+}
+// View toggle — persisted via Stats.setPref('hub','toolsView'); default 'pedalboard'.
+(function(){
+  const gBtn=$('viewGrid'), pBtn=$('viewPedal'), grid=$('toolgrid'), board=$('toolboard');
+  let built=false;
+  function apply(view){
+    const pedal=view==='pedalboard';
+    if(pedal&&!built){renderBoard();built=true;board.classList.add('board-in');}
+    grid.style.display=pedal?'none':'';
+    board.style.display=pedal?'':'none';
+    gBtn.setAttribute('aria-pressed',String(!pedal));
+    pBtn.setAttribute('aria-pressed',String(pedal));
+    if(pedal)requestAnimationFrame(drawCable);
+  }
+  gBtn.onclick=()=>{Stats.setPref('hub','toolsView','grid');apply('grid');};
+  pBtn.onclick=()=>{Stats.setPref('hub','toolsView','pedalboard');apply('pedalboard');};
+  apply(Stats.getPref('hub','toolsView','pedalboard')==='grid'?'grid':'pedalboard');
+  let rt; window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(board.style.display!=='none')drawCable();},150);});
+})();
+
+
+
+// Current guitar — student/gear.json is canonical; PUT /api/gear on change
+// (localStorage 'gearCurrentGuitar' is only a fallback when the API is unavailable).
+$('gearChip').innerHTML=icon('guitar');
+fetch('../student/gear.json').then(r=>r.ok?r.json():Promise.reject()).then(d=>{
+  const guitars=(d.gear||[]).filter(g=>g.kind==='guitar');
+  const sel=$('curGuitarSel');
+  if(!guitars.length){$('curGuitarName').textContent='No guitars yet';$('curGuitarSpecs').textContent='Add one in the Gear Library.';sel.style.display='none';return;}
+  sel.innerHTML=guitars.map(g=>`<option value="${esc(g.id)}">${esc(g.name||g.model||'Guitar')}</option>`).join('');
+  const cur=d.currentGuitarId||localStorage.getItem('gearCurrentGuitar')||guitars[0].id;
+  function show(id){
+    const g=guitars.find(x=>x.id===id)||guitars[0];
+    sel.value=g.id;
+    $('curGuitarName').textContent=g.name||g.model||'Guitar';
+    const s=g.specs||{};
+    $('curGuitarSpecs').textContent=[(g.brand&&g.model)?`${g.brand} ${g.model}`:(g.brand||g.model||''),s.tuning&&('Tuning: '+s.tuning),s.strings].filter(Boolean).join(' · ');
+    // engraved portrait when we have one — dark mode wears the blueprint-plate variant
+    const chip=$('gearChip');
+    const dark=document.documentElement.classList.contains('dark')?'-dark':'';
+    chip.innerHTML=`<img class="gportrait" src="../assets/guitars/${esc(g.id)}${dark}-thumb.png" alt="">`;
+    const img=chip.querySelector('img');
+    img.onerror=()=>{
+      // dark variant missing → try the light thumb, then the line icon
+      if(dark&&!img.dataset.retried){img.dataset.retried='1';img.src=`../assets/guitars/${esc(g.id)}-thumb.png`;}
+      else chip.innerHTML=icon('guitar');
+    };
+  }
+  show(cur);
+  sel.onchange=()=>{
+    const id=sel.value;
+    const pad=n=>String(n).padStart(2,'0'),now=new Date();
+    const body={updated:now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate()),currentGuitarId:id,gear:d.gear||[]};
+    fetch('/api/gear',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+      .then(r=>r.ok?r.json():Promise.reject())
+      .then(()=>{d.currentGuitarId=id;show(id);})
+      .catch(()=>{localStorage.setItem('gearCurrentGuitar',id);show(id);});
+  };
+}).catch(()=>{
+  const sel=$('curGuitarSel');
+  // Gear file unavailable — show saved current guitar name if we have it
+  const curId=localStorage.getItem('gearCurrentGuitar');
+  if(curId){
+    $('curGuitarName').textContent=curId;
+    $('curGuitarSpecs').textContent='Gear file unavailable — serve locally to see full details.';
+  } else {
+    $('curGuitarName').textContent='Gear loads when served locally';
+    $('curGuitarSpecs').textContent='Open this page through the local server to pick your current guitar.';
+  }
+  sel.style.display='none';
+});
+
+fetch('../student/progress-data.json').then(r=>r.ok?r.json():Promise.reject()).then(d=>{
+  $('phase').textContent=d.currentBlock?.phase||'—';
+  $('target').innerHTML='Target: <b style="color:hsl(var(--foreground));font-weight:500">'+esc(d.currentBlock?.target||'—')+'</b>';
+  const latest=(d.domainRatings&&d.domainRatings.history||[]).slice(-1)[0]||{};
+  $('doms').innerHTML=DOMS_PAIRS.map(([k,n])=>`<div class="domchip"><div class="v tab-num ${latest[k]==null?'empty':''}">${latest[k]==null?'–':latest[k]}</div><div class="k">${n}</div></div>`).join('');
+  $('bars').innerHTML=(d.sourceProgress||[]).map(s=>{const focus=/current focus/.test(s.label);return `<div class="bar"><div class="t"><span>${esc(s.label.replace(' ★ current focus',''))}${focus?' <span class="badge badge-secondary" style="font-size:.6rem;padding:1px 7px;color:hsl(var(--brand-strong))">focus</span>':''}</span><span class="p">${s.pct}%</span></div><div class="progress${focus?' brand':''}"><div style="width:${Math.max(2,Math.min(100,s.pct))}%"></div></div></div>`;}).join('')||'<div class="muted" style="font-size:.85rem">No data yet.</div>';
+  $('synced').innerHTML=d.updated?`Synced from your accounts: <b style="color:hsl(var(--foreground))">${esc(d.updated)}</b> · ask The Instructor to “sync my progress” to refresh`:'';
+}).catch(()=>{
+  $('phase').textContent='Serve locally to load progress';
+  $('target').innerHTML='Run <span class="mono">python -m http.server</span> in the project root, then open <span class="mono">/tools/</span>.';
+  $('bars').innerHTML='<div class="muted" style="font-size:.85rem">Progress loads when served locally.</div>';
+});
+
+// 14-day practice-pattern calendar + "This week" improvements line (law 4: no flame, no streak guilt)
+(function(){
+  const days=Stats.patternDays(14);
+  const todayStr=Stats.today();
+  const hasAny=days.some(d=>d.active);
+  if(!hasAny)return; // nothing to show yet — keep block hidden
+  $('practicePatternBlock').style.display='block';
+  // dot grid
+  $('patGrid').innerHTML=days.map(d=>{
+    const isToday=d.date===todayStr;
+    const cls=['pat-dot',d.active?'active':'',isToday?'today-ring':''].filter(Boolean).join(' ');
+    const label=(d.active?'Practice day ':'No practice ')+(d.date)+(isToday?' — today':'');
+    return `<div class="${cls}" role="img" title="${label}" aria-label="${label}"></div>`;
+  }).join('');
+  // improvements line — max 3 entries, plain sentences
+  const impr=Stats.improvements(7);
+  const weekEl=$('weekImprovements');
+  if(!impr||!impr.length){weekEl.innerHTML='';return;}
+  const shown=impr.slice(0,3);
+  // minutes delta from the improvements array (demoted to muted note)
+  const minsEntry=impr.find(e=>e.kind==='minutes');
+  const nonMins=shown.filter(e=>e.kind!=='minutes');
+  const parts=nonMins.map(e=>{
+    if(e.kind==='confirmations')
+      return `<span class="impr-item"><span class="tab-num">${e.delta}</span> re-test${e.delta===1?'':'s'} confirmed</span>`;
+    if(e.kind==='accuracy')
+      return `<span class="impr-item">${esc(e.label)} <span class="tab-num">${e.delta>0?'+':''}${e.delta}pts</span></span>`;
+    if(e.kind==='cleanTempo')
+      return `<span class="impr-item">${esc(e.label)} <span class="tab-num">${e.delta>0?'+':''}${e.delta} bpm</span></span>`;
+    return `<span class="impr-item">${esc(e.label)}</span>`;
+  });
+  // if all 3 shown slots taken by non-mins and minsEntry exists, put mins as muted note
+  let html='';
+  if(parts.length){
+    html='<div>This week: '+parts.join(' · ')+'</div>';
+  }
+  if(minsEntry&&impr.indexOf(minsEntry)<3){
+    // already in shown — but only emit as muted note, not in main sentence
+  }
+  if(minsEntry){
+    const delta=minsEntry.delta;
+    html+=`<div class="mins-note"><span class="tab-num">${delta>0?'+':''}${delta}</span> min vs prior week</div>`;
+  }
+  weekEl.innerHTML=html;
+})();
+
+// Tomorrow's bench — due review items from Stats.review (pillar 3, BUILD-GOAL C)
+(function(){
+  if(typeof Stats==='undefined'||typeof Stats.review==='undefined')return;
+  // Only show the card if the user has any practice history or any queued reviews
+  const hasHistory=Stats.patternDays(14).some(d=>d.active);
+  const allReviews=(typeof Stats.review.all==='function')?Stats.review.all():[];
+  if(!hasHistory&&!allReviews.length)return;
+  const due=Stats.review.due();
+  // Tool-id → human label + page href (mirrors TOOLS array above)
+  const TOOL_META={
+    'ear-trainer':      {label:'Ear trainer',        href:'ear-trainer.html'},
+    'fretboard-trainer':{label:'Fretboard trainer',  href:'fretboard-trainer.html'},
+    'scale-trainer':    {label:'Scale trainer',      href:'scale-trainer.html'},
+    'triad-trainer':    {label:'Triad trainer',      href:'triad-trainer.html'},
+    'metronome':        {label:'Metronome',          href:'metronome.html'},
+    'target-tone':      {label:'Target-tone trainer',href:'target-tone-trainer.html'},
+    'technique-drills': {label:'Technique drills',   href:'technique-drills.html'},
+  };
+  if(!due||!due.length){
+    $('benchList').innerHTML='<li class="bench-item bench-empty" style="border-top:0;padding-top:0;display:flex;align-items:center;gap:12px"><img src="../assets/stamps/stamp-shed.png" alt="" style="width:44px;height:44px;border-radius:50%;opacity:.85">Nothing due — the bench is clear.</li>';
+  } else {
+    const shown=due.slice(0,5);
+    $('benchList').innerHTML=shown.map(it=>{
+      const meta=TOOL_META[it.tool]||{label:it.tool,href:it.tool+'.html'};
+      const noteHtml=it.note?`<div class="b-note">${esc(it.note)}</div>`:'';
+      const keyHtml=it.key&&it.key!==it.tool?` <span class="muted" style="font-size:.75rem">· ${esc(it.key)}</span>`:'';
+      return `<li class="bench-item">
+        <div style="flex:1;min-width:0"><span>${esc(meta.label)}${keyHtml}</span>${noteHtml}</div>
+        <a class="btn btn-outline btn-xs b-link" href="${esc(meta.href)}">Open</a>
+      </li>`;
+    }).join('');
+    $('benchCnt').textContent=due.length+' due';
+    $('benchCnt').style.display='inline-flex';
+  }
+  $('benchCard').style.display='block';
+})();
+
+// Today's plan lives on the Session page now (jump in via the amp) — the hub only
+// renders it if the markup is present (kept guarded so the JS below is a safe no-op).
+if($('planBody')) fetch('../student/current-plan.json').then(r=>r.ok?r.json():Promise.reject()).then(renderPlan).catch(()=>{
+  if($('planTitle'))$('planTitle').textContent='Plan loads when served locally';
+  if($('planBody'))$('planBody').innerHTML='<div class="muted" style="font-size:.88rem">Open this page through the local server.</div>';
+});
+// ---- session tracking (browser-local; report to the Instructor to make it durable) ----
+const pad2=n=>String(n).padStart(2,'0');
+const isoOf=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+const todayISO=()=>isoOf(new Date());
+const SESS_KEY='guitar-sessions';
+const loadSessions=()=>{try{return JSON.parse(localStorage.getItem(SESS_KEY)||'[]');}catch(e){return[];}};
+const saveSessions=a=>localStorage.setItem(SESS_KEY,JSON.stringify(a));
+function weekStart(d){const x=new Date(d);x.setDate(x.getDate()-x.getDay());x.setHours(0,0,0,0);return x;} // Sunday-first
+function streakLen(sessions){const set=new Set(sessions.map(s=>s.date));let n=0;const d=new Date();while(set.has(isoOf(d))){n++;d.setDate(d.getDate()-1);}return n;}
+
+function renderPlan(p){
+  $('planDate').textContent=p.date?'· plan set '+p.date:'';
+  if(!p.items||!p.items.length||p.status==='pending-intake'){
+    $('planTitle').textContent=p.phase&&p.phase!=='Not started'?p.phase:'No active plan';
+    $('planBody').innerHTML=`<div class="muted" style="font-size:.88rem">${esc(p.message||'No plan yet. Run /instructor.')}</div>`;
+    $('planActions').innerHTML='';
+    return;
+  }
+  $('planActions').innerHTML=`<a class="btn btn-brand btn-sm" href="transcribe.html#record"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg> Record a take</a> <span class="muted" style="font-size:.78rem">opens Transcribe ready to record — then hit <b style="color:hsl(var(--foreground));font-weight:500">Ask the Instructor</b> to debrief it.</span>`;
+  $('planTitle').textContent=p.phase||'Today';
+  const today=todayISO();
+  const key=i=>`plan-${today}-${i}`,total=p.items.length; // per CALENDAR DAY → resets tomorrow
+  $('planCnt').style.display='inline-flex';
+  $('planTheme').innerHTML=`This is your <b style="color:hsl(var(--foreground))">daily routine for the whole block</b> — do it again each day; the boxes reset tomorrow.${p.target?` <b style="color:hsl(var(--foreground))">Block target:</b> ${esc(p.target)}`:''}`;
+  const doneIds=()=>p.items.filter(it=>localStorage.getItem(key(it.id))==='1').map(it=>it.id);
+  const doneMin=ids=>p.items.filter(it=>ids.includes(it.id)).reduce((s,it)=>s+(+it.minutes||0),0);
+
+  function refresh(){
+    const done=doneIds().length;
+    $('planCnt').textContent=`${done}/${total} done · ~${p.totalMinutes||''} min`;
+    $('planBar').style.display='block';$('planBar').firstElementChild.style.width=(done/total*100)+'%';
+    document.querySelectorAll('.pitem').forEach((el,idx)=>el.classList.toggle('done',localStorage.getItem(key(p.items[idx].id))==='1'));
+    renderFoot();
+  }
+
+  function renderFoot(){
+    const sessions=loadSessions();
+    const today2=todayISO();
+    const logged=sessions.find(s=>s.date===today2);
+    const done=doneIds().length;
+    // week strip (Mon–Sun of the current week)
+    const wk=weekStart(new Date()),labels=['S','M','T','W','T','F','S'];
+    let strip='';
+    for(let i=0;i<7;i++){const d=new Date(wk);d.setDate(wk.getDate()+i);const iso=isoOf(d);const on=sessions.some(s=>s.date===iso);const now=iso===today2;strip+=`<div class="wday ${on?'on':''} ${now?'now':''}"><div class="dn">${labels[i]}</div><div class="dd">${d.getDate()}</div></div>`;}
+    const weekCount=sessions.filter(s=>{const sd=new Date(s.date+'T00:00:00');return sd>=wk;}).length;
+    const streak=streakLen(sessions);
+    const controls=logged
+      ? `<span class="logged">✓ Session logged today — ${logged.done}/${logged.total}</span>
+         <button class="btn btn-outline btn-sm" id="copyRep">Debrief with the Instructor</button>
+         <button class="btn btn-ghost btn-xs" id="undoLog">Undo</button>`
+      : `<button class="btn btn-outline btn-sm" id="logSess">Log today's session${done?` (${done}/${total})`:''}</button>
+         <span class="muted" style="font-size:.78rem">marks today done &amp; resets tomorrow</span>`;
+    $('sessFoot').style.display='block';
+    $('sessFoot').innerHTML=`
+      <div class="eyebrow" style="margin-bottom:8px">This week · ${weekCount} session${weekCount===1?'':'s'}${streak>1?` · <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> ${streak}-day streak`:''}</div>
+      <div class="wstrip">${strip}</div>
+      <div class="sessrow">${controls}</div>
+      ${logged?'':`<textarea class="noteln" id="sessNote" rows="2" placeholder="Optional: how did it go? where did it break down? tempos hit… (saved with the session)"></textarea>`}`;
+
+    const lg=$('logSess');
+    if(lg)lg.onclick=()=>{
+      const ids=doneIds();
+      const note=($('sessNote')&&$('sessNote').value.trim())||'';
+      const arr=loadSessions().filter(s=>s.date!==today2);
+      arr.push({date:today2,planDate:p.date,phase:p.phase,done:ids.length,total,minutes:doneMin(ids),items:ids,note});
+      saveSessions(arr);renderFoot();
+    };
+    const ul=$('undoLog');
+    if(ul)ul.onclick=()=>{saveSessions(loadSessions().filter(s=>s.date!==today2));renderFoot();};
+    const cr=$('copyRep');
+    if(cr)cr.onclick=()=>{
+      const s=loadSessions().find(x=>x.date===today2);if(!s)return;
+      const lines=p.items.map(it=>`${s.items.includes(it.id)?'✓':'✗'} ${it.name}`);
+      const rep=`Debrief today's session and log it - — ${s.date}\nPlan: ${p.phase}\nDone: ${s.done}/${s.total} (~${s.minutes} min)\n${lines.join('\n')}\nNote: ${s.note||'—'}`;
+      if(window.WoodshedCoach&&WoodshedCoach.open)WoodshedCoach.open({prefill:rep});
+    };
+  }
+
+  $('planBody').innerHTML=p.items.map(it=>`
+    <div class="pitem">
+      <input type="checkbox" data-k="${esc(key(it.id))}" aria-label="${esc(it.name)}" ${localStorage.getItem(key(it.id))==='1'?'checked':''}>
+      <div style="flex:1;min-width:0">
+        <div class="nm">${esc(it.name)}</div>
+        <div class="meta">${it.domain?`<span class="badge badge-outline">${esc(it.domain)}</span>`:''}${it.minutes?`<span>~${it.minutes} min</span>`:''}${it.success?`<span>· ${esc(it.success)}</span>`:''}</div>
+        ${it.how?`<div class="how">${esc(it.how)}</div>`:''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:stretch">
+        ${it.tool?`<a class="btn btn-outline btn-sm" href="${esc(it.tool)}">Open tool</a>`:''}
+        ${/record|transcrib|capture|baseline/i.test((it.name||'')+' '+(it.how||'')+' '+(it.success||''))&&it.tool!=='transcribe.html'?`<a class="btn btn-ghost btn-xs" href="transcribe.html#record" aria-label="Record"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg> Record</a>`:''}
+      </div>
+    </div>`).join('') + (p.logThis?`<div class="how" style="margin-top:14px;color:hsl(var(--muted-foreground))"><b style="color:hsl(var(--foreground))">Log this:</b> ${esc(p.logThis)}</div>`:'');
+  document.querySelectorAll('.pitem input').forEach(cb=>cb.onchange=()=>{localStorage.setItem(cb.dataset.k,cb.checked?'1':'0');refresh();});
+  refresh();
+  // Prune stale plan-* keys that don't belong to this plan's date+items
+  const validKeys=new Set(p.items.map(it=>key(it.id)));
+  try{
+    const toRemove=[];
+    for(let i=0;i<localStorage.length;i++){const k2=localStorage.key(i);if(k2&&/^plan[-_]/.test(k2)&&!validKeys.has(k2))toRemove.push(k2);}
+    toRemove.forEach(k2=>localStorage.removeItem(k2));
+  }catch(e){}
+}
+</script>
+</body>
+</html>

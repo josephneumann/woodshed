@@ -1,0 +1,341 @@
+/* ============================================================
+   The Woodshed — single source of truth for theme + shared UI.
+   Linked by the home page AND every tool. shadcn "Zinc" tokens
+   (light in :root, dark in .dark). Tool stylesheets use the
+   short aliases (--bg, --panel, --ink, --accent, ...) which
+   derive from the tokens, so they adapt to dark automatically.
+   Tool-specific colors (fretboard dots: --root, --accent2, etc.)
+   stay in each tool's own :root.
+   ============================================================ */
+
+/* Self-hosted variable fonts (public/fonts/, served from the site root).
+   Inter = UI workhorse · Fraunces = display serif for the wordmark + heroes
+   ("analog warmth meets modern discipline"). System stacks as fallback. */
+@font-face{font-family:'Inter Variable';src:url('/fonts/inter-latin-opsz-normal.woff2') format('woff2-variations');font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:'Fraunces Variable';src:url('/fonts/fraunces-latin-opsz-normal.woff2') format('woff2-variations');font-weight:100 900;font-style:normal;font-display:swap}
+
+:root{
+  --font-ui:'Inter Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-display:'Fraunces Variable',Georgia,'Times New Roman',serif;
+  /* warm-paper neutrals (light) — espresso-and-cream, not blue-zinc:
+     the whole app should feel like it lives in the hero photograph */
+  --background:40 30% 98.4%;
+  --foreground:26 14% 9%;
+  --card:40 36% 99.4%;
+  --card-foreground:26 14% 9%;
+  --secondary:38 22% 93.5%;
+  --secondary-foreground:26 12% 14%;
+  --muted-foreground:28 8% 42%;
+  --border:36 14% 87%;
+  --input:36 14% 85%;
+  --ring:38 92% 50%;
+  --primary:26 14% 12%;
+  --primary-foreground:40 30% 98%;
+  --brand:38 92% 50%;
+  --brand-foreground:30 30% 12%;
+  --brand-strong:27 88% 38%;
+  --success:142 71% 45%;
+  --destructive:0 72% 51%;
+  --destructive-foreground:0 0% 98%;
+  --radius:0.65rem;
+  --shadow-sm:0 1px 2px 0 hsl(26 30% 8% / .05);
+  --shadow-md:0 4px 12px -2px hsl(26 30% 8% / .09), 0 2px 4px -2px hsl(26 30% 8% / .05);
+  /* short aliases used by the tool stylesheets (derive from tokens → auto dark) */
+  --bg:hsl(var(--background));
+  --panel:hsl(var(--card));
+  --panel2:hsl(var(--secondary));
+  --ink:hsl(var(--foreground));
+  --muted:hsl(var(--muted-foreground));
+  --line:hsl(var(--border));
+  --accent:hsl(var(--brand));
+  --good:#5ec07a;
+  --bad:#e0655e;
+}
+.dark{
+  /* espresso charcoal — warm dark, tube-amp glow, matches the hero imagery */
+  --background:26 12% 5.2%;
+  --foreground:40 24% 96%;
+  --card:26 11% 8.2%;
+  --card-foreground:40 24% 96%;
+  --secondary:27 9% 14.5%;
+  --secondary-foreground:40 20% 96%;
+  --muted-foreground:32 9% 64%;
+  --border:27 9% 15.5%;
+  --input:27 9% 18%;
+  --ring:38 92% 50%;
+  --primary:40 24% 96%;
+  --primary-foreground:26 12% 9%;
+  --brand:38 92% 52%;
+  --brand-strong:40 96% 64%;
+  --shadow-sm:0 1px 2px 0 hsl(20 40% 1% / .5);
+  --shadow-md:0 6px 16px -4px hsl(20 40% 1% / .55), 0 2px 6px -2px hsl(20 40% 1% / .45);
+}
+
+/* shared card styling (matches the home page) */
+.panel,.card{border-radius:10px!important;box-shadow:var(--shadow-sm)}
+
+/* page titles everywhere pick up the display serif (tools' inline h1 rules
+   set size/weight but not family, so this cascades cleanly) */
+h1{font-family:var(--font-display);letter-spacing:.005em}
+
+/* ---- signature: the fret line ----
+   Our divider — a hairline "string" with amber side-marker dots (frets 3·5·7).
+   Use once or twice per page between major sections; never stacked. */
+.fretline{height:7px;border:0;margin:26px 0;padding:0;background:
+  radial-gradient(circle 2.2px at 16% 50%, hsl(var(--brand)/.6) 97%, transparent),
+  radial-gradient(circle 2.2px at 50% 50%, hsl(var(--brand)/.6) 97%, transparent),
+  radial-gradient(circle 2.2px at 84% 50%, hsl(var(--brand)/.6) 97%, transparent),
+  linear-gradient(90deg,transparent,hsl(var(--border)) 8%,hsl(var(--border)) 92%,transparent) center/100% 1px no-repeat}
+
+/* ---- signature: the masthead ----
+   Every tool page opens the same way: kicker · Fraunces title · one-line sub. */
+.masthead{margin:2px 0 6px}
+.masthead .kicker{font-family:var(--font-ui);font-size:.68rem;font-weight:650;letter-spacing:.15em;text-transform:uppercase;color:hsl(var(--brand-strong));display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.masthead .kicker::after{content:"";flex:0 0 34px;height:1px;background:hsl(var(--brand)/.4)}
+.masthead h1{font-size:1.9rem;font-weight:580;margin:0 0 5px;line-height:1.15}
+.masthead .sub{color:var(--muted);font-size:.92rem;line-height:1.55;max-width:660px;margin:0}
+/* the masthead motif: a borderless spot illustration that MELTS into the page.
+   Light: sepia line art on pure white, multiplied onto the cream (white vanishes).
+   Dark: header.js swaps in the -dark file (ivory on pure black) and it screens
+   onto the espresso (black vanishes). A radial mask feathers the square edge away
+   so it reads as drawn ON the page, not pinned to it. */
+/* compact: the art carries big internal margins, so the element stays small and
+   pulls up into the masthead's own whitespace instead of adding any */
+.masthead-plate{float:right;width:clamp(88px,11vw,126px);height:auto;margin:-22px -14px -8px 8px;
+  mix-blend-mode:multiply;opacity:.9;filter:brightness(1.05);
+  -webkit-mask-image:radial-gradient(ellipse 60% 60% at 50% 50%,#000 55%,transparent 90%);
+  mask-image:radial-gradient(ellipse 60% 60% at 50% 50%,#000 55%,transparent 90%)}
+.dark .masthead-plate{mix-blend-mode:screen;opacity:.95;filter:none}
+@media(max-width:640px){.masthead-plate{display:none}}
+.fretline{clear:both}
+
+/* ---- numerals: amp-faceplate discipline ----
+   Big display numbers (BPM dial, stat panels) wear the serif; small inline
+   stats stay Inter with lining tabular figures so columns never jiggle. */
+.display-num{font-family:var(--font-display);font-weight:560;font-variant-numeric:lining-nums}
+.tab-num{font-variant-numeric:tabular-nums}
+
+/* ---- global finish: selection, focus, scrollbars, motion ---- */
+::selection{background:hsl(var(--brand)/.28)}
+:focus-visible{outline:2px solid hsl(var(--ring));outline-offset:2px}
+/* native form controls wear the brand amber, not the browser default blue */
+input[type=checkbox],input[type=radio],input[type=range],progress{accent-color:hsl(var(--brand))}
+button,a,input,select{transition:border-color .15s ease,background-color .15s ease,color .15s ease,box-shadow .15s ease}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+.dark{color-scheme:dark}
+
+/* ---- STAGE MODE (header lamp toggle; always rides on dark) ----
+   For practicing at night at music-stand distance: deeper blacks, artwork dimmed
+   to embers, type bumped ~12% (rem-based sizes scale), motion stilled. */
+.stage{font-size:112.5%}
+.stage.dark body{background:hsl(26 15% 3.5%)}
+.stage .masthead-plate,.stage .hero-banner,.stage .gthumb,.stage .gportrait{filter:brightness(.45) saturate(.8)}
+.stage .masthead-plate:hover,.stage .hero-banner:hover{filter:brightness(.85) saturate(.95);transition:filter .3s ease}
+.stage *{animation-duration:.01ms!important}
+.stage .site-header .name small{color:hsl(38 60% 45%)}
+*{scrollbar-width:thin;scrollbar-color:hsl(var(--border)) transparent}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:hsl(var(--border));border-radius:5px}
+::-webkit-scrollbar-thumb:hover{background:hsl(var(--muted-foreground)/.5)}
+::-webkit-scrollbar-track{background:transparent}
+
+/* brand mark (home logo + tool header chip): the pick — see BRAND.md */
+.logo{width:32px;height:32px;border-radius:8px;background:#1c1a16 url("../assets/pick-mark.svg") center/72% no-repeat;border:1px solid hsl(var(--border));flex-shrink:0}
+
+/* shared site header (injected by header.js — identical on home + every tool) */
+.site-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.site-header .hdr-left{display:flex;align-items:center;gap:14px}
+/* back: a quiet ghost chevron with real breathing room — no box crowding the brand */
+.hdr-back{width:30px;height:30px;border-radius:8px;border:none;background:none;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;text-decoration:none;flex:none;transition:.15s;margin-left:-6px}
+.hdr-back:hover{background:var(--panel2);color:hsl(var(--brand-strong))}
+.hdr-back svg{transition:transform .15s ease}
+.hdr-back:hover svg{transform:translateX(-2px)}
+.site-header .brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--ink)}
+.site-header .brand .name{font-family:var(--font-display);font-weight:600;letter-spacing:.005em;font-size:1.06rem;line-height:1.14}
+.site-header .brand .name small{display:block;font-size:.66rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.site-header .hdr-actions{display:flex;align-items:center;gap:10px}
+.hdr-toggle{width:36px;height:36px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.15s;flex:none;padding:0}
+/* collapsed panel (header.js data-collapse panel mode): only the header stays */
+.panel.sec-collapsed>*:not([data-collapse]){display:none!important}
+.panel.sec-collapsed{padding-bottom:14px}
+
+/* the global mic-input picker (injected by mic.js on pages that listen) */
+.hdr-mic{height:36px;max-width:190px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:13px;padding:0 8px;cursor:pointer}
+.hdr-mic:hover{border-color:hsl(var(--brand)/.5)}
+
+/* phones: the actions cluster (mic + voice picker + mute + lamp + theme) outgrows the
+   row — compact the controls and let the header wrap rather than push the page wide */
+@media(max-width:520px){
+  .site-header{flex-wrap:wrap;row-gap:8px}
+  .site-header .hdr-actions{gap:6px}
+  .hdr-toggle{width:32px;height:32px}
+  #voicePick{max-width:92px;font-size:12px}
+  .hdr-mic{max-width:120px;font-size:12px}
+}
+.hdr-toggle:hover{border-color:var(--accent)}
+
+/* keep small UI icons immune to each tool's global fretboard svg{min-width;width:100%} rule */
+.hdr-toggle svg,.hdr-back svg{min-width:0;max-width:none;flex:none;display:block;width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+/* Mobile header: prevent brand name from wrapping to 3 lines */
+@media(max-width:480px){
+  .site-header .brand .name{font-size:.82rem}
+  .site-header .brand .name small{display:none}
+}
+
+/* ============================================================
+   ---- pedal component ----
+   A shared, physical stompbox rendered from a fixed markup contract
+   (see SHARED PEDAL COMPONENT CONTRACT). Consumers write the markup;
+   theme.css owns every pixel of the finish so pedals look identical
+   in the hub board AND in Tone Studio (which renders bigger via --pedal-w).
+
+   MARKUP:
+     <div class="wsd-pedal fam-drive" role="…">
+       <div class="wsd-pedal-knobs"> …1-3 <svg class="wsd-knob-mini"/> </div>
+       <span class="wsd-pedal-led"></span>
+       <div class="wsd-pedal-face"> icon or content </div>
+       <div class="wsd-pedal-label">Name</div>
+       <span class="wsd-pedal-switch"></span>
+     </div>
+
+   REALISM CUES (sanctioned texture deviation — pedals are physical objects):
+     · enamel body = subtle vertical tint gradient over the panel base + inset
+       top highlight
+     · four corner screws (two layered radial-gradient dots)
+     · footswitch = concentric metal button near the bottom (the #1 'real' cue)
+     · LED = small glossy dome in the family color
+     · label = cream plate, dark ink, Fraunces, slightly inset
+   Every size scales off --pedal-w (default 120px). Family tints below set
+   --pedal-tint (enamel) and --pedal-led (jewel + switch accent).
+   ============================================================ */
+.wsd-pedal{
+  --pedal-w:120px;
+  --pedal-tint:#3a3f45;      /* default → graphite */
+  --pedal-led:#9aa7b5;
+  position:relative;
+  flex:none;
+  width:var(--pedal-w);
+  min-height:calc(var(--pedal-w) * 1.34);
+  display:flex;flex-direction:column;align-items:center;
+  padding:calc(var(--pedal-w) * .10) calc(var(--pedal-w) * .085) calc(var(--pedal-w) * .30);
+  border-radius:calc(var(--pedal-w) * .085);
+  text-decoration:none;color:var(--ink);
+  /* enamel: vertical tint gradient over the panel base + top inset highlight;
+     four corner screws layered as radial dots on top of the enamel fill */
+  background:
+    radial-gradient(circle at 12% 11%, rgba(0,0,0,.42) 34%, transparent 38%),
+    radial-gradient(circle at 88% 11%, rgba(0,0,0,.42) 34%, transparent 38%),
+    radial-gradient(circle at 12% 89%, rgba(0,0,0,.42) 34%, transparent 38%),
+    radial-gradient(circle at 88% 89%, rgba(0,0,0,.42) 34%, transparent 38%),
+    radial-gradient(circle at 12% 11%, rgba(255,255,255,.14) 20%, transparent 30%),
+    radial-gradient(circle at 88% 11%, rgba(255,255,255,.14) 20%, transparent 30%),
+    radial-gradient(circle at 12% 89%, rgba(255,255,255,.14) 20%, transparent 30%),
+    radial-gradient(circle at 88% 89%, rgba(255,255,255,.14) 20%, transparent 30%),
+    linear-gradient(180deg,
+      color-mix(in srgb,var(--pedal-tint) 78%,#fff 6%) 0%,
+      color-mix(in srgb,var(--pedal-tint) 92%,var(--panel) 30%) 46%,
+      color-mix(in srgb,var(--pedal-tint) 88%,#000 14%) 100%),
+    var(--panel);
+  background-size:9px 9px,9px 9px,9px 9px,9px 9px, 9px 9px,9px 9px,9px 9px,9px 9px, 100% 100%,100% 100%;
+  background-position:8px 8px,calc(100% - 8px) 8px,8px calc(100% - 8px),calc(100% - 8px) calc(100% - 8px), 8px 8px,calc(100% - 8px) 8px,8px calc(100% - 8px),calc(100% - 8px) calc(100% - 8px), 0 0,0 0;
+  background-repeat:no-repeat;
+  border:1px solid rgba(0,0,0,.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    inset 0 -10px 22px -12px rgba(0,0,0,.6),
+    var(--shadow-md);
+  transition:transform .18s ease-out,box-shadow .18s ease-out,border-color .18s ease-out;
+}
+/* knob row (1-3 mini pots) */
+.wsd-pedal-knobs{display:flex;gap:calc(var(--pedal-w) * .12);margin-bottom:calc(var(--pedal-w) * .03)}
+.wsd-knob-mini{width:calc(var(--pedal-w) * .14);height:calc(var(--pedal-w) * .14);flex:none;color:rgba(255,255,255,.72);filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+.wsd-knob-mini circle,.wsd-knob-mini path,.wsd-knob-mini line{stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round}
+/* LED — small glossy dome in the family color */
+.wsd-pedal-led{
+  width:calc(var(--pedal-w) * .075);height:calc(var(--pedal-w) * .075);
+  border-radius:50%;margin:calc(var(--pedal-w) * .04) 0 calc(var(--pedal-w) * .035);
+  background:radial-gradient(circle at 35% 30%, #fff 0 8%, var(--pedal-led) 60%, color-mix(in srgb,var(--pedal-led) 55%,#000) 100%);
+  box-shadow:0 0 6px 0 var(--pedal-led),inset 0 0 2px rgba(0,0,0,.35);
+  transition:box-shadow .18s ease-out;
+}
+/* face — icon or free content, centered */
+.wsd-pedal-face{flex:1;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.94);text-shadow:0 1px 2px rgba(0,0,0,.45);min-height:calc(var(--pedal-w) * .22)}
+.wsd-pedal-face svg{width:calc(var(--pedal-w) * .24);height:calc(var(--pedal-w) * .24);min-width:0;max-width:none;flex:none}
+/* label — cream enamel plate, dark ink, Fraunces, slightly inset */
+.wsd-pedal-label{
+  align-self:stretch;margin:calc(var(--pedal-w) * .05) calc(var(--pedal-w) * -.02) 0;
+  background:linear-gradient(180deg,#f3ead6,#efe6d2);color:#2b2016;
+  font-family:var(--font-display);font-size:calc(var(--pedal-w) * .10);line-height:1.15;font-weight:560;
+  text-align:center;border-radius:calc(var(--pedal-w) * .04);
+  padding:calc(var(--pedal-w) * .05) calc(var(--pedal-w) * .04);
+  border:1px solid rgba(0,0,0,.28);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.28),inset 0 -1px 0 rgba(255,255,255,.5);
+}
+/* footswitch — concentric metal button near the bottom (the #1 'real pedal' cue) */
+.wsd-pedal-switch{
+  position:absolute;left:50%;bottom:calc(var(--pedal-w) * .075);transform:translateX(-50%);
+  width:calc(var(--pedal-w) * .19);height:calc(var(--pedal-w) * .19);border-radius:50%;
+  background:
+    radial-gradient(circle at 50% 38%, #e8ebee 0 26%, #b7bdc4 42%, #7d838a 62%, #4a4e54 100%);
+  box-shadow:
+    0 0 0 calc(var(--pedal-w) * .022) #2c2f33,
+    0 0 0 calc(var(--pedal-w) * .032) rgba(255,255,255,.08),
+    inset 0 1px 1px rgba(255,255,255,.7),
+    inset 0 -2px 3px rgba(0,0,0,.55),
+    0 2px 3px rgba(0,0,0,.5);
+}
+/* hover: -2px lift + LED brightens (180ms ease-out, per motion spec) */
+.wsd-pedal:hover{transform:translateY(-2px);border-color:rgba(0,0,0,.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),inset 0 -10px 22px -12px rgba(0,0,0,.6),var(--shadow-md)}
+.wsd-pedal:hover .wsd-pedal-led{box-shadow:0 0 12px 1px var(--pedal-led),inset 0 0 2px rgba(0,0,0,.35)}
+/* light mode: same tints, body gradient over --card, stronger border */
+:root:not(.dark) .wsd-pedal{
+  background:
+    radial-gradient(circle at 12% 11%, rgba(0,0,0,.32) 34%, transparent 38%),
+    radial-gradient(circle at 88% 11%, rgba(0,0,0,.32) 34%, transparent 38%),
+    radial-gradient(circle at 12% 89%, rgba(0,0,0,.32) 34%, transparent 38%),
+    radial-gradient(circle at 88% 89%, rgba(0,0,0,.32) 34%, transparent 38%),
+    radial-gradient(circle at 12% 11%, rgba(255,255,255,.22) 20%, transparent 30%),
+    radial-gradient(circle at 88% 11%, rgba(255,255,255,.22) 20%, transparent 30%),
+    radial-gradient(circle at 12% 89%, rgba(255,255,255,.22) 20%, transparent 30%),
+    radial-gradient(circle at 88% 89%, rgba(255,255,255,.22) 20%, transparent 30%),
+    linear-gradient(180deg,
+      color-mix(in srgb,var(--pedal-tint) 70%,#fff 10%) 0%,
+      color-mix(in srgb,var(--pedal-tint) 82%,var(--panel) 40%) 46%,
+      color-mix(in srgb,var(--pedal-tint) 84%,#000 8%) 100%),
+    var(--panel);
+  background-size:9px 9px,9px 9px,9px 9px,9px 9px, 9px 9px,9px 9px,9px 9px,9px 9px, 100% 100%,100% 100%;
+  background-position:8px 8px,calc(100% - 8px) 8px,8px calc(100% - 8px),calc(100% - 8px) calc(100% - 8px), 8px 8px,calc(100% - 8px) 8px,8px calc(100% - 8px),calc(100% - 8px) calc(100% - 8px), 0 0,0 0;
+  background-repeat:no-repeat;
+  border-color:rgba(0,0,0,.32);
+}
+
+/* family enamel tints — each sets --pedal-tint (body) and --pedal-led (jewel).
+   Desaturated, woodshed-compatible. Nine effect families + six hub domains. */
+.wsd-pedal.fam-tuner {--pedal-tint:#3a3f45;--pedal-led:#9aa7b5}
+.wsd-pedal.fam-comp  {--pedal-tint:#35473a;--pedal-led:#54b06e}
+.wsd-pedal.fam-drive {--pedal-tint:#4d3a1e;--pedal-led:#f0a11e}
+.wsd-pedal.fam-fuzz  {--pedal-tint:#4a2c26;--pedal-led:#e0655e}
+.wsd-pedal.fam-mod   {--pedal-tint:#3c3347;--pedal-led:#b48ead}
+.wsd-pedal.fam-delay {--pedal-tint:#2f3b4a;--pedal-led:#7e95b3}
+.wsd-pedal.fam-reverb{--pedal-tint:#2a4344;--pedal-led:#4fb3a5}
+.wsd-pedal.fam-eq    {--pedal-tint:#47412f;--pedal-led:#d8c27a}
+.wsd-pedal.fam-gate  {--pedal-tint:#33322f;--pedal-led:#8a8578}
+/* hub domains */
+.wsd-pedal.fam-ear   {--pedal-tint:#2a4344;--pedal-led:#34b88a}
+.wsd-pedal.fam-fret  {--pedal-tint:#2f3b4a;--pedal-led:#7e95b3}
+.wsd-pedal.fam-tech  {--pedal-tint:#4d3a1e;--pedal-led:#f0a11e}
+.wsd-pedal.fam-time  {--pedal-tint:#4a2c26;--pedal-led:#e0655e}
+.wsd-pedal.fam-improv{--pedal-tint:#3c3347;--pedal-led:#b48ead}
+.wsd-pedal.fam-ref   {--pedal-tint:#3a3f45;--pedal-led:#9aa7b5}
+
+/* ---- grain: a faint film for marquee surfaces ----
+   Inline feTurbulence SVG data-uri painted at ~2.5% opacity through a ::after
+   overlay (pointer-events:none) so it never intercepts clicks. */
+.grain{position:relative}
+.grain::after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:1;border-radius:inherit;
+  opacity:.025;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:140px 140px;
+}

@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="theory.js"></script>
+<script src="stats.js"></script>
+<script src="header.js" defer></script>
+<title>Progress Dashboard · The Woodshed</title>
+<style>
+  :root{--accent2:#7e95b3}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);padding:24px;display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+  .wrap{width:100%;max-width:900px}
+  a.back{color:var(--muted);text-decoration:none;font-size:14px}a.back:hover{color:var(--ink)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(360px,100%),1fr));gap:16px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .panel.wide{grid-column:1/-1}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 14px}
+  .ph2{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .ph2 h2{margin-bottom:0}
+  .phase{font-size:19px;font-weight:700}
+  .target{color:var(--muted);font-size:14px;margin-top:4px}
+  .target b{color:var(--accent)}
+  .bar{margin-bottom:12px}
+  .bar .top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+  .bar .top .d{color:var(--muted);font-size:12px}
+  .track{height:10px;background:var(--panel2);border-radius:5px;overflow:hidden}
+  .fill{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--accent2),var(--accent));width:0;transition:width 450ms ease-out}
+  .domains{display:flex;gap:12px;flex-wrap:wrap}
+  .dom{flex:1;min-width:90px;text-align:center;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 6px}
+  .dom .v{font-size:24px;font-weight:700}
+  .dom .v.empty{color:var(--muted);font-size:18px}
+  .dom .k{font-size:11px;color:var(--muted);margin-top:2px}
+  .rep{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .rep:last-child{border:none}
+  .stage{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid var(--line);color:var(--accent2)}
+  .empty-note{color:var(--muted);font-size:13px;line-height:1.5}
+  .file{margin-top:10px}
+  .file button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer}
+  .file button:hover{border-color:var(--accent)}
+  .meta{font-size:12px;color:var(--muted);margin-top:6px}
+  /* sessions timeline: one row per sitting, expandable */
+  .sess-row{border-bottom:1px solid var(--line)}
+  .sr-line{display:flex;align-items:baseline;gap:14px;width:100%;background:none;border:0;padding:10px 2px;font:inherit;color:inherit;cursor:pointer;text-align:left}
+  .sr-line:hover .sr-date{color:var(--accent)}
+  .sr-date{font-size:13.5px;font-weight:600;min-width:86px}
+  .sr-time{font-size:12px;color:var(--muted);min-width:56px}
+  .sr-min{font-size:12.5px;min-width:52px}
+  .sr-steps{font-size:12px;color:var(--muted)}
+  .sr-src{font-size:10px;letter-spacing:.07em;text-transform:uppercase;border:1px solid var(--line);border-radius:9px;padding:1px 8px;color:var(--muted)}
+  .sr-grade{font-size:12px;color:var(--accent);font-weight:600}
+  .sr-chev{margin-left:auto;color:var(--muted);font-size:11px}
+  .sr-detail{padding:2px 2px 12px 100px;font-size:13px}
+  .sd-steps{list-style:none;margin:0 0 6px;padding:0;line-height:1.8}
+  .sd-steps .no{color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--muted) 45%,transparent)}
+  .sd-steps i{color:var(--muted);font-style:normal;font-size:11px}
+  .sd-chips{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 6px}
+  .sd-chip{font-size:11px;border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);color:var(--accent);border-radius:9px;padding:1px 8px}
+  .sd-note{color:var(--muted);border-left:2px solid color-mix(in srgb,var(--accent) 45%,transparent);padding-left:9px;margin:4px 0}
+  .sd-phase{font-size:11px;color:var(--muted);margin:4px 0}
+  .sd-open{font-size:12px;color:var(--accent);text-decoration:none}
+  .sd-open:hover{text-decoration:underline}
+  @media(max-width:640px){.sr-detail{padding-left:2px}.sr-time{display:none}}
+  .err{color:var(--bad);font-size:13px}
+  /* activity panel */
+  .act-chart{overflow-x:auto}
+  .act-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+  .act-table th{text-align:left;color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.4px;padding:4px 6px;border-bottom:1px solid var(--line)}
+  .act-table td{padding:6px 6px;border-bottom:1px solid var(--line)}
+  .act-table tr:last-child td{border-bottom:none}
+  .act-table td:not(:first-child){text-align:right;color:var(--muted)}
+  .act-table td:first-child{color:var(--ink)}
+  .weak-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .badge{font-size:12px;padding:3px 10px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);color:var(--muted)}
+  .badge b{color:var(--ink)}
+  .copy-btn{font-size:12px;padding:4px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;white-space:nowrap}
+  .copy-btn:hover{border-color:var(--accent)}
+  .copy-btn.ok{color:var(--accent);border-color:var(--accent)}
+  .src-badge{font-size:10px;padding:2px 6px;border-radius:10px;border:1px solid var(--line);color:var(--muted);margin-left:6px;vertical-align:middle}
+  /* empty-state onboarding */
+  .onboard{display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px 16px 8px}
+  .onboard-copy{color:var(--muted);font-size:13px;text-align:center}
+  .onboard-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .cta-btn{font-size:13px;padding:8px 18px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+  .cta-btn:hover{border-color:var(--accent);color:var(--accent)}
+  /* svg icon helper */
+  svg.li{display:inline-block;width:1em;height:1em;min-width:0;max-width:none;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em;flex:none}
+  /* chart bar animation */
+  @keyframes bar-rise{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+  .chart-bar{transform-origin:bottom;animation:bar-rise 450ms ease-out both}
+  /* --- This week at the bench --- */
+  .improvements{list-style:none;margin:0 0 4px;padding:0}
+  .imp-row{display:flex;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .imp-row:last-child{border-bottom:none}
+  .imp-delta{font-size:26px;line-height:1;min-width:56px;text-align:right;color:var(--ink)}
+  .imp-delta.down{color:var(--muted)}
+  .imp-label{font-size:14px;color:var(--ink)}
+  .imp-empty{color:var(--muted);font-size:13px;line-height:1.5;padding:6px 0}
+  /* instrument row */
+  .instruments{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+  .gauge{flex:1;min-width:150px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 10px 10px;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .gauge svg{display:block;width:100%;max-width:170px;height:auto;min-width:0}
+  .gauge .g-cap{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center}
+  /* weekly briefing card */
+  #briefing-panel{margin-bottom:16px}
+  .brief-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .brief-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px}
+  .brief-head h2{margin-bottom:0}
+  .brief-date{font-size:12px;color:var(--muted)}
+  .brief-body{font-size:14px;line-height:1.6;color:var(--ink)}
+  .brief-body .bh1{font-size:18px;font-weight:700;margin:0 0 8px}
+  .brief-body h2{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:14px 0 6px}
+  .brief-body h3{font-size:14px;font-weight:600;margin:12px 0 4px}
+  .brief-body ul{margin:6px 0;padding-left:20px}
+  .brief-body li{margin:4px 0}
+  .brief-body p{margin:6px 0}
+  .brief-body a{color:var(--accent);text-decoration:none}
+  .brief-body a:hover{text-decoration:underline}
+  .brief-body em{color:var(--muted)}
+  .brief-empty{color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:12px}
+  .brief-btn{font-size:13px;padding:8px 16px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .brief-btn:hover{border-color:var(--accent);color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead"><img class="masthead-plate" src="../assets/plates/plate-progress.png" alt="">
+    <div class="kicker">The Woodshed · Progress</div>
+    <h1>Progress Dashboard</h1>
+    <p class="sub">Your practice numbers and skill ratings at a glance.</p>
+  </div>
+  <hr class="fretline">
+
+  <div id="briefing-panel"></div>
+  <div id="content"></div>
+  <div id="stats-panel"></div>
+
+  <div class="panel" style="margin-top:16px">
+    <div class="meta" id="meta"></div>
+    <div class="file" id="filefallback" style="display:none">
+      <div class="err">Couldn't auto-load the data file (this happens when you open the page directly via file://). Load it manually:</div>
+      <input type="file" id="fileinput" accept="application/json" style="display:none">
+      <button onclick="document.getElementById('fileinput').click()">Load progress-data.json</button>
+    </div>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+// DOMAINS is provided by stats.js as a global const — use it directly.
+
+function esc(s){return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+/* ---- count-up animation ---- */
+function countUp(el, target, duration){
+  if(!el||isNaN(target)||target===0)return;
+  const start=performance.now();
+  function step(now){
+    const t=Math.min(1,(now-start)/duration);
+    // ease-out cubic
+    const eased=1-(1-t)*(1-t)*(1-t);
+    el.textContent=Math.round(eased*target);
+    if(t<1)requestAnimationFrame(step);
+    else el.textContent=target;
+  }
+  el.textContent='0';
+  requestAnimationFrame(step);
+}
+
+/* ---- animate fill bars (CSS width) ---- */
+function animateFills(){
+  const fills=document.querySelectorAll('.fill[data-pct]');
+  fills.forEach((el,i)=>{
+    const pct=parseFloat(el.dataset.pct)||0;
+    el.style.transitionDelay=(i*40)+'ms';
+    // trigger reflow so width:0 is painted before transition fires
+    el.getBoundingClientRect();
+    el.style.width=Math.max(2,Math.min(100,pct))+'%';
+  });
+}
+
+/* ---- sparkline for domain history ---- */
+function sparkline(history,domainKey){
+  if(!history||history.length<2)return '';
+  const vals=history.map(h=>h[domainKey]).filter(v=>v!=null);
+  if(vals.length<2)return '';
+  const mn=Math.min(...vals), mx=Math.max(...vals);
+  const range=mx-mn||1;
+  const W=60,H=24,pad=2;
+  const pts=vals.map((v,i)=>{
+    const x=pad+(i/(vals.length-1))*(W-pad*2);
+    const y=H-pad-(v-mn)/(range)*(H-pad*2);
+    return x.toFixed(1)+','+y.toFixed(1);
+  }).join(' ');
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="vertical-align:middle;margin-left:8px"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+
+/* ---- 14-day activity bar chart ---- */
+function buildActivityChart(){
+  const days=Stats.recentDays(14);
+  const tools=['ear-trainer','fretboard-trainer','triad-trainer','scale-trainer',
+                'metronome','technique-drills','target-tone','circle-of-fifths','transcribe','tone','identity'];
+  const counts=days.map(({date,data})=>{
+    let total=0;
+    tools.forEach(t=>{ const r=data[t]; if(r)total+=(r.answered||0)+(r.events||0); });
+    return {date,total};
+  });
+  const maxC=Math.max(1,...counts.map(c=>c.total));
+  const todayStr=Stats.today();
+  const W=700,H=80,barW=32,gap=10,padL=4;
+  const totalW=counts.length*(barW+gap)-gap;
+  const offsetX=(W-totalW)/2;
+
+  const bars=counts.map(({date,total},i)=>{
+    const isToday=date===todayStr;
+    const bh=Math.max(total>0?4:0,Math.round((total/maxC)*(H-30)));
+    const x=offsetX+i*(barW+gap);
+    const y=H-16-bh;
+    const col=isToday?'var(--accent)':'var(--accent2)';
+    const opacity=total===0?0.25:1;
+    const dayLabel=date.slice(5); // MM-DD
+    const label=total>0?`<text x="${x+barW/2}" y="${Math.max(10,y-4)}" text-anchor="middle" font-size="10" fill="var(--ink)" opacity="0.75" class="tab-num">${total}</text>`:'';
+    const delay=(i*40)+'ms';
+    // whole column is a click target → that day's sessions in the timeline below
+    return `<g data-date="${date}" style="cursor:pointer"><title>${date} — see sessions</title>
+<rect x="${x-gap/2}" y="0" width="${barW+gap}" height="${H}" fill="transparent"/>
+<rect class="chart-bar" x="${x}" y="${y}" width="${barW}" height="${bh}" rx="3" fill="${col}" opacity="${opacity}" style="animation-delay:${delay}"/>
+${label}
+<text x="${x+barW/2}" y="${H-2}" text-anchor="middle" font-size="9" fill="var(--muted)">${dayLabel}</text></g>`;
+  }).join('\n');
+
+  return `<div class="act-chart"><svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:420px;display:block">${bars}</svg></div>`;
+}
+
+/* ---- minutes practiced today (from Stats.totals over 1 day) ---- */
+function minutesToday(){
+  const days=Stats.recentDays(1)[0]; if(!days)return 0;
+  let m=0; for(const tool in days.data){ const r=days.data[tool];
+    if(r&&r.firstTs&&r.lastTs) m+=Math.max(1,Math.round((r.lastTs-r.firstTs)/60000)); }
+  return m;
+}
+
+/* ---- 7-day all-tool accuracy (answered/correct across every tool) ---- */
+function weekAccuracy(){
+  let a=0,c=0;
+  Stats.recentDays(7).forEach(({data})=>{ for(const tool in data){ const r=data[tool];
+    if(r){ a+=r.answered||0; c+=r.correct||0; } } });
+  return a>0?{pct:Math.round(c/a*100),answered:a}:{pct:null,answered:0};
+}
+
+/* ---- instrument: VU-style arc meter (minutes today, 0–60, amber needle) ----
+   The one amber moment on this screen: the needle glows amber. */
+function buildVUMeter(minutes){
+  const W=170,H=104,cx=85,cy=90,r=66;
+  // sweep from 150° (left) to 30° (right) => 240°? Keep a classic VU arc: 180°→0°.
+  const a0=Math.PI, a1=0; // left to right, top arc
+  const val=Math.max(0,Math.min(60,minutes));
+  const t=val/60;
+  const pol=(ang)=>[cx+r*Math.cos(ang),cy-r*Math.sin(ang)];
+  // top semicircle: from left (π) to right (0) over the top → SVG sweep-flag 0
+  const arc=(from,to,col,w)=>{ const [x0,y0]=pol(from),[x1,y1]=pol(to);
+    const large=Math.abs(to-from)>Math.PI?1:0;
+    return `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)} A${r} ${r} 0 ${large} 0 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`; };
+  // tick marks at 0,15,30,45,60
+  let ticks='';
+  for(let i=0;i<=4;i++){ const ang=a0-(i/4)*Math.PI; const [ix,iy]=pol(ang);
+    const [ox,oy]=[cx+(r+6)*Math.cos(ang),cy-(r+6)*Math.sin(ang)];
+    ticks+=`<line x1="${ix.toFixed(1)}" y1="${iy.toFixed(1)}" x2="${ox.toFixed(1)}" y2="${oy.toFixed(1)}" stroke="var(--muted)" stroke-width="1.4"/>`; }
+  const nAng=a0-t*Math.PI;
+  const [nx,ny]=[cx+(r-6)*Math.cos(nAng),cy-(r-6)*Math.sin(nAng)];
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${val} minutes practiced today">
+${arc(a0,a1,'var(--line)',6)}
+${ticks}
+<line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="hsl(var(--brand))" stroke-width="2.6" stroke-linecap="round"/>
+<circle cx="${cx}" cy="${cy}" r="4" fill="hsl(var(--brand))"/>
+<text x="${cx}" y="${cy-16}" text-anchor="middle" class="display-num" font-size="22" fill="var(--ink)">${val}</text>
+</svg>`;
+}
+
+/* ---- instrument: accuracy dial (arc + needle, INK-colored, quiet) ---- */
+function buildAccuracyDial(pct){
+  const W=170,H=104,cx=85,cy=90,r=66;
+  const a0=Math.PI,a1=0;
+  const has=pct!=null;
+  const val=has?Math.max(0,Math.min(100,pct)):0;
+  const t=val/100;
+  const pol=(ang)=>[cx+r*Math.cos(ang),cy-r*Math.sin(ang)];
+  // top semicircle: from left (π) to right (0) over the top → SVG sweep-flag 0
+  const arc=(from,to,col,w)=>{ const [x0,y0]=pol(from),[x1,y1]=pol(to);
+    const large=Math.abs(to-from)>Math.PI?1:0;
+    return `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)} A${r} ${r} 0 ${large} 0 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`; };
+  let ticks='';
+  for(let i=0;i<=4;i++){ const ang=a0-(i/4)*Math.PI; const [ix,iy]=pol(ang);
+    const [ox,oy]=[cx+(r+6)*Math.cos(ang),cy-(r+6)*Math.sin(ang)];
+    ticks+=`<line x1="${ix.toFixed(1)}" y1="${iy.toFixed(1)}" x2="${ox.toFixed(1)}" y2="${oy.toFixed(1)}" stroke="var(--muted)" stroke-width="1.4"/>`; }
+  const nAng=a0-t*Math.PI;
+  const [nx,ny]=[cx+(r-6)*Math.cos(nAng),cy-(r-6)*Math.sin(nAng)];
+  const label=has?val+'%':'—';
+  const needle=has?`<line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="var(--ink)" stroke-width="2.6" stroke-linecap="round"/>
+<circle cx="${cx}" cy="${cy}" r="4" fill="var(--ink)"/>`:'';
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${label} accuracy this week">
+${arc(a0,a1,'var(--line)',6)}
+${ticks}
+${needle}
+<text x="${cx}" y="${cy-16}" text-anchor="middle" class="display-num" font-size="22" fill="var(--ink)">${label}</text>
+</svg>`;
+}
+
+/* ---- instrument: counter wheel (bordered digit boxes, display-num) ---- */
+function buildCounterWheel(count){
+  const s=String(Math.max(0,count|0)).padStart(2,'0');
+  const boxes=s.split('').map(d=>`<span style="display:inline-block;min-width:26px;padding:6px 0;border:1px solid var(--line);border-radius:6px;background:var(--panel);text-align:center;font-size:26px;line-height:1" class="display-num">${d}</span>`).join('<span style="display:inline-block;width:4px"></span>');
+  return `<div style="display:flex;justify-content:center;align-items:center;padding:14px 0 6px">${boxes}</div>`;
+}
+
+/* ---- 30-day practice-pattern calendar (dot grid, no flame; law 4) ---- */
+function buildPatternCalendar(){
+  const days=Stats.patternDays(30);
+  const todayStr=Stats.today();
+  const dots=days.map(d=>{
+    const isToday=d.date===todayStr;
+    const fill=d.active?(isToday?'hsl(var(--brand))':'var(--accent2)'):'var(--line)';
+    const op=d.active?'1':'0.5';
+    const title=d.date+(d.active?' · '+d.minutes+' min — see sessions':' · rest');
+    return `<span class="cal-dot" data-date="${d.date}" title="${title}" style="width:13px;height:13px;border-radius:4px;background:${fill};opacity:${op};display:inline-block;cursor:pointer"></span>`;
+  }).join('');
+  return `<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Practice pattern — last 30 days</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">${dots}</div>`;
+}
+
+/* ---- 30-day per-tool table ---- */
+function buildToolTable(){
+  const tools=[
+    ['ear-trainer','Ear Trainer'],
+    ['fretboard-trainer','Fretboard Trainer'],
+    ['triad-trainer','Triad Trainer'],
+    ['scale-trainer','Scale Trainer'],
+    ['metronome','Metronome'],
+    ['technique-drills','Technique Drills'],
+    ['target-tone','Target Tone'],
+    ['circle-of-fifths','Circle of Fifths'],
+    ['transcribe','Transcribe'],
+    ['tone','Tone Studio'],
+    ['identity','My Sound']
+  ];
+  const rows=[];
+  tools.forEach(([id,label])=>{
+    const t=Stats.totals(id,30);
+    if(!t.answered&&!t.minutes&&!t.tempos.length)return;
+    const acc=t.answered>0?Math.round(t.correct/t.answered*100)+'%':'—';
+    const answered=t.answered||0;
+    const answeredCell=answered>0
+      ? `<td class="tab-num"><span class="count-up-val" data-val="${answered}">0</span></td>`
+      : `<td class="tab-num">0</td>`;
+    rows.push(`<tr><td>${esc(label)}</td>${answeredCell}<td class="tab-num">${acc}</td><td class="tab-num">${t.minutes||0}</td><td class="tab-num">${t.bestStreak||0}</td></tr>`);
+  });
+  if(!rows.length)return '';
+  return `<table class="act-table">
+<thead><tr><th>Tool</th><th style="text-align:right">Answered</th><th style="text-align:right">Accuracy</th><th style="text-align:right">Min</th><th style="text-align:right">Streak</th></tr></thead>
+<tbody>${rows.join('')}</tbody></table>`;
+}
+
+/* ---- weakKeys badges ---- */
+function buildWeakBadges(){
+  const earWeak=Stats.weakKeys('ear-trainer',{min:4,worst:3});
+  const fretWeak=Stats.weakKeys('fretboard-trainer',{min:4,worst:3});
+  const all=[...earWeak.map(w=>({...w,src:'Ear'})),...fretWeak.map(w=>({...w,src:'Fret'}))];
+  if(!all.length)return '';
+  const badges=all.map(w=>`<span class="badge"><b>${esc(w.key.replace(/^(iv|ch|deg):/,''))}</b> ${Math.round(w.acc*100)}% <span style="opacity:.6">${w.src}</span></span>`).join('');
+  return `<div style="font-size:12px;color:var(--muted);margin-top:14px;margin-bottom:4px">Work on next</div><div class="weak-badges">${badges}</div>`;
+}
+
+/* ---- check if there's any stats data at all ---- */
+function hasStatsData(){
+  const tools=['ear-trainer','fretboard-trainer','triad-trainer','scale-trainer',
+                'metronome','technique-drills','target-tone','circle-of-fifths','transcribe','tone','identity'];
+  const days=Stats.recentDays(30);
+  return days.some(({data})=>tools.some(t=>data[t]&&((data[t].answered||0)+(data[t].events||0)>0)));
+}
+
+/* ---- empty-state onboarding illustration ---- */
+function buildEmptyState(){
+  // Muted bar-chart sketch with an amber accent bar (~140px wide)
+  const illustration=`<svg viewBox="0 0 140 72" width="140" height="72" aria-hidden="true" style="display:block">
+  <!-- grid line -->
+  <line x1="8" y1="60" x2="132" y2="60" stroke="var(--line)" stroke-width="1"/>
+  <!-- bars: muted rising sequence with 5th bar in amber -->
+  <rect x="10" y="48" width="16" height="12" rx="2" fill="var(--muted)" opacity="0.3"/>
+  <rect x="32" y="38" width="16" height="22" rx="2" fill="var(--muted)" opacity="0.3"/>
+  <rect x="54" y="30" width="16" height="30" rx="2" fill="var(--muted)" opacity="0.3"/>
+  <rect x="76" y="20" width="16" height="40" rx="2" fill="var(--muted)" opacity="0.3"/>
+  <!-- accent bar -->
+  <rect x="98" y="10" width="16" height="50" rx="2" fill="hsl(var(--brand))" opacity="0.85"/>
+  <!-- last bar muted again, shorter (future potential) -->
+  <rect x="116" y="36" width="16" height="24" rx="2" fill="var(--muted)" opacity="0.18"/>
+</svg>`;
+
+  return `<div class="onboard">
+  ${illustration}
+  <div class="onboard-copy">Your practice numbers land here automatically.</div>
+  <div class="onboard-actions">
+    <a href="ear-trainer.html" class="cta-btn">
+      <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      Do 10 ear-trainer questions
+    </a>
+    <a href="fretboard-trainer.html" class="cta-btn">
+      <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Drill the fretboard
+    </a>
+  </div>
+</div>`;
+}
+
+/* ---- run count-up on all .count-up-val spans ---- */
+function runCountUps(){
+  document.querySelectorAll('.count-up-val[data-val]').forEach(el=>{
+    const val=parseInt(el.dataset.val,10);
+    if(!isNaN(val)&&val>0) countUp(el,val,500);
+  });
+}
+
+/* ---- 'This week at the bench' panel: improvements headline + instrument row ---- */
+function buildBenchPanel(){
+  const imps=Stats.improvements(7);
+  let list;
+  if(!imps.length){
+    list=`<div class="imp-empty">Practice this week and improvements land here.</div>`;
+  } else {
+    list='<ul class="improvements">'+imps.map(im=>{
+      const sign=im.delta>0?'+':'';
+      const down=im.delta<0?' down':'';
+      return `<li class="imp-row"><span class="imp-delta display-num${down}">${sign}${im.delta}</span><span class="imp-label">${esc(im.label)}</span></li>`;
+    }).join('')+'</ul>';
+  }
+  const mins=minutesToday();
+  const acc=weekAccuracy();
+  const confirms=Stats.confirmations(30).length;
+  const instruments=`<div class="instruments">
+  <div class="gauge">${buildVUMeter(mins)}<div class="g-cap">Minutes today</div></div>
+  <div class="gauge">${buildAccuracyDial(acc.pct)}<div class="g-cap">Accuracy · 7 days</div></div>
+  <div class="gauge">${buildCounterWheel(confirms)}<div class="g-cap">Confirmed · 30 days</div></div>
+</div>`;
+  return `<div class="panel wide" id="bench-panel">
+<h2>This week at the bench</h2>
+${list}
+${instruments}
+</div>`;
+}
+
+/* ---- render the stats activity panel ---- */
+function renderStatsPanel(){
+  const hasData=hasStatsData();
+  const streakDays=Stats.streakDays();
+  const streakNote=streakDays>0?`<span style="font-size:12px;color:var(--muted);margin-left:10px">${streakDays}-day streak</span>`:'';
+
+  let body;
+  if(!hasData){
+    body=buildEmptyState();
+  } else {
+    const calendar=buildPatternCalendar();
+    const chart=buildActivityChart();
+    const table=buildToolTable();
+    const weak=buildWeakBadges();
+    body=`${calendar}<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Questions answered + activity events per day (last 14 days; today highlighted)</div>
+${chart}${table}${weak}`;
+  }
+
+  $('stats-panel').innerHTML=`${buildBenchPanel()}<div class="panel wide" style="margin-top:16px" id="activity-panel">
+<div class="ph2"><h2>Practice activity — from your tools${streakNote}</h2><div style="display:flex;gap:8px"><a class="copy-btn" href="recital.html" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">Recital page</a><button class="copy-btn" id="scrubTodayBtn" title="Data fix: remove today's practice records from this device (for when testing or an idle tab polluted the numbers)">Scrub today</button></div></div>
+${body}
+</div>`;
+
+
+}
+
+/* ---- the sessions timeline: records from student/sessions.json, clickable ---- */
+let sessRecs=[];
+const fmtClock=ts=>{const d=new Date(ts);let h=d.getHours();const m=String(d.getMinutes()).padStart(2,'0'),am=h<12?'am':'pm';h=h%12||12;return h+':'+m+am;};
+function buildSessionsPanel(d){
+  const legacy=(d.sessions||[]);
+  const recDates=new Set(sessRecs.map(s=>s.date));
+  // legacy narrative entries (coach-written focus lines) for dates no record covers
+  const legacyOnly=legacy.filter(s=>!recDates.has(s.date));
+  if(!sessRecs.length&&!legacyOnly.length)
+    return '<div class="empty-note">No sessions yet. Finish a guided session (or log one from the session page) and it lands here.</div>';
+  const totalMin=sessRecs.reduce((a,s)=>a+(+s.minutes||0),0);
+  const head=`<div class="meta">${sessRecs.length} recorded · ${Math.round(totalMin/60*10)/10} h total${legacyOnly.length?' · '+legacyOnly.length+' legacy log entries':''}</div>`;
+  const recRows=[...sessRecs].sort((a,b)=>(b.startedAt||0)-(a.startedAt||0)||(a.date<b.date?1:-1)).map((s,i)=>{
+    const steps=s.steps||[],done=steps.filter(x=>x.completed).length;
+    const chips=Object.entries(s.toolStats||{}).map(([k,v])=>{
+      let t=k; if(v.correct!=null&&v.count!=null)t+=' '+v.correct+'/'+v.count; else if(v.events!=null)t+=' · '+v.events;
+      return `<span class="sd-chip">${esc(t)}</span>`;}).join('');
+    return `<div class="sess-row" data-date="${esc(s.date)}" id="sessrow-${i}">
+      <button class="sr-line" data-i="${i}" aria-expanded="false">
+        <span class="sr-date tab-num">${esc(s.date)}</span>
+        <span class="sr-time tab-num">${s.startedAt?fmtClock(s.startedAt):''}</span>
+        <span class="sr-min tab-num">${s.minutes||0} min</span>
+        ${steps.length?`<span class="sr-steps tab-num">${done}/${steps.length}</span>`:''}
+        <span class="sr-src">${esc(s.source||'')}</span>
+        ${s.grade?`<span class="sr-grade">${esc(s.grade)}</span>`:''}
+        <span class="sr-chev">▾</span>
+      </button>
+      <div class="sr-detail" hidden>
+        ${steps.length?'<ul class="sd-steps">'+steps.map(x=>`<li class="${x.completed?'ok':'no'}">${x.completed?'✓':'✗'} ${esc(x.title)}${x.minutes?` <i>~${x.minutes}m</i>`:''}</li>`).join('')+'</ul>':''}
+        ${chips?`<div class="sd-chips">${chips}</div>`:''}
+        ${s.note?`<div class="sd-note">${esc(s.note)}</div>`:''}
+        ${s.phase?`<div class="sd-phase">${esc(s.phase)}</div>`:''}
+        <a class="sd-open" href="session.html?day=${esc(s.date)}">Open in session view →</a>
+      </div>
+    </div>`;
+  }).join('');
+  const legacyRows=legacyOnly.slice(-6).reverse().map(s=>
+    `<div class="rep sess-legacy" data-date="${esc(s.date)}"><span>${esc(s.date)}: ${esc(s.focus||'')}</span><span class="stage">${s.recorded?'recorded':'log'}</span></div>`).join('');
+  return head+recRows+legacyRows;
+}
+// expand/collapse + chart-driven drill-in
+function wireSessionsPanel(){
+  document.querySelectorAll('#sessions-panel .sr-line').forEach(b=>b.addEventListener('click',()=>{
+    const det=b.parentElement.querySelector('.sr-detail');
+    const open=det.hidden; det.hidden=!open;
+    b.setAttribute('aria-expanded',String(open));
+    b.querySelector('.sr-chev').textContent=open?'▴':'▾';
+  }));
+}
+// a chart bar / calendar dot picked a date → open that date's sessions
+function revealSessionsFor(date){
+  const panel=document.getElementById('sessions-panel'); if(!panel)return;
+  let hit=null;
+  panel.querySelectorAll('.sess-row').forEach(r=>{ if(!hit&&r.dataset.date===date)hit=r; });
+  const target=hit||panel.querySelector(`.sess-legacy[data-date="${date}"]`)||panel;
+  if(hit){ const det=hit.querySelector('.sr-detail'),b=hit.querySelector('.sr-line');
+    det.hidden=false; b.setAttribute('aria-expanded','true'); b.querySelector('.sr-chev').textContent='▴'; }
+  target.scrollIntoView({behavior:'smooth',block:'center'});
+  target.style.transition='background .3s'; target.style.background='hsl(var(--brand)/.1)';
+  setTimeout(()=>{ target.style.background=''; },1200);
+}
+
+/* ---- merge tempo records (file + stats) ---- */
+function buildTempos(fileTempos,statTempos){
+  const rows=[];
+  // from progress-data.json
+  (fileTempos||[]).forEach(t=>{
+    const last=(t.points||[]).slice(-1)[0];
+    if(last) rows.push({label:esc(t.exercise),val:last.value+' '+(t.unit||''),ts:last.date?new Date(last.date).getTime():0,src:'file'});
+  });
+  // from Stats (metronome, technique-drills)
+  (statTempos||[]).forEach(t=>{
+    rows.push({label:esc(t.label||'Metronome'),val:t.bpm+' bpm',ts:t.ts||0,src:'stats'});
+  });
+  rows.sort((a,b)=>b.ts-a.ts);
+  if(!rows.length)return '<div class="empty-note">No tempo data yet. Log clean tempos from the metronome and they\'ll trend here.</div>';
+  return rows.map(r=>`<div class="rep"><span>${r.label}<span class="src-badge">${r.src==='stats'?'live':'file'}</span></span><span class="stage">${r.val}</span></div>`).join('');
+}
+
+let lastFileData=null;
+function render(d){
+  lastFileData=d;
+  const history=d.domainRatings&&d.domainRatings.history||[];
+  const latest=history.slice(-1)[0]||{};
+  const ratedAny=DOMAINS.some(([k])=>latest[k]!=null);
+  const hasHistory=history.length>1;
+
+  // Merge tempo stats from Stats (metronome + technique-drills)
+  const statTemposMet=Stats.totals('metronome',90).tempos||[];
+  const statTemposDrills=Stats.totals('technique-drills',90).tempos||[];
+  const allStatTempos=[...statTemposMet,...statTemposDrills];
+
+  // Build domain tiles — mark numeric values for count-up
+  const domainTiles=DOMAINS.map(([k,name])=>{
+    const val=latest[k];
+    const isEmpty=val==null;
+    const display=isEmpty?'–':val;
+    const spark=hasHistory&&!isEmpty?sparkline(history,k):'';
+    const countAttr=(!isEmpty&&typeof val==='number'&&val>0)?` data-countup="${val}"`:'';
+    return `<div class="dom"><div class="v display-num ${isEmpty?'empty':''}"><span class="dom-num"${countAttr}>${display}</span>${spark}</div><div class="k">${name}</div></div>`;
+  }).join('');
+
+  const html=`
+  <div class="grid">
+    <div class="panel wide">
+      <h2>Current block</h2>
+      <div class="phase">${esc(d.currentBlock&&d.currentBlock.phase||'—')}</div>
+      <div class="target">Target: <b>${esc(d.currentBlock&&d.currentBlock.target||'—')}</b></div>
+      <div class="meta">${esc(d.currentBlock&&d.currentBlock.weeks||'')}</div>
+    </div>
+
+    <div class="panel wide">
+      <h2>Skill domains (1–10)</h2>
+      <div class="domains">${domainTiles}</div>
+      ${ratedAny?'':'<div class="empty-note" style="margin-top:12px">No ratings yet. Run the intake self-rating and a baseline recording, and the Instructor will fill these in, then this panel tracks them over time.</div>'}
+    </div>
+
+    <div id="stats-slot" style="display:contents"></div>
+
+    <div class="panel">
+      <h2>Source-course progress</h2>
+      ${(d.sourceProgress||[]).map((s,i)=>`
+        <div class="bar"><div class="top"><span>${esc(s.label)}</span><span class="d">${s.pct}% · ${esc(s.detail||'')}</span></div>
+        <div class="track"><div class="fill" data-pct="${Math.max(2,Math.min(100,s.pct))}" style="transition-delay:${i*40}ms"></div></div></div>`).join('')||'<div class="empty-note">No data.</div>'}
+    </div>
+
+    <div class="panel">
+      <h2>Repertoire</h2>
+      ${(d.repertoire||[]).map(r=>`<div class="rep"><span>${esc(r.piece)}</span><span class="stage">${esc(r.stage)}</span></div>`).join('')||'<div class="empty-note">No pieces tracked yet.</div>'}
+      <h2 style="margin-top:18px">Tempo records</h2>
+      ${buildTempos(d.tempos,allStatTempos)}
+    </div>
+
+    <div class="panel wide" id="sessions-panel">
+      <h2>Sessions</h2>
+      ${buildSessionsPanel(d)}
+    </div>
+  </div>`;
+  $('content').innerHTML=html;
+  // pull the (already-rendered) bench + practice-activity panels up into the grid,
+  // right after the skill domains — they read as part of the story, not a footer.
+  // 'This week at the bench' lands first (above the activity panel), per spec.
+  const sp=$('stats-panel'), slot=$('stats-slot');
+  if(sp&&slot){ while(sp.firstElementChild){ const p=sp.firstElementChild; p.style.marginTop=''; slot.appendChild(p); } }
+  $('meta').textContent='Data updated: '+(d.updated||'unknown');
+  wireSessionsPanel();
+
+  // animate fills and domain count-ups after paint
+  requestAnimationFrame(()=>{
+    animateFills();
+    // domain count-ups — animate the dedicated number span; the sparkline sits
+    // beside it and is never rewritten.
+    document.querySelectorAll('.dom .dom-num[data-countup]').forEach(el=>{
+      const val=parseInt(el.dataset.countup,10);
+      if(!isNaN(val)&&val>0) countUp(el,val,500);
+    });
+    // per-tool "Answered" column count-ups (the table lands in the grid here)
+    runCountUps();
+  });
+}
+
+async function loadData(){
+  try {
+    // session records load beside progress-data (best-effort — panel degrades to the legacy log)
+    const [r]=await Promise.all([
+      fetch('../student/progress-data.json'),
+      fetch('/api/sessions').then(x=>x.ok?x.json():{sessions:[]}).then(d=>{sessRecs=Array.isArray(d.sessions)?d.sessions:[];}).catch(()=>{sessRecs=[];})
+    ]);
+    if(!r.ok) throw new Error('Server returned '+r.status+' '+r.statusText);
+    const d=await r.json();
+    render(d);
+  } catch(err){
+    $('filefallback').style.display='block';
+    $('content').innerHTML='<div class="panel"><div class="empty-note">Waiting for data — load <code>student/progress-data.json</code> below, or open this dashboard through the local server and it loads on its own.'+(err&&err.message?'<br><span class="err">'+esc(err.message)+'</span>':'')+'</div></div>';
+    // the stats panel stays put on this path; still let its Answered column count up
+    requestAnimationFrame(runCountUps);
+  }
+}
+
+// chart bars + pattern dots drill into the sessions timeline (delegated — panels re-render)
+document.addEventListener('click',e=>{
+  const t=e.target.closest('.act-chart g[data-date], .cal-dot[data-date]');
+  if(t)revealSessionsFor(t.dataset.date);
+});
+
+$('fileinput').onchange=e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{ render(JSON.parse(rd.result)); $('filefallback').style.display='none'; }
+    catch(err){ $('filefallback').querySelector('.err').textContent='Invalid JSON: '+(err.message||err); }
+  };
+  rd.readAsText(f);
+};
+
+/* ---- weekly briefing card ---------------------------------------------------
+   Fetches ../student/briefing.md (the Instructor's own weekly plan file). If it
+   404s, shows an empty state with a button that opens the coach pre-filled to
+   write it. When present, renders the markdown with its date + a Refresh button
+   that re-opens the coach with the same prefill. */
+
+// minimal markdown: headers (#/##/###), bold, links, unordered lists, italics, paragraphs.
+function renderBriefingMd(src){
+  const lines=String(src==null?'':src).replace(/\r\n/g,'\n').split('\n');
+  // inline pass (escape-first, then links/bold/italics)
+  function fmt(s){
+    s=esc(s);
+    s=s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,function(_,txt,url){
+      // the coach writes repo-root paths (tools/x.html); this page lives IN tools/
+      if(/^tools\//.test(url))url=url.slice(6);
+      if(/^javascript:/i.test(url))url='#';
+      return '<a href="'+url+'">'+txt+'</a>'; });
+    s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+    s=s.replace(/(^|[\s(])\*([^*]+)\*/g,'$1<em>$2</em>');
+    return s;
+  }
+  let html='',inList=false;
+  const closeList=()=>{ if(inList){ html+='</ul>'; inList=false; } };
+  for(let raw of lines){
+    const line=raw.replace(/\s+$/,'');
+    let m;
+    if((m=line.match(/^\s*###\s+(.*)$/))){ closeList(); html+='<h3>'+fmt(m[1])+'</h3>'; }
+    else if((m=line.match(/^\s*##\s+(.*)$/))){ closeList(); html+='<h2>'+fmt(m[1])+'</h2>'; }
+    else if((m=line.match(/^\s*#\s+(.*)$/))){ closeList(); html+='<div class="bh1">'+fmt(m[1])+'</div>'; }
+    else if((m=line.match(/^\s*[-*]\s+(.*)$/))){ if(!inList){ html+='<ul>'; inList=true; } html+='<li>'+fmt(m[1])+'</li>'; }
+    else if(!line.trim()){ closeList(); }
+    else { closeList(); html+='<p>'+fmt(line)+'</p>'; }
+  }
+  closeList();
+  return html;
+}
+
+// pull the briefing's title/date line, e.g. "# Weekly Briefing — 2026-07-02" → "2026-07-02"
+function briefingDate(src){
+  const m=String(src||'').match(/^#\s+.*?(\d{4}-\d{2}-\d{2})/m);
+  return m?m[1]:'';
+}
+
+// compact stats summary for the coach when no dedicated export exists.
+// stats.js exposes recentDays(7); build a small snapshot object inline.
+function briefingStats(){
+  try{
+    if(typeof Stats==='undefined') return undefined;
+    if(typeof Stats.exportForCoach==='function') return Stats.exportForCoach();
+    const days=Stats.recentDays(7);
+    const perTool={};
+    days.forEach(({data})=>{ for(const tool in data){ const r=data[tool]||{};
+      const t=perTool[tool]||(perTool[tool]={answered:0,correct:0,events:0,minutes:0});
+      t.answered+=r.answered||0; t.correct+=r.correct||0; t.events+=r.events||0;
+      if(r.firstTs&&r.lastTs) t.minutes+=Math.max(1,Math.round((r.lastTs-r.firstTs)/60000)); } });
+    return {
+      window:'last 7 days',
+      streakDays:Stats.streakDays?Stats.streakDays():0,
+      perTool:perTool,
+      weakEar:Stats.weakKeys?Stats.weakKeys('ear-trainer',{min:4,worst:3}):[],
+      weakFret:Stats.weakKeys?Stats.weakKeys('fretboard-trainer',{min:4,worst:3}):[],
+      due:(Stats.review?Stats.review.due():[])
+    };
+  }catch(e){ return undefined; }
+}
+
+var BRIEFING_PREFILL='Write my weekly briefing (student/briefing.md): read my progress log + repertoire, use the stats snapshot in context, and write the file. Then give me the one-line version here.';
+function openBriefingCoach(){
+  if(!window.WoodshedCoach||typeof WoodshedCoach.open!=='function') return;
+  WoodshedCoach.open({ stats: briefingStats(), prefill: BRIEFING_PREFILL });
+}
+// monthly assessment ritual — the coach runs it per its GRADING TAPE persona section
+var GRADING_PREFILL='Run my monthly grading tape: read student/grading-log.md for last month\'s readings and walk me through re-recording the baseline exercises via Transcribe, one at a time. I\'ll send each take; compare against last month, then write the new grading-log.md entry and update progress-data.json with evidence.';
+function openGradingCoach(){
+  if(!window.WoodshedCoach||typeof WoodshedCoach.open!=='function') return;
+  WoodshedCoach.open({ stats: briefingStats(), prefill: GRADING_PREFILL });
+}
+
+function renderBriefing(){
+  const host=$('briefing-panel'); if(!host) return;
+  fetch('../student/briefing.md').then(function(r){
+    if(!r.ok) throw new Error('no briefing');
+    return r.text();
+  }).then(function(txt){
+    if(!txt||!txt.trim()) throw new Error('empty briefing');
+    const date=briefingDate(txt);
+    host.innerHTML='<div class="brief-card">'
+      +'<div class="brief-head"><h2>Weekly briefing</h2>'
+      +(date?'<span class="brief-date">'+esc(date)+'</span>':'')
+      +'</div>'
+      +'<div class="brief-body">'+renderBriefingMd(txt)+'</div>'
+      +'<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><button class="brief-btn" id="briefRefreshBtn">'
+      +'<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Refresh with the Instructor</button>'
+      +'<button class="brief-btn" id="gradingBtn" title="Monthly ritual: re-record the baseline exercises and get graded against last month">'
+      +'<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="10" rx="3"/><path d="M6 11a6 6 0 0 0 12 0"/><path d="M12 17v4"/><path d="M8 21h8"/></svg>Monthly grading tape</button></div>'
+      +'</div>';
+    const rb=$('briefRefreshBtn'); if(rb) rb.addEventListener('click',openBriefingCoach);
+    const gb=$('gradingBtn'); if(gb) gb.addEventListener('click',openGradingCoach);
+  }).catch(function(){
+    host.innerHTML='<div class="brief-card">'
+      +'<div class="brief-head"><h2>Weekly briefing</h2></div>'
+      +'<div class="brief-empty">No briefing yet. The Instructor writes a one-page plan for your week — the pieces to work, the tools to use, and why.</div>'
+      +'<button class="brief-btn" id="briefWriteBtn">'
+      +'<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Write my briefing with the Instructor</button>'
+      +'</div>';
+    const wb=$('briefWriteBtn'); if(wb) wb.addEventListener('click',openBriefingCoach);
+  });
+}
+
+renderBriefing();
+renderStatsPanel();
+loadData();
+</script>
+</body>
+</html>

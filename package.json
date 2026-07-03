@@ -1,0 +1,29 @@
+{
+  "name": "the-woodshed",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The Woodshed — local guitar practice tools (Vite dev server over tools/).",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "node server/serve.js",
+    "hash-pass": "node scripts/hash-password.js",
+    "postinstall": "node scripts/init-student.mjs",
+    "setup": "node scripts/init-student.mjs"
+  },
+  "devDependencies": {
+    "vite": "^7.3.6"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.109.1",
+    "@fontsource-variable/fraunces": "^5.2.9",
+    "@fontsource-variable/inter": "^5.2.8",
+    "@spotify/basic-pitch": "^1.0.1",
+    "@tensorflow/tfjs": "^4.22.0",
+    "@tombatossals/chords-db": "^0.5.1",
+    "@tonejs/midi": "^2.0.28",
+    "tonal": "^6.4.3"
+  }
+}

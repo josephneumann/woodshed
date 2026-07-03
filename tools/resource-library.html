@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="header.js" defer></script>
+<title>Resource Library · The Woodshed</title>
+<style>
+  :root{--accent2:#7e95b3}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);padding:24px;display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+  .wrap{width:100%;max-width:1000px}
+  a.back{color:var(--muted);text-decoration:none;font-size:14px}a.back:hover{color:var(--ink)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:16px}
+  .filters{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  input[type=search],input[type=text],select,textarea{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-size:14px;font-family:inherit}
+  input[type=search]{min-width:200px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+  .chip{background:var(--panel2);color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-size:12.5px;cursor:pointer}
+  .chip.sel{background:var(--panel);color:var(--ink);border:1px solid var(--line);font-weight:600;box-shadow:0 1px 2px hsl(26 30% 8%/.12)}
+  label.cb{font-size:12.5px;color:var(--muted);display:flex;gap:6px;align-items:center}
+  .counts{font-size:12.5px;color:var(--muted);margin-left:auto}
+  .btn{background:var(--accent);color:#1a1407;border:none;border-radius:8px;padding:9px 14px;font-size:13.5px;font-weight:600;cursor:pointer}
+  .btn.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line);font-weight:500}
+  .btn.ghost:hover{border-color:var(--accent)}
+  .actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;align-items:center}
+  .catgroup{margin-bottom:22px}
+  .catgroup h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .res{display:flex;gap:12px;align-items:flex-start;padding:11px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--panel)}
+  .res .ico{font-size:20px;margin-top:1px;display:inline-flex;align-items:center}
+  .res .main{flex:1;min-width:0}
+  .res a.title{color:var(--ink);text-decoration:none;font-weight:600;font-size:15px}
+  .res a.title:hover{color:var(--accent)}
+  .res .url{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+  .res .note{color:var(--muted);font-size:13px;margin-top:4px;line-height:1.45}
+  .res .tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+  .tag{font-size:10.5px;color:var(--accent2);border:1px solid var(--line);border-radius:20px;padding:1px 8px}
+  .tag.src{color:var(--muted)}
+  .res .ctl{display:flex;gap:4px;align-items:center}
+  .iconbtn{background:none;border:1px solid var(--line);border-radius:7px;color:var(--muted);cursor:pointer;font-size:13px;padding:4px 8px}
+  .iconbtn.on{color:var(--accent);border-color:var(--accent)}
+  .mine{font-size:10px;color:var(--good);border:1px solid var(--good);border-radius:20px;padding:1px 7px;margin-left:6px}
+  .form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .form .full{grid-column:1/-1}
+  .form label{font-size:12px;color:var(--muted);display:block;margin-bottom:3px}
+  .form input,.form select,.form textarea{width:100%}
+  .empty{color:var(--muted);font-size:13px;padding:10px 0}
+  .hint{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:8px}
+  details summary{cursor:pointer;color:var(--accent2);font-size:13.5px}
+  svg.li{display:inline-block;width:1em;height:1em;min-width:0;max-width:none;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em;flex:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead"><img class="masthead-plate" src="../assets/plates/plate-reference.png" alt="">
+    <div class="kicker">The Woodshed · Reference</div>
+    <h1>Resource Library</h1>
+    <p class="sub">Your curated hub of courses, channels, tools, tabs, and backing tracks — seeded, taggable, searchable.</p>
+  </div>
+  <hr class="fretline">
+
+  <div class="panel">
+    <div class="filters">
+      <input type="search" id="search" placeholder="Search resources, tags, notes…">
+      <select id="typeFilter">
+        <option value="all">All types</option>
+        <option value="course">Courses</option>
+        <option value="platform">Platforms</option>
+        <option value="youtube-channel">YouTube channels</option>
+        <option value="youtube-video">YouTube videos</option>
+        <option value="tool">Tools</option>
+        <option value="article">Articles</option>
+        <option value="tabs">Tabs</option>
+        <option value="backing-track">Backing tracks</option>
+        <option value="other">Other</option>
+      </select>
+      <label class="cb"><input type="checkbox" id="favOnly"> Favorites</label>
+      <label class="cb"><input type="checkbox" id="mineOnly"> My links</label>
+      <span class="counts tab-num" id="counts"></span>
+    </div>
+    <div class="chips" id="cats"></div>
+    <div class="actions">
+      <button class="btn" id="addBtn">+ Add resource</button>
+      <button class="btn ghost" id="exportBtn"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> Export my links (JSON)</button>
+      <button class="btn ghost" id="importBtn"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg> Import JSON</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none">
+    </div>
+  </div>
+
+  <div class="panel" id="formPanel" style="display:none">
+    <div class="form">
+      <div class="full"><label>Title</label><input type="text" id="f-title" placeholder="e.g. SomeGuitarist: Sweep Picking Masterclass"></div>
+      <div class="full"><label>URL</label><input type="text" id="f-url" placeholder="https://…"></div>
+      <div><label>Category</label><select id="f-cat"></select></div>
+      <div><label>Type</label><select id="f-type">
+        <option value="youtube-video">YouTube video</option><option value="youtube-channel">YouTube channel</option>
+        <option value="course">Course</option><option value="platform">Platform</option><option value="tool">Tool</option>
+        <option value="article">Article</option><option value="tabs">Tabs</option><option value="backing-track">Backing track</option><option value="other">Other</option>
+      </select></div>
+      <div><label>Source / author</label><input type="text" id="f-source" placeholder="who made it"></div>
+      <div><label>Tags (comma-separated)</label><input type="text" id="f-tags" placeholder="blues, repertoire, slow"></div>
+      <div class="full"><label>Note</label><textarea id="f-note" rows="2" placeholder="why it's useful, or which song it supports"></textarea></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="saveBtn">Save</button>
+      <button class="btn ghost" id="cancelBtn">Cancel</button>
+      <span id="editId" style="display:none"></span>
+    </div>
+    <div class="hint">Tip: for repertoire, add the tab, a tutorial video, and a backing track for each song, then tag them all with the song name so they group together when you search it.</div>
+  </div>
+
+  <div id="library"></div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const CATS=["Courses & Platforms","YouTube Channels","Theory & Harmony","Fretboard","Ear Training","Transcription","Rhythm & Time","Repertoire & Songs","Tabs & Backing Tracks","My Bookmarks","Other"];
+const ICON={
+  course:'<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>',
+  platform:'<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+  'youtube-channel':'<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>',
+  'youtube-video':'<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>',
+  tool:'<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+  article:'<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+  tabs:'<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+  'backing-track':'<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+  other:'<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+};
+let seed=[],typeFilter='all',catFilter='all',favOnly=false,mineOnly=false,q='';
+
+function mine(){try{return JSON.parse(localStorage.getItem('resLibMine')||'[]');}catch(e){return[];}}
+function saveMine(a){localStorage.setItem('resLibMine',JSON.stringify(a));}
+function favs(){try{return new Set(JSON.parse(localStorage.getItem('resLibFavs')||'[]'));}catch(e){return new Set();}}
+function saveFavs(s){localStorage.setItem('resLibFavs',JSON.stringify([...s]));}
+function all(){return [...seed.map(r=>({...r,_seed:true})),...mine().map(r=>({...r,_mine:true}))];}
+
+function renderCats(){
+  const wrap=$('cats');wrap.innerHTML='';
+  const present=new Set(all().map(r=>r.category));
+  const mk=(v,l)=>{const c=document.createElement('div');c.className='chip'+(catFilter===v?' sel':'');c.textContent=l;c.onclick=()=>{catFilter=v;render();};return c;};
+  wrap.appendChild(mk('all','All'));
+  CATS.filter(c=>present.has(c)).forEach(c=>wrap.appendChild(mk(c,c)));
+  // populate form category select
+  const fc=$('f-cat');if(fc&&!fc.dataset.filled){CATS.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;fc.appendChild(o);});fc.dataset.filled='1';}
+}
+function visible(){
+  const fv=favs();
+  return all().filter(r=>
+    (catFilter==='all'||r.category===catFilter)&&
+    (typeFilter==='all'||r.type===typeFilter)&&
+    (!favOnly||fv.has(r.id))&&
+    (!mineOnly||r._mine)&&
+    (!q||((r.title+' '+(r.note||'')+' '+(r.tags||[]).join(' ')+' '+(r.source||'')+' '+r.url).toLowerCase().includes(q)))
+  );
+}
+function render(){
+  renderCats();
+  const fv=favs();const list=visible();
+  $('counts').innerHTML=`${list.length} shown · <b style="color:var(--good)">${mine().length}</b> yours · ${seed.length} seeded`;
+  const lib=$('library');lib.innerHTML='';
+  if(!list.length){lib.innerHTML='<div class="panel"><div class="empty">No resources match. Adjust filters, or add one.</div></div>';return;}
+  const byCat={};list.forEach(r=>{(byCat[r.category]=byCat[r.category]||[]).push(r);});
+  CATS.filter(c=>byCat[c]).forEach(cat=>{
+    const g=document.createElement('div');g.className='catgroup';
+    g.innerHTML=`<h2>${cat} <span class="tab-num" style="color:var(--muted);font-weight:400">(${byCat[cat].length})</span></h2>`;
+    byCat[cat].forEach(r=>{
+      const isFav=fv.has(r.id);
+      const el=document.createElement('div');el.className='res';
+      el.innerHTML=`
+        <div class="ico">${ICON[r.type]||ICON.other}</div>
+        <div class="main">
+          <a class="title" href="${escAttr(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a>${r._mine?'<span class="mine">yours</span>':''}
+          <div class="url">${esc(r.url)}</div>
+          ${r.note?`<div class="note">${esc(r.note)}</div>`:''}
+          <div class="tags">${r.source?`<span class="tag src">${esc(r.source)}</span>`:''}${(r.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+        </div>
+        <div class="ctl">
+          <button class="iconbtn ${isFav?'on':''}" data-act="fav" title="Favorite" aria-label="Favorite"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"${isFav?' fill="currentColor"':''}/></svg></button>
+          ${r._mine?'<button class="iconbtn" data-act="edit" title="Edit" aria-label="Edit"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="iconbtn" data-act="del" title="Delete" aria-label="Delete"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>':''}
+        </div>`;
+      el.querySelector('[data-act=fav]').onclick=()=>{const s=favs();s.has(r.id)?s.delete(r.id):s.add(r.id);saveFavs(s);render();};
+      if(r._mine){
+        el.querySelector('[data-act=edit]').onclick=()=>openForm(r);
+        el.querySelector('[data-act=del]').onclick=()=>{if(confirm('Delete this link?')){saveMine(mine().filter(x=>x.id!==r.id));render();}};
+      }
+      g.appendChild(el);
+    });
+    lib.appendChild(g);
+  });
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function escAttr(s){return esc(s).replace(/"/g,'&quot;');}
+
+function openForm(r){
+  $('formPanel').style.display='block';
+  $('f-title').value=r?r.title:'';$('f-url').value=r?r.url:'';$('f-cat').value=r?r.category:'Repertoire & Songs';
+  $('f-type').value=r?r.type:'youtube-video';$('f-source').value=r?r.source||'':'';$('f-tags').value=r?(r.tags||[]).join(', '):'';$('f-note').value=r?r.note||'':'';
+  $('editId').textContent=r?r.id:'';
+  $('formPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function saveForm(){
+  const url=$('f-url').value.trim(),title=$('f-title').value.trim();
+  if(!title||!url){alert('Title and URL are required.');return;}
+  const item={id:$('editId').textContent|| 'u'+Date.now(),title,url,category:$('f-cat').value,type:$('f-type').value,source:$('f-source').value.trim(),tags:$('f-tags').value.split(',').map(t=>t.trim()).filter(Boolean),note:$('f-note').value.trim()};
+  let m=mine();const i=m.findIndex(x=>x.id===item.id);if(i>=0)m[i]=item;else m.push(item);saveMine(m);
+  $('formPanel').style.display='none';render();
+}
+$('addBtn').onclick=()=>openForm(null);
+$('saveBtn').onclick=saveForm;
+$('cancelBtn').onclick=()=>$('formPanel').style.display='none';
+$('search').oninput=e=>{q=e.target.value.toLowerCase().trim();render();};
+$('typeFilter').onchange=e=>{typeFilter=e.target.value;render();};
+$('favOnly').onchange=e=>{favOnly=e.target.checked;render();};
+$('mineOnly').onchange=e=>{mineOnly=e.target.checked;render();};
+$('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify({resources:mine()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='my-resources.json';a.click();};
+$('importBtn').onclick=()=>$('importFile').click();
+$('importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const data=JSON.parse(rd.result);const incoming=(data.resources||data||[]).map(r=>({...r,id:r.id||'u'+Date.now()+Math.random().toString(36).slice(2,6)}));const m=mine();incoming.forEach(r=>{if(!m.some(x=>x.url===r.url))m.push(r);});saveMine(m);render();alert('Imported '+incoming.length+' links.');}catch(err){alert('Invalid JSON');}};rd.readAsText(f);};
+
+fetch('../reference/resource-library.json').then(r=>r.ok?r.json():Promise.reject()).then(d=>{seed=d.resources||[];render();})
+  .catch(()=>{seed=[];render();$('counts').innerHTML='Seed list didn’t load — open through the local server for the full library. Your own links still work.';});
+</script>
+</body>
+</html>

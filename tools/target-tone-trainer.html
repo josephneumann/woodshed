@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="header.js" defer></script>
+<script src="theory.js"></script><script src="audio.js"></script><script src="stats.js"></script>
+<title>Target-Tone Trainer · The Woodshed</title>
+<style>
+  :root{--accent2:#7e95b3;--root:#e0655e;--guide:#e0b15e;--other:#4a6b8a}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);padding:24px;display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+  .wrap{width:100%;max-width:880px}
+  a.back{color:var(--muted);text-decoration:none;font-size:14px}a.back:hover{color:var(--ink)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .controls{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  .controls label{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center}
+  select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;cursor:pointer}
+  .board-wrap{overflow-x:auto}
+  svg{display:block;min-width:780px;width:100%}
+  .chordstrip{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+  .chip{padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-size:15px;font-weight:600;cursor:pointer}
+  .chip.active{background:var(--panel);color:var(--ink);border:1px solid var(--accent);box-shadow:0 1px 2px hsl(26 30% 8%/.12)}
+  /* groove pulse: the live chord chip breathes on each bar downbeat (retriggered from the existing UI tick — no extra timer) */
+  @keyframes chip-pulse{0%{transform:scale(1)}30%{transform:scale(1.06);box-shadow:0 0 0 3px hsl(var(--brand)/.22)}100%{transform:scale(1)}}
+  .chip.pulse{animation:chip-pulse .5s ease-out}
+  @media(prefers-reduced-motion:reduce){.chip.pulse{animation:none}}
+  .nav{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+  .nav button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:9px 13px;font-size:13.5px;cursor:pointer}
+  .nav button:hover{border-color:var(--accent)}
+  .nav button.play{background:var(--accent);color:#1a1407;border:none;font-weight:600}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:10px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}.swatch{width:13px;height:13px;border-radius:50%}
+  .now{font-size:18px;margin-bottom:8px}.now b{color:var(--accent)}
+  .hint{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:10px}
+  label.chk{display:inline-flex;gap:6px;align-items:center}
+  svg.li{display:inline-block;width:1em;height:1em;min-width:0;max-width:none;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em;flex:none}
+  .grv{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:9px 13px;font-size:13.5px;cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:6px}
+  .grv:hover{border-color:var(--accent)}
+  .grv.on{background:var(--accent);color:#1a1407;border:none;font-weight:600}
+  #grTempo,#grVol{vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead"><img class="masthead-plate" src="../assets/plates/plate-improv.png" alt="">
+    <div class="kicker">The Woodshed · Improvisation</div>
+    <h1>Target-Tone Trainer</h1>
+    <p class="sub">Land chord tones on strong beats — see and hear the target notes and guide tones (3 &amp; 7) over one chord or through changes.</p>
+  </div>
+  <hr class="fretline">
+
+  <div class="panel">
+    <div class="controls">
+      <label>Progression
+        <select id="prog">
+          <option value="ii-V-I">ii–V–I in C (Dm7–G7–Cmaj7)</option>
+          <option value="blues">12-bar Blues in A (A7–D7–E7)</option>
+          <option value="pop">I–V–vi–IV in G (G–D–Em–C)</option>
+          <option value="single">Single chord…</option>
+        </select>
+      </label>
+      <label id="singleWrap" style="display:none">Chord
+        <select id="sroot"></select>
+        <select id="squal"><option value="maj">maj</option><option value="min">min</option><option value="7">7</option><option value="maj7">maj7</option><option value="min7">min7</option></select>
+      </label>
+      <label class="chk"><input type="checkbox" id="guideOnly"> Guide tones only (3 &amp; 7)</label>
+      <label class="chk"><input type="checkbox" id="lab" checked> Labels</label>
+      <label class="chk"><input type="checkbox" id="audio" checked> <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg> Audio</label>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="controls" style="align-items:center">
+      <button id="grooveBtn" class="grv"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg> Groove</button>
+      <label>Feel
+        <select id="grPat"><option value="straight">Straight</option><option value="swing">Swing</option></select>
+      </label>
+      <label>Tempo <input type="range" id="grTempo" min="50" max="170" value="100" style="accent-color:var(--accent)"> <span id="grTempoVal" style="color:var(--ink)">100</span> bpm</label>
+      <label>Drums <input type="range" id="grVol" min="0" max="100" value="25" style="accent-color:var(--accent)"></label>
+      <label class="chk"><input type="checkbox" id="grLoop" checked> Loop</label>
+    </div>
+    <div class="hint" style="margin-top:8px">Turn on <strong>Groove</strong>, then hit <em>Play progression</em> — the chords sustain as a bed and a synth drum kit locks to the same clock. Loop keeps the changes cycling so you can blow over them.</div>
+  </div>
+
+  <div class="panel">
+    <div class="now" id="now"></div>
+    <div class="chordstrip" id="strip"></div>
+    <div class="board-wrap"><svg id="board" viewBox="0 0 780 230"></svg></div>
+    <div class="legend">
+      <span><span class="swatch" style="background:var(--root)"></span> Root</span>
+      <span><span class="swatch" style="background:var(--guide)"></span> Guide tone (3 / 7)</span>
+      <span><span class="swatch" style="background:var(--other)"></span> Other chord tone (5)</span>
+    </div>
+    <div class="nav">
+      <button id="prev">‹ Prev</button>
+      <button id="next">Next ›</button>
+      <button id="hearChord"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg> Hear chord</button>
+      <button id="hearGuide"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Guide tones</button>
+      <button class="play" id="playProg"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg> Play progression</button>
+      <button id="playLine"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg> Guide-tone line</button>
+    </div>
+    <div class="hint">Improvise over a backing track and <strong>start &amp; end phrases on a lit note</strong>, especially the amber guide tones (3rd &amp; 7th), landed on beats 1 &amp; 3. Hit <em>Play progression</em> and watch/hear the guide tones shift by a step or two between chords. That movement is the guide-tone line, the backbone of melodic soloing (Paul Davids L6.4; PMT Harmonic Analysis).</div>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+// NOTES · OPEN_SEMI · OPEN_MIDI · STR_NAMES · QUAL come from theory.js · ac()/tone() from audio.js
+const TOOL='target-tone';
+
+// ==== Woodshed drum engine (inline module — identical in target-tone-trainer.html & circle-of-fifths.html) ====
+// WebAudio kit on the shared ac() context. Lookahead scheduler (setInterval + audio-clock; no per-hit setTimeout).
+// Drums.start(bpm,pattern,bars,t0?) · Drums.stop() · Drums.setVol(v) · Drums.events(bpm,pattern,bars)
+const Drums=(function(){
+  const LOOK=0.12, TICK=25;                       // schedule 120ms ahead every 25ms
+  let master=null, timer=null, vol=0.25, running=false;
+  let bpm=100, pattern='straight', bars=1, barDur=0, t0=0, next=0;   // next = index into the virtual infinite event stream
+  function barEvents(pat){                          // one bar as beat-fractions (0..4) → drum; times never accumulated
+    const e=[];
+    if(pat==='swing'){                              // jazz: ride/hat swung 2:1, kick light 1&3, snare(brush) quiet 2&4
+      for(let b=0;b<4;b++){ e.push({beat:b,drum:'hat',vel:0.5}); e.push({beat:b+2/3,drum:'hat',vel:0.32}); } // "and" at 2/3 beat → 2:1
+      e.push({beat:0,drum:'kick',vel:0.7}); e.push({beat:2,drum:'kick',vel:0.6});
+      e.push({beat:1,drum:'snare',vel:0.28}); e.push({beat:3,drum:'snare',vel:0.28});
+      return e;
+    }
+    for(let b=0;b<4;b++){ e.push({beat:b,drum:'hat',vel:0.5}); e.push({beat:b+0.5,drum:'hat',vel:0.4}); } // even 8ths
+    e.push({beat:0,drum:'kick',vel:0.9}); e.push({beat:2,drum:'kick',vel:0.9});
+    e.push({beat:1,drum:'snare',vel:0.8}); e.push({beat:3,drum:'snare',vel:0.8});
+    return e;
+  }
+  function events(bpmv,pat,barsv){                  // pure: absolute times; bar N start = N*barDur (no drift)
+    const bd=60/bpmv, out=[], be=barEvents(pat).slice().sort((a,b)=>a.beat-b.beat);
+    for(let bar=0;bar<barsv;bar++){ const barStart=bar*4*bd; for(const ev of be) out.push({t:barStart+ev.beat*bd,drum:ev.drum,vel:ev.vel}); }
+    return out.sort((a,b)=>a.t-b.t);
+  }
+  function kick(a,t,vel){ const o=a.createOscillator(),g=a.createGain(); o.type='sine'; o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(50,t+0.12); g.gain.setValueAtTime(vel,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.16); o.connect(g).connect(master); o.start(t); o.stop(t+0.18); }
+  function noiseBuf(a,dur){ const n=Math.max(1,(a.sampleRate*dur)|0),b=a.createBuffer(1,n,a.sampleRate),d=b.getChannelData(0); for(let i=0;i<n;i++)d[i]=Math.random()*2-1; return b; }
+  function snare(a,t,vel){ const s=a.createBufferSource(); s.buffer=noiseBuf(a,0.2); const bp=a.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1800; bp.Q.value=0.7; const g=a.createGain(); g.gain.setValueAtTime(vel,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.14); s.connect(bp).connect(g).connect(master); s.start(t); s.stop(t+0.2);
+    const o=a.createOscillator(),og=a.createGain(); o.type='triangle'; o.frequency.value=180; og.gain.setValueAtTime(vel*0.3,t); og.gain.exponentialRampToValueAtTime(0.001,t+0.06); o.connect(og).connect(master); o.start(t); o.stop(t+0.08); }
+  function hat(a,t,vel){ const s=a.createBufferSource(); s.buffer=noiseBuf(a,0.05); const hp=a.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=7000; const g=a.createGain(); g.gain.setValueAtTime(vel*0.5,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.04); s.connect(hp).connect(g).connect(master); s.start(t); s.stop(t+0.06); }
+  const HIT={kick,snare,hat};
+  function scheduler(a){                             // emit each event exactly once via monotonic `next` (no window-boundary doubles)
+    const now=a.currentTime, horizon=now+LOOK, loopDur=bars*4*barDur, be=events(bpm,pattern,bars);
+    while(true){ const cycle=Math.floor(next/be.length), i=next%be.length, t=t0+cycle*loopDur+be[i].t;
+      if(t>=horizon) break;
+      if(t>=now-0.05) (HIT[be[i].drum]||hat)(a,Math.max(t,now),be[i].vel*vol);
+      next++;
+    }
+  }
+  function start(bpmv,pat,barsv,startAt){ stop(); const a=ac(); if(a.resume)a.resume();
+    bpm=bpmv; pattern=pat; bars=barsv||1; barDur=60/bpm; running=true;
+    master=a.createGain(); master.gain.value=1; master.connect(a.destination);
+    t0=(startAt!=null?startAt:a.currentTime+0.06); next=0;
+    scheduler(a); timer=setInterval(()=>{ if(running)scheduler(a); },TICK);
+  }
+  function stop(){ running=false; if(timer){clearInterval(timer);timer=null;} if(master){try{master.disconnect()}catch(e){}master=null;} }
+  function setVol(v){ vol=Math.max(0,Math.min(1,v)); }
+  return {start,stop,setVol,events,isRunning:()=>running};
+})();
+
+const MAXF=15,NUT=46,FW=46,SG=32,TOP=28; // fretboard geometry for this view (px)
+const GUIDE=new Set([3,4,10,11]);
+const PROGS={'ii-V-I':[[2,'min7'],[7,'7'],[0,'maj7']],'blues':[[9,'7'],[2,'7'],[4,'7']],'pop':[[7,'maj'],[2,'maj'],[4,'min'],[0,'maj']]};
+let chords=[],idx=0,timer=null,flashSet=null,lineTimers=[];
+let grooveOn=false, pStart=0, pBar=-1, pBarDur=0;   // audio-clock progression state
+const grBpm=()=>+$('grTempo').value;
+const barDurFor=bpm=>4*60/bpm;                       // one chord = one 4/4 bar
+const ICON_PLAY='<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
+const ICON_PAUSE='<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg>';
+function stopPlayback(){if(timer){clearInterval(timer);timer=null;$('playProg').innerHTML=ICON_PLAY+' Play progression';}lineTimers.forEach(clearTimeout);lineTimers=[];Drums.stop();stopTones();flashSet=null;pBar=-1;}
+
+NOTES.forEach((n,i)=>{const o=document.createElement('option');o.value=i;o.textContent=n;$('sroot').appendChild(o);});
+function degLabel(iv){return ({0:'R',3:'♭3',4:'3',6:'♭5',7:'5',8:'♯5',10:'♭7',11:'7'})[iv]||'?';}
+function colorOf(iv){return iv===0?'var(--root)':GUIDE.has(iv)?'var(--guide)':'var(--other)';}
+function rootMidi(r){return 48+r;}                 // C3..B3 region
+function chordMidis(root,ints){return ints.map(iv=>rootMidi(root)+iv);}
+
+function buildChords(){stopPlayback();const p=$('prog').value;if(p==='single')chords=[[+$('sroot').value,$('squal').value]];else chords=PROGS[p].slice();idx=0;renderStrip();draw();}
+function chordName([r,q]){const m={maj:'',min:'m','7':'7',maj7:'maj7',min7:'m7'};return NOTES[r]+(m[q]||q);}
+function renderStrip(){const s=$('strip');s.innerHTML='';chords.forEach((c,i)=>{const el=document.createElement('div');el.className='chip'+(i===idx?' active':'');el.textContent=chordName(c);el.onclick=()=>{idx=i;renderStrip();draw();playChord();};s.appendChild(el);});$('now').innerHTML=chords.length?`Now: <b>${chordName(chords[idx])}</b>`+(chords.length>1?` <span style="color:var(--muted);font-size:14px">(${idx+1}/${chords.length})</span>`:''):'';}
+
+function draw(){
+  const svg=$('board');svg.innerHTML='';const ns='http://www.w3.org/2000/svg';const boardW=NUT+FW*MAXF;
+  const bg=document.createElementNS(ns,'rect');bg.setAttribute('x',NUT);bg.setAttribute('y',TOP-8);bg.setAttribute('width',FW*MAXF);bg.setAttribute('height',SG*5+16);bg.setAttribute('fill','#241a10');bg.setAttribute('rx',4);svg.appendChild(bg);
+  [3,5,7,9].forEach(f=>{const c=document.createElementNS(ns,'circle');c.setAttribute('cx',NUT+FW*(f-0.5));c.setAttribute('cy',TOP+SG*2.5);c.setAttribute('r',5);c.setAttribute('fill','#3c3020');svg.appendChild(c);});
+  [12].forEach(f=>[1.5,3.5].forEach(s=>{const c=document.createElementNS(ns,'circle');c.setAttribute('cx',NUT+FW*(f-0.5));c.setAttribute('cy',TOP+SG*s);c.setAttribute('r',5);c.setAttribute('fill','#3c3020');svg.appendChild(c);}));
+  for(let f=0;f<=MAXF;f++){const x=NUT+FW*f;const l=document.createElementNS(ns,'line');l.setAttribute('x1',x);l.setAttribute('x2',x);l.setAttribute('y1',TOP-8);l.setAttribute('y2',TOP+SG*5+8);l.setAttribute('stroke',f===0?'#cfd3da':'#5a5043');l.setAttribute('stroke-width',f===0?5:2);svg.appendChild(l);if(f>0){const t=document.createElementNS(ns,'text');t.setAttribute('x',x-FW/2);t.setAttribute('y',TOP+SG*5+24);t.setAttribute('fill','#6b7280');t.setAttribute('font-size','11');t.setAttribute('text-anchor','middle');t.textContent=f;svg.appendChild(t);}}
+  for(let s=0;s<6;s++){const y=TOP+SG*(5-s);const l=document.createElementNS(ns,'line');l.setAttribute('x1',NUT);l.setAttribute('x2',boardW);l.setAttribute('y1',y);l.setAttribute('y2',y);l.setAttribute('stroke','#9aa0aa');l.setAttribute('stroke-width',0.6+s*0.3);svg.appendChild(l);const t=document.createElementNS(ns,'text');t.setAttribute('x',NUT-14);t.setAttribute('y',y+4);t.setAttribute('fill','#6b7280');t.setAttribute('font-size','11');t.setAttribute('text-anchor','end');t.textContent=STR_NAMES[s];svg.appendChild(t);}
+  if(!chords.length)return;
+  const [root,q]=chords[idx];const ints=QUAL[q];const guideOnly=$('guideOnly').checked,showLab=$('lab').checked;
+  for(let s=0;s<6;s++)for(let f=0;f<=MAXF;f++){const pc=(OPEN_SEMI[s]+f)%12;const iv=((pc-root)%12+12)%12;if(!ints.includes(iv))continue;if(guideOnly&&iv!==0&&!GUIDE.has(iv))continue;
+    const x=f===0?NUT-20:NUT+FW*(f-0.5),y=TOP+SG*(5-s);const flash=flashSet&&flashSet.has(iv);
+    const c=document.createElementNS(ns,'circle');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',flash?14:(iv===0?12:11));c.setAttribute('fill',colorOf(iv));c.setAttribute('stroke',flash?'#fff':'#0f1115');c.setAttribute('stroke-width',flash?3:2);svg.appendChild(c);
+    if(showLab){const t=document.createElementNS(ns,'text');t.setAttribute('x',x);t.setAttribute('y',y+4);t.setAttribute('fill','#0f1115');t.setAttribute('font-size','11');t.setAttribute('font-weight','700');t.setAttribute('text-anchor','middle');t.textContent=degLabel(iv);svg.appendChild(t);}}
+}
+function flash(ivSet,hold){flashSet=ivSet;draw();setTimeout(()=>{flashSet=null;draw();},(hold||1.1)*1000);}
+function playChord(){if(!chords.length)return;const [root,q]=chords[idx];const m=chordMidis(root,QUAL[q]);m.forEach(x=>tone(x,0.03,1.4,0.18));flash(new Set(QUAL[q]),1.2);}
+// schedule chord i as a sustained bed (fills the bar in groove mode) at absolute audio time `at`
+function playChordAt(i,at,dur){const a=ac();const[root,q]=chords[i];const off=Math.max(0,at-a.currentTime);chordMidis(root,QUAL[q]).forEach(x=>tone(x,off,dur,grooveOn?0.14:0.18));}
+function playGuide(){if(!chords.length)return;const [root,q]=chords[idx];const gt=QUAL[q].filter(iv=>GUIDE.has(iv));gt.forEach(iv=>tone(rootMidi(root)+iv,0.03,1.4,0.24));flash(new Set(gt),1.2);}
+function step(n){if(!chords.length)return;idx=(idx+n+chords.length)%chords.length;renderStrip();draw();playChord();}
+function loopOn(){return grooveOn?$('grLoop').checked:false;}
+// audio-clock progression: every chord bar-start is derived as t0 + bar*barDur (never t+=step → no drift)
+function togglePlay(){
+  if(timer){stopPlayback();draw();return;}
+  stopPlayback();draw();Stats.activity(TOOL);
+  const a=ac(); if(a.resume)a.resume();
+  $('playProg').innerHTML=ICON_PAUSE+' Stop';
+  pBarDur=barDurFor(grBpm()); pStart=a.currentTime+0.1; pBar=-1;
+  const n=chords.length;
+  if(grooveOn){ Drums.setVol(+$('grVol').value/100); Drums.start(grBpm(),$('grPat').value,n,pStart); } // groove session (Stats.activity already recorded above)
+  // schedule the first cycle's chord beds up front
+  for(let i=0;i<n;i++) playChordAt(i,pStart+i*pBarDur,pBarDur*0.98);
+  let scheduledCycles=1;
+  timer=setInterval(()=>{
+    const elapsed=a.currentTime-pStart;
+    const b=Math.floor(elapsed/pBarDur);
+    if(b<0)return;
+    // UI highlight follows the audio clock
+    const cur=((b%n)+n)%n;
+    if(cur!==pBar){ pBar=cur; idx=cur; renderStrip(); draw();
+      if(grooveOn){ const ac=$('strip').querySelector('.chip.active'); if(ac) ac.classList.add('pulse'); } // beat-synced breathe, retriggered by the fresh element
+    }
+    // pre-schedule the next cycle's beds just before we reach it (bounded lookahead ~1 bar, so notes don't pile up)
+    if(loopOn()){
+      const base=pStart+scheduledCycles*n*pBarDur;
+      if(base-a.currentTime<=pBarDur+0.2){ // next cycle starts within ~1 bar → schedule it now
+        for(let i=0;i<n;i++) playChordAt(i,base+i*pBarDur,pBarDur*0.98);
+        scheduledCycles++;
+      }
+    } else if(b>=n){ stopPlayback(); draw(); }
+  },40);
+}
+function playLine(){ // step through chords playing just the guide tones (3 & 7) — hear the line move
+  stopPlayback();draw();Stats.activity(TOOL);let d=0;chords.forEach((c,i)=>{lineTimers.push(setTimeout(()=>{idx=i;renderStrip();draw();const gt=QUAL[c[1]].filter(iv=>GUIDE.has(iv));gt.forEach(iv=>tone(rootMidi(c[0])+iv,0.03,1.3,0.26));flash(new Set(gt),1.2);},d));d+=1500;});}
+
+// restore persisted prefs before first render
+(function(){
+  const p=Stats.getPref(TOOL,'prog',null);if(p){$('prog').value=p;}
+  $('singleWrap').style.display=$('prog').value==='single'?'flex':'none';
+  if($('prog').value==='single'){
+    const sr=Stats.getPref(TOOL,'sroot',null);if(sr!==null)$('sroot').value=sr;
+    const sq=Stats.getPref(TOOL,'squal',null);if(sq)$('squal').value=sq;
+  }
+  const go=Stats.getPref(TOOL,'guideOnly',null);if(go!==null)$('guideOnly').checked=go;
+  // groove prefs
+  const gp=Stats.getPref(TOOL,'grPat',null);if(gp)$('grPat').value=gp;
+  const gt=Stats.getPref(TOOL,'grTempo',null);if(gt!==null){$('grTempo').value=gt;$('grTempoVal').textContent=gt;}
+  const gv=Stats.getPref(TOOL,'grVol',null);if(gv!==null)$('grVol').value=gv;
+  const gl=Stats.getPref(TOOL,'grLoop',null);if(gl!==null)$('grLoop').checked=gl;
+})();
+// ---- groove / backing-track controls ----
+function setGroove(on){ grooveOn=on; $('grooveBtn').classList.toggle('on',on); Stats.setPref(TOOL,'groove',on);
+  if(!on){ Drums.stop(); } else if(timer){ // turning groove on mid-play: restart cleanly so drums lock to the grid
+    togglePlay(); togglePlay();
+  }
+}
+$('grooveBtn').onclick=()=>setGroove(!grooveOn);
+$('grPat').onchange=()=>{ Stats.setPref(TOOL,'grPat',$('grPat').value); if(grooveOn&&timer){togglePlay();togglePlay();} };
+$('grTempo').oninput=e=>{ $('grTempoVal').textContent=+e.target.value; };
+$('grTempo').onchange=e=>{ Stats.setPref(TOOL,'grTempo',+e.target.value); if(timer){togglePlay();togglePlay();} }; // re-anchor at new tempo
+$('grVol').oninput=e=>{ Drums.setVol(+e.target.value/100); };
+$('grVol').onchange=e=>{ Stats.setPref(TOOL,'grVol',+e.target.value); };
+$('grLoop').onchange=()=>{ Stats.setPref(TOOL,'grLoop',$('grLoop').checked); };
+$('prog').onchange=()=>{const v=$('prog').value;$('singleWrap').style.display=v==='single'?'flex':'none';Stats.setPref(TOOL,'prog',v);buildChords();};
+$('sroot').onchange=()=>{Stats.setPref(TOOL,'sroot',+$('sroot').value);buildChords();};
+$('squal').onchange=()=>{Stats.setPref(TOOL,'squal',$('squal').value);buildChords();};
+$('guideOnly').onchange=()=>{Stats.setPref(TOOL,'guideOnly',$('guideOnly').checked);draw();};
+$('lab').onchange=draw;
+$('prev').onclick=()=>step(-1);$('next').onclick=()=>step(1);
+$('hearChord').onclick=playChord;$('hearGuide').onclick=playGuide;
+$('playProg').onclick=togglePlay;$('playLine').onclick=playLine;
+buildChords();
+{ const g=Stats.getPref(TOOL,'groove',null); if(g){ grooveOn=true; $('grooveBtn').classList.add('on'); } } // restore groove toggle (no autoplay)
+// Audio lifecycle: stop the progression, drums, and any sustained beds when the tab
+// is hidden or the page unloads — no scheduled hits ring on into a backgrounded tab.
+function haltAudio(){ if(timer) stopPlayback(); else { Drums.stop(); stopTones(); } }
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) haltAudio(); });
+window.addEventListener('pagehide',haltAudio);
+Stats.activity(TOOL); // count the visit toward practice minutes
+</script>
+</body>
+</html>

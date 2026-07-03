@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="header.js" defer></script>
+<script src="theory.js"></script><script src="audio.js"></script><script src="stats.js"></script>
+<title>Scale Pattern Trainer · The Woodshed</title>
+<style>
+  :root{--accent2:#7e95b3;--root:#e0655e}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);padding:24px;display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+  .wrap{width:100%;max-width:960px}
+  a.back{color:var(--muted);text-decoration:none;font-size:14px}a.back:hover{color:var(--ink)}
+  /* masthead override: remove conflicting inline h1 sizing (theme.css masthead sets 1.9rem) */
+  .masthead h1{margin:0 0 5px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .controls{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  .controls label{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center}
+  select,button.ctrl{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer}
+  button.ctrl:hover{border-color:var(--accent)}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+  .seg button{background:var(--panel2);color:var(--muted);border:none;padding:7px 11px;cursor:pointer;font-size:13px;border-right:1px solid var(--line)}
+  .seg button:last-child{border-right:none}
+  .seg button.sel{background:var(--panel);color:var(--ink);border:1px solid var(--line);font-weight:600;box-shadow:0 1px 2px hsl(26 30% 8%/.12)}
+  .board-wrap{overflow-x:auto}
+  svg{display:block;min-width:820px;width:100%}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:10px;align-items:center}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .swatch{width:14px;height:14px;border-radius:50%;display:inline-block}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 12px}
+  .patterns{display:flex;gap:10px;flex-wrap:wrap}
+  .pat{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:13px}
+  .pat:hover{border-color:var(--accent)}
+  .pat.active{border-color:var(--accent2);box-shadow:0 0 0 1px var(--accent2)}
+  .pat.mastered{border-color:var(--good)}
+  .pat .star{font-size:15px;line-height:1}
+  .pat.mastered .star{color:var(--good)}
+  .rosette{flex:none;width:18px;height:18px;min-width:18px;max-width:18px;display:inline-block;vertical-align:middle}
+  .confirm-banner{background:var(--panel2);border:1px solid var(--accent);border-radius:9px;padding:10px 14px;margin-top:12px;font-size:13px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .confirm-banner button{background:hsl(var(--brand));color:#1a1407;border:none;border-radius:7px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer}
+  .confirm-banner button:hover{opacity:.88}
+  .confirm-prog{font-size:12px;color:var(--muted);margin-top:6px}
+  svg.li{display:inline-block;width:1em;height:1em;min-width:0;max-width:none;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em;flex:none}
+  .summary{font-size:13px;color:var(--muted);margin-top:12px}
+  .summary b{color:var(--ink)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+  .big{padding:10px 18px;font-size:15px;font-weight:600;border:none;border-radius:9px;background:var(--accent);color:#1a1407;cursor:pointer}
+  .ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:10px 16px;font-size:14px;cursor:pointer}
+  .ghost:hover{border-color:var(--accent)}
+  .ghost.on{background:var(--good);color:#06140b;border-color:var(--good)}
+  .hint{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead"><img class="masthead-plate" src="../assets/plates/plate-fretboard.png" alt="">
+    <div class="kicker">The Woodshed · Fretboard</div>
+    <h1>Scale Pattern Trainer</h1>
+    <p class="sub">See it, drill it, master it — pentatonic, major, and minor shapes across the neck, with mastery tracking saved on this device.</p>
+  </div>
+  <hr class="fretline">
+
+  <div class="panel">
+    <div class="controls">
+      <label>Scale
+        <select id="scale">
+          <option value="majPent">Major Pentatonic</option>
+          <option value="minPent" selected>Minor Pentatonic</option>
+          <option value="blues">Minor Blues</option>
+          <option value="major">Major (Ionian)</option>
+          <option value="minor">Natural Minor (Aeolian)</option>
+        </select>
+      </label>
+      <label>Root
+        <select id="root"></select>
+      </label>
+      <label>Show
+        <div class="seg" id="view">
+          <button data-v="all" class="sel">Whole neck</button>
+          <button data-v="pos">One position</button>
+        </div>
+      </label>
+      <label>Labels
+        <div class="seg" id="labels">
+          <button data-l="deg" class="sel">Degrees</button>
+          <button data-l="note">Notes</button>
+          <button data-l="none">None</button>
+        </div>
+      </label>
+      <label>Mode
+        <div class="seg" id="dmode">
+          <button data-d="explore" class="sel">Explore</button>
+          <button data-d="drill">Degree drill</button>
+        </div>
+      </label>
+      <label id="compareLabel" style="font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center"><input type="checkbox" id="compare"> ⇄ Pentatonic vs full scale</label>
+      <button class="big" id="play">▶ Hear it</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="board-wrap"><svg id="board" viewBox="0 0 840 230"></svg></div>
+    <div class="legend">
+      <span><span class="swatch" style="background:var(--root)"></span> Root</span>
+      <span><span class="swatch" style="background:var(--accent2)"></span> Scale tone</span>
+      <span id="dropLeg" style="display:none"><span class="swatch" style="background:transparent;border:2px dashed var(--accent)"></span> dropped to make pentatonic</span>
+      <span id="posnote"></span>
+      <span id="relInfo" style="color:var(--muted);font-size:12.5px"></span>
+    </div>
+    <div class="summary" id="cmpNote" style="display:none"></div>
+    <div id="drillRow" style="display:none;margin-top:14px">
+      <div id="drillQ" style="font-size:16px;margin-bottom:10px">Name the degree of the <b style="color:var(--ink)">ringed</b> note.</div>
+      <div class="patterns" id="drillChoices"></div>
+      <div style="margin-top:10px"><button class="big" id="drillNext">New note</button></div>
+      <div id="drillStats" style="margin-top:12px;font-size:12.5px;color:var(--muted);line-height:1.7"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Patterns &amp; mastery</h2>
+    <div class="patterns" id="patterns"></div>
+    <div id="confirmBanners"></div>
+    <div class="row">
+      <button class="ghost" id="masterBtn"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor"></polygon></svg> Mark this pattern mastered</button>
+      <button class="ctrl" id="resetMastery">Reset all mastery</button>
+    </div>
+    <div class="summary" id="summary"></div>
+    <div class="hint">A pattern = one position of the current scale + root. Drill it slowly with the metronome until clean ascending <em>and</em> descending, say the degrees aloud, then mark it mastered. Work toward owning all 5 pentatonic shapes in a key, then connect them (that's the whole-neck view). Mastery is saved per scale + root + position in this browser.</div>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+// NOTES · OPEN_SEMI · OPEN_MIDI · STR_NAMES come from theory.js · ac()/tone() from audio.js
+// Stats · DOMAINS come from stats.js
+const TOOL='scale-trainer';
+const MAXF=15, NUT=46, FW=50, SG=32, TOP=28; // fretboard geometry for this view (px)
+const SCALES={
+  major:{ints:[0,2,4,5,7,9,11],deg:{0:'1',2:'2',4:'3',5:'4',7:'5',9:'6',11:'7'}},
+  minor:{ints:[0,2,3,5,7,8,10],deg:{0:'1',2:'2',3:'♭3',5:'4',7:'5',8:'♭6',10:'♭7'}},
+  majPent:{ints:[0,2,4,7,9],deg:{0:'1',2:'2',4:'3',7:'5',9:'6'}},
+  minPent:{ints:[0,3,5,7,10],deg:{0:'1',3:'♭3',5:'4',7:'5',10:'♭7'}},
+  blues:{ints:[0,3,5,6,7,10],deg:{0:'1',3:'♭3',5:'4',6:'♭5',7:'5',10:'♭7'}},
+};
+let scale=Stats.getPref(TOOL,'scale','minPent');
+let rootPC=Stats.getPref(TOOL,'root',9);
+let view='all', labels='deg', posIdx=0, positions=[], compare=false;
+let drillStreak=0;
+// pentatonic ⇄ full-scale comparison: which 2 diatonic notes get dropped to make the pentatonic
+const FAMILY={major:'major',majPent:'major',minor:'minor',minPent:'minor',blues:'minor'};
+function compareSet(){const full=FAMILY[scale];if(!full)return null;const pent=new Set(SCALES[full==='major'?'majPent':'minPent'].ints);const removed=new Set(SCALES[full].ints.filter(iv=>!pent.has(iv)));return{full,pent,removed};}
+
+// root dropdown — pre-select from persisted pref
+NOTES.forEach((n,i)=>{const o=document.createElement('option');o.value=i;o.textContent=n;if(i===rootPC)o.selected=true;$('root').appendChild(o);});
+// scale select — pre-select from persisted pref
+$('scale').value=scale;
+
+function ints(){return SCALES[scale].ints;}
+function inScale(pc){return ints().includes(((pc-rootPC)%12+12)%12);}
+function degOf(pc){return SCALES[scale].deg[((pc-rootPC)%12+12)%12];}
+
+// positions: anchor a window at each scale-tone fret on the low E string (string 0), frets 0..11.
+// (Stop before fret 12 — it's the octave of the open string, so it would duplicate the fret-0 shape:
+//  this gives the canonical 5 pentatonic boxes / 7 full-scale positions instead of an extra repeat.)
+function computePositions(){
+  const starts=[];
+  for(let f=0;f<12;f++){ if(inScale((OPEN_SEMI[0]+f)%12)) starts.push(f); }
+  // each position window = [start, start+ (scale.length<=5?3:4)]
+  const span = ints().length<=5?3:4;
+  positions = starts.map((s,i)=>({i,start:s,end:Math.min(s+span,MAXF)}));
+  if(posIdx>=positions.length) posIdx=0;
+}
+
+function masteryKey(p){return `${scale}_${rootPC}_${p.start}`;}
+function reviewKey(p){return `${scale}:${rootPC}:${p.start}`;}  // Stats.review key — scoped to scale+root+pos
+function getMastery(){try{return JSON.parse(localStorage.getItem('scaleMastery')||'{}');}catch(e){return{};}}
+function setMastery(m){localStorage.setItem('scaleMastery',JSON.stringify(m));}
+
+/* ---- rosette ----
+   3 concentric rings, outermost→innermost = ring1 (mastered), ring2 (drill evidence), ring3 (confirmed).
+   Each ring gets amber stroke when its criterion is met; var(--line) when not.
+   Radii: outer 8, mid 5.5, inner 3 px — drawn in 18×18 viewBox. */
+function makeRosette(ring1,ring2,ring3){
+  const amber='hsl(var(--brand))';const quiet='var(--line)';
+  const TITLES=['Ring 1: position marked mastered','Ring 2: degree drill ≥10 answers at ≥80% accuracy (30 days)','Ring 3: next-day confirmation completed'];
+  return `<svg class="rosette" viewBox="0 0 18 18" aria-hidden="true"><title>${TITLES.filter((_,i)=>[ring1,ring2,ring3][i]).join(' · ')||'Mastery rosette'}</title>`+
+    `<circle cx="9" cy="9" r="8" fill="none" stroke="${ring1?amber:quiet}" stroke-width="1.5"/>`+
+    `<circle cx="9" cy="9" r="5.5" fill="none" stroke="${ring2?amber:quiet}" stroke-width="1.5"/>`+
+    `<circle cx="9" cy="9" r="3" fill="none" stroke="${ring3?amber:quiet}" stroke-width="1.5"/>`+
+    `</svg>`;
+}
+
+/* Compute ring2: does the current scale (any root) have >=10 drill answers at >=80% in 30 days?
+   Stats.byKey keys for scale-trainer are 'scaleId:degree' (e.g. 'minPent:♭3').
+   We aggregate all degrees for the CURRENT scale only. */
+function computeRing2(){
+  const bk=Stats.byKey(TOOL,30);
+  let tot=0,cor=0;
+  for(const k in bk){
+    const parts=k.split(':');
+    // key format is scaleId:degree (theory.js sets deg which can contain ':' only for
+    // harmonic cases but in practice is a short label — safe to use startsWith)
+    if(parts[0]===scale){tot+=bk[k].a;cor+=bk[k].c;}
+  }
+  return tot>=10&&(tot===0||cor/tot>=0.8);
+}
+
+/* Compute ring3 for a position: does Stats.confirmations() include an entry for
+   TOOL + reviewKey(p) within the last 30 days? */
+function computeRing3(p){
+  const rk=reviewKey(p);
+  return Stats.confirmations(30).some(c=>c.tool===TOOL&&c.key===rk);
+}
+
+/* ---- confirmation session tracker ----
+   When the user starts a confirmation drill for a position, we track answers in-session.
+   8 answers at >=75% that session → complete the review. */
+let confirmSession={active:false,posStart:null,answered:0,correct:0};
+function startConfirmSession(p){
+  confirmSession={active:true,posStart:p.start,answered:0,correct:0};
+  // Switch to drill mode and set the position view
+  posIdx=positions.findIndex(x=>x.start===p.start);
+  if(posIdx<0)posIdx=0;
+  view='pos';syncView();
+  renderPatterns();draw();
+  setDmode('drill');
+  // Show subtle progress note in drill area
+  renderConfirmProgress();
+}
+function confirmSessionRecord(ok){
+  if(!confirmSession.active)return;
+  confirmSession.answered++;
+  if(ok)confirmSession.correct++;
+  const need=8,thresh=0.75;
+  if(confirmSession.answered>=need){
+    const pass=confirmSession.correct/confirmSession.answered>=thresh;
+    const p=positions.find(x=>x.start===confirmSession.posStart);
+    if(p){
+      Stats.review.complete(TOOL,reviewKey(p),pass);
+    }
+    confirmSession={active:false,posStart:null,answered:0,correct:0};
+    renderPatterns();renderConfirmBanners();
+  }
+  renderConfirmProgress();
+}
+function renderConfirmProgress(){
+  const el=$('drillStats');if(!el)return;
+  if(!confirmSession.active){renderDrillStats();return;}
+  const need=8,done=confirmSession.answered,cor=confirmSession.correct;
+  const pct=done?Math.round(100*cor/done):0;
+  el.innerHTML=`<span style="color:var(--accent)">Confirmation drill: ${done}/${need} answers · ${pct}% correct (need ≥8 answers at ≥75% to confirm)</span>`;
+}
+
+/* ---- confirmation banners ---- */
+function renderConfirmBanners(){
+  const wrap=$('confirmBanners'); if(!wrap)return;
+  // Find all due review items for the current scale (any root, any position)
+  // Due items with key matching 'scale:*:*' for current scale and current rootPC
+  const prefix=`${scale}:${rootPC}:`;
+  const due=Stats.review.due().filter(it=>it.tool===TOOL&&it.key.startsWith(prefix));
+  if(!due.length){wrap.innerHTML='';return;}
+  wrap.innerHTML=due.map(it=>{
+    // Extract position start from key 'scale:rootPC:posStart'
+    const parts=it.key.split(':');
+    const posStart=parseInt(parts[2],10);
+    const posN=(positions.findIndex(p=>p.start===posStart)+1)||'?';
+    return `<div class="confirm-banner">`+
+      `<span>Confirm position ${posN} today — degree drill awaits to lock in your memory across sleep.</span>`+
+      `<button data-posstart="${posStart}">Start confirmation drill</button>`+
+      `</div>`;
+  }).join('');
+  wrap.querySelectorAll('button[data-posstart]').forEach(btn=>{
+    btn.onclick=()=>{
+      const ps=parseInt(btn.dataset.posstart,10);
+      const p=positions.find(x=>x.start===ps);
+      if(p)startConfirmSession(p);
+    };
+  });
+}
+
+function draw(active,hideLabels){
+  const svg=$('board'); svg.innerHTML=''; const ns='http://www.w3.org/2000/svg';
+  const boardW=NUT+FW*MAXF;
+  const bg=document.createElementNS(ns,'rect');
+  bg.setAttribute('x',NUT);bg.setAttribute('y',TOP-8);bg.setAttribute('width',FW*MAXF);bg.setAttribute('height',SG*5+16);bg.setAttribute('fill','#241a10');bg.setAttribute('rx',4);svg.appendChild(bg);
+  [3,5,7,9].forEach(f=>{const c=document.createElementNS(ns,'circle');c.setAttribute('cx',NUT+FW*(f-0.5));c.setAttribute('cy',TOP+SG*2.5);c.setAttribute('r',5);c.setAttribute('fill','#3c3020');svg.appendChild(c);});
+  [12].forEach(f=>[1.5,3.5].forEach(s=>{const c=document.createElementNS(ns,'circle');c.setAttribute('cx',NUT+FW*(f-0.5));c.setAttribute('cy',TOP+SG*s);c.setAttribute('r',5);c.setAttribute('fill','#3c3020');svg.appendChild(c);}));
+  for(let f=0;f<=MAXF;f++){const x=NUT+FW*f;const l=document.createElementNS(ns,'line');l.setAttribute('x1',x);l.setAttribute('x2',x);l.setAttribute('y1',TOP-8);l.setAttribute('y2',TOP+SG*5+8);l.setAttribute('stroke',f===0?'#cfd3da':'#5a5043');l.setAttribute('stroke-width',f===0?5:2);svg.appendChild(l);
+    if(f>0){const t=document.createElementNS(ns,'text');t.setAttribute('x',x-FW/2);t.setAttribute('y',TOP+SG*5+24);t.setAttribute('fill','#6b7280');t.setAttribute('font-size','11');t.setAttribute('text-anchor','middle');t.textContent=f;svg.appendChild(t);}}
+  for(let s=0;s<6;s++){const y=TOP+SG*(5-s);const l=document.createElementNS(ns,'line');l.setAttribute('x1',NUT);l.setAttribute('x2',boardW);l.setAttribute('y1',y);l.setAttribute('y2',y);l.setAttribute('stroke','#9aa0aa');l.setAttribute('stroke-width',0.6+s*0.3);svg.appendChild(l);
+    const t=document.createElementNS(ns,'text');t.setAttribute('x',NUT-14);t.setAttribute('y',y+4);t.setAttribute('fill','#6b7280');t.setAttribute('font-size','11');t.setAttribute('text-anchor','end');t.textContent=STR_NAMES[s];svg.appendChild(t);}
+
+  const pos=positions[posIdx];
+  const cmp = compare ? compareSet() : null;
+  const fullDeg = cmp ? SCALES[cmp.full].deg : null;
+  for(let s=0;s<6;s++){
+    for(let f=0;f<=MAXF;f++){
+      const pc=(OPEN_SEMI[s]+f)%12, rel=((pc-rootPC)%12+12)%12;
+      let kind;
+      if(cmp){ kind = cmp.pent.has(rel)?'core':(cmp.removed.has(rel)?'drop':null); if(!kind) continue; }
+      else { if(!inScale(pc)) continue; kind='core'; }
+      if(view==='pos' && pos && (f<pos.start||f>pos.end)) continue;
+      const isRoot=rel===0;
+      const x=f===0?NUT-20:NUT+FW*(f-0.5), y=TOP+SG*(5-s);
+      const c=document.createElementNS(ns,'circle');c.setAttribute('cx',x);c.setAttribute('cy',y);
+      if(kind==='drop'){
+        c.setAttribute('r',10);c.setAttribute('fill','#241a10');c.setAttribute('stroke','var(--accent)');c.setAttribute('stroke-width',1.8);c.setAttribute('stroke-dasharray','3 3');svg.appendChild(c);
+        const t=document.createElementNS(ns,'text');t.setAttribute('x',x);t.setAttribute('y',y+4);t.setAttribute('fill','var(--accent)');t.setAttribute('font-size','11');t.setAttribute('font-weight','700');t.setAttribute('text-anchor','middle');t.textContent=fullDeg[rel];svg.appendChild(t);
+      } else {
+        const on=active&&active.has(s+','+f);
+        c.setAttribute('r',on?14:(isRoot?12:11));c.setAttribute('fill',isRoot?'var(--root)':'var(--accent2)');c.setAttribute('stroke',on?'#fff':'#0f1115');c.setAttribute('stroke-width',on?3:2);svg.appendChild(c);
+        if(labels!=='none'&&!hideLabels){const t=document.createElementNS(ns,'text');t.setAttribute('x',x);t.setAttribute('y',y+4);t.setAttribute('fill',isRoot?'#fff':'#06140b');t.setAttribute('font-size','11');t.setAttribute('font-weight','700');t.setAttribute('text-anchor','middle');t.textContent=labels==='deg'?(cmp?fullDeg[rel]:degOf(pc)):NOTES[pc];svg.appendChild(t);}
+      }
+    }
+  }
+  $('posnote').textContent = view==='pos'&&pos?`Position ${posIdx+1}: frets ${pos.start}–${pos.end}`:'';
+  $('dropLeg').style.display = cmp?'inline-flex':'none';
+  if(cmp){ $('cmpNote').style.display='block'; $('cmpNote').innerHTML = cmp.full==='major'
+    ? 'Major pentatonic = the major scale with the <b>4</b> and <b>7</b> taken out (the dashed notes) — the two tones that clash most over a major chord.'
+    : 'Minor pentatonic = the natural minor scale with the <b>2</b> and <b>♭6</b> taken out (the dashed notes) — the two tones that add the most tension.'; }
+  else { $('cmpNote').style.display='none'; }
+  // always-visible relative key info in legend
+  let relTxt='';
+  if(scale==='minor'||scale==='minPent'||scale==='blues') relTxt=`Relative major: ${NOTES[(rootPC+3)%12]}`;
+  else if(scale==='major'||scale==='majPent') relTxt=`Relative minor: ${NOTES[(rootPC+9)%12]}`;
+  $('relInfo').textContent=relTxt;
+}
+
+function renderPatterns(){
+  const wrap=$('patterns'); wrap.innerHTML=''; const m=getMastery();
+  const ring2=computeRing2(); // same for all positions: drill coverage is per-scale
+  positions.forEach((p,i)=>{
+    const r1=!!m[masteryKey(p)];
+    const r3=computeRing3(p);
+    const el=document.createElement('div');
+    el.className='pat'+(i===posIdx&&view==='pos'?' active':'')+(r1?' mastered':'');
+    el.innerHTML=makeRosette(r1,ring2,r3)+` Pos ${i+1} <span style="color:var(--muted)">fr ${p.start}</span>`;
+    el.onclick=()=>{posIdx=i;view='pos';syncView();draw();renderPatterns();};
+    wrap.appendChild(el);
+  });
+  const total=positions.length, done=positions.filter(p=>m[masteryKey(p)]).length;
+  let rel='';
+  if(scale==='minor'||scale==='minPent')rel=` &nbsp;·&nbsp; relative major: <b>${NOTES[(rootPC+3)%12]}</b> (same notes, different home)`;
+  else if(scale==='major'||scale==='majPent')rel=` &nbsp;·&nbsp; relative minor: <b>${NOTES[(rootPC+9)%12]}</b> (same notes, different home)`;
+  $('summary').innerHTML=`<b>${NOTES[rootPC]} ${scaleName()}</b>: ${done}/${total} positions mastered.${rel}`;
+  const cur=positions[posIdx];
+  $('masterBtn').classList.toggle('on', cur && !!m[masteryKey(cur)]);
+  const _mStar=`<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor"></polygon></svg>`;
+  $('masterBtn').innerHTML = cur && m[masteryKey(cur)] ? `${_mStar} Mastered (click to unmark)` : `${_mStar} Mark this pattern mastered`;
+  renderConfirmBanners();
+}
+function scaleName(){return $('scale').selectedOptions[0].textContent;}
+function syncView(){document.querySelectorAll('#view button').forEach(b=>b.classList.toggle('sel',b.dataset.v===view));}
+
+// audio: play current scale tones ascending then descending (ac()/tone() from audio.js)
+let playTimers=[]; // pending highlight timeouts from the last run
+function play(){
+  stopTones();
+  playTimers.forEach(clearTimeout); playTimers=[];
+  const a=ac();
+  const notes=[];
+  const pos=positions[posIdx];
+  for(let f=0;f<=MAXF;f++)for(let s=0;s<6;s++){const pc=(OPEN_SEMI[s]+f)%12;if(!inScale(pc))continue;if(view==='pos'&&pos&&(f<pos.start||f>pos.end))continue;notes.push({m:OPEN_MIDI[s]+f,s,f});}
+  notes.sort((a,b)=>a.m-b.m);
+  const uniq=[];const seen=new Set();notes.forEach(n=>{if(!seen.has(n.m)){seen.add(n.m);uniq.push(n);}});
+  const seq=view==='pos'?uniq.concat([...uniq].reverse().slice(1)):uniq;
+  let t=a.currentTime+0.05;const dt=0.26;
+  seq.forEach(n=>{tone(n.m,t-a.currentTime,dt*0.95,0.3);
+    const when=(t-a.currentTime)*1000;playTimers.push(setTimeout(()=>draw(new Set([n.s+','+n.f]),dmode==='drill'),when));t+=dt;});
+  playTimers.push(setTimeout(()=>{if(dmode==='explore')draw(null,dmode==='drill');},(t-a.currentTime)*1000+50));
+}
+
+// ---- degree drill ----
+let dmode='explore',drillTarget=null;
+function scaleDegLabels(){return ints().map(iv=>SCALES[scale].deg[iv]);}
+function pickDrill(){
+  const cells=[];for(let s=0;s<6;s++)for(let f=0;f<=MAXF;f++){const pc=(OPEN_SEMI[s]+f)%12;if(!inScale(pc))continue;if(view==='pos'&&positions[posIdx]&&(f<positions[posIdx].start||f>positions[posIdx].end))continue;cells.push({s,f,pc});}
+  if(!cells.length)return;drillTarget=cells[Math.floor(Math.random()*cells.length)];drillTarget.answered=false;
+  draw(new Set([drillTarget.s+','+drillTarget.f]),true);
+  $('drillQ').innerHTML='Name the degree of the <b style="color:var(--ink)">ringed</b> note.';
+  const wrap=$('drillChoices');wrap.innerHTML='';
+  scaleDegLabels().forEach(lbl=>{const b=document.createElement('div');b.className='pat';b.style.fontSize='15px';b.textContent=lbl;b.onclick=()=>answerDrill(lbl,b);wrap.appendChild(b);});
+}
+function answerDrill(lbl,el){
+  if(!drillTarget||drillTarget.answered)return;drillTarget.answered=true;
+  const correct=degOf(drillTarget.pc);const ok=lbl===correct;
+  if(ok) drillStreak++; else drillStreak=0;
+  Stats.record(TOOL,{correct:ok,key:scale+':'+correct,streak:drillStreak});
+  el.style.borderColor=ok?'var(--good)':'var(--bad)';
+  [...$('drillChoices').children].forEach(c=>{if(c.textContent===correct)c.style.borderColor='var(--good)';});
+  $('drillQ').innerHTML=ok?`✓ Yes, that's the <b style="color:var(--good)">${correct}</b> (${NOTES[drillTarget.pc]}).`:`✗ It's the <b style="color:var(--bad)">${correct}</b> (${NOTES[drillTarget.pc]}).`;
+  draw(new Set([drillTarget.s+','+drillTarget.f]),false);
+  tone(OPEN_MIDI[drillTarget.s]+drillTarget.f,0,1,0.3);
+  // Feed the confirmation session tracker if one is active
+  confirmSessionRecord(ok);
+  if(!confirmSession.active) renderDrillStats();
+}
+function renderDrillStats(){
+  const t=Stats.totals(TOOL,30);
+  if(!t.answered){$('drillStats').textContent='';return;}
+  const acc=t.answered?Math.round(100*t.correct/t.answered):0;
+  const weak=Stats.weakKeys(TOOL,{days:30,min:3,worst:3});
+  let weakHtml='';
+  if(weak.length){weakHtml=' &nbsp;·&nbsp; weak degrees: '+weak.map(w=>{const deg=w.key.split(':')[1]||w.key;return`<b>${deg}</b> ${Math.round(100*w.acc)}%`;}).join(', ');}
+  $('drillStats').innerHTML=`<span style="color:var(--muted)">Last 30 days: <span class="display-num">${t.answered}</span> answered, <span class="display-num">${acc}%</span> correct, best streak <span class="display-num">${t.bestStreak}</span>${weakHtml}</span>`;
+}
+function setDmode(d){dmode=d;Stats.setPref(TOOL,'mode',d);document.querySelectorAll('#dmode button').forEach(b=>b.classList.toggle('sel',b.dataset.d===d));$('drillRow').style.display=d==='drill'?'block':'none';if(d==='drill'){pickDrill();renderDrillStats();}else draw();}
+
+function syncCompare(){const show=scale==='majPent'||scale==='minPent';$('compareLabel').style.display=show?'flex':'none';if(!show){compare=false;$('compare').checked=false;}}
+function refresh(){syncCompare();computePositions();renderPatterns();renderConfirmBanners();if(dmode==='drill')pickDrill();else draw();}
+
+$('scale').onchange=e=>{scale=e.target.value;Stats.setPref(TOOL,'scale',scale);refresh();};
+$('root').onchange=e=>{rootPC=+e.target.value;Stats.setPref(TOOL,'root',rootPC);refresh();};
+document.querySelectorAll('#view button').forEach(b=>b.onclick=()=>{view=b.dataset.v;syncView();renderPatterns();if(dmode==='drill')pickDrill();else draw();});
+document.querySelectorAll('#labels button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#labels button').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');labels=b.dataset.l;draw();});
+$('compare').onchange=e=>{compare=e.target.checked;draw();};
+$('play').onclick=play;
+document.querySelectorAll('#dmode button').forEach(b=>b.onclick=()=>setDmode(b.dataset.d));
+$('drillNext').onclick=pickDrill;
+$('masterBtn').onclick=()=>{
+  const m=getMastery();const p=positions[posIdx];const k=masteryKey(p);
+  if(m[k]){delete m[k];}
+  else{
+    m[k]=Date.now();
+    // Enqueue a next-day confirmation — sleep-aware consolidation (pillar 3, law 3)
+    Stats.review.add(TOOL,reviewKey(p),{note:'confirm '+scaleName()+' position '+(posIdx+1)});
+  }
+  setMastery(m);draw();renderPatterns();
+};
+$('resetMastery').onclick=()=>{const m=getMastery();const n=Object.keys(m).length;if(confirm(`Erase mastery for ALL scales and keys — ${n} position${n!==1?'s':''}.  This cannot be undone.`)){setMastery({});renderPatterns();draw();}};
+
+// restore persisted mode after initial render
+const _savedMode=Stats.getPref(TOOL,'mode','explore');
+refresh();
+if(_savedMode==='drill') setDmode('drill');
+Stats.activity(TOOL); // count the visit toward practice minutes
+</script>
+</body>
+</html>

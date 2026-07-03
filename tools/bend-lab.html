@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="stats.js"></script>
+<script src="header.js" defer></script>
+<script src="pitch.js"></script>
+<title>Bend &amp; Vibrato Lab · The Woodshed</title>
+<style>
+  :root{--steel:#7e95b3}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);
+    -webkit-font-smoothing:antialiased;padding:24px;display:flex;justify-content:center}
+  .wrap{width:100%;max-width:660px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:0 0 12px}
+  .controls{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  .controls label{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center}
+  select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-size:14px;cursor:pointer}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{background:var(--panel2);color:var(--muted);border:none;padding:8px 13px;cursor:pointer;font-size:13px;border-right:1px solid var(--line)}
+  .seg button:last-child{border-right:none}
+  .seg button.sel{background:var(--panel);color:var(--ink);font-weight:600}
+  .mode-seg button.sel{color:var(--accent)}
+  .start{padding:13px 20px;font-size:16px;font-weight:600;border:none;border-radius:10px;cursor:pointer;background:var(--accent);color:#1a1407}
+  .start.running{background:var(--bad);color:#fff}
+  .status{font-size:13px;color:var(--muted);margin-top:10px;min-height:18px}
+  .status.err{color:var(--bad)}
+  .tracewrap{position:relative;background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:4px}
+  canvas{display:block;width:100%;height:240px}
+  .live{display:flex;gap:24px;flex-wrap:wrap;align-items:baseline;margin-top:12px}
+  .live .big{font-family:var(--font-display);font-size:30px;font-weight:560;font-variant-numeric:lining-nums}
+  .live .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .result{border-radius:12px;padding:16px;border:1px solid var(--line);background:var(--panel2)}
+  .result.nailed{border-color:var(--good);background:hsl(140 40% 45%/.10)}
+  .result.close{border-color:var(--accent);background:hsl(var(--brand)/.08)}
+  .result.off{border-color:var(--bad);background:hsl(4 70% 55%/.08)}
+  .result .grade{font-family:var(--font-display);font-size:26px;font-weight:560}
+  .result.nailed .grade{color:var(--good)}.result.close .grade{color:var(--accent)}.result.off .grade{color:var(--bad)}
+  .result .detail{font-size:13.5px;color:var(--muted);margin-top:6px;line-height:1.6}
+  .result .detail b{color:var(--ink)}
+  .attempts{list-style:none;padding:0;margin:12px 0 0;font-size:13px}
+  .attempts li{display:flex;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}
+  .attempts li .tag{font-weight:600;min-width:78px}
+  .attempts li .tag.nailed{color:var(--good)}.attempts li .tag.close{color:var(--accent)}.attempts li .tag.off{color:var(--bad)}
+  .attempts li .meta{color:var(--muted)}
+  .hint{font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:10px}
+  .vib-note{font-size:12.5px;color:var(--muted);margin-top:6px}
+  svg.li{display:inline-block;width:1em;height:1em;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead"><img class="masthead-plate" src="../assets/plates/plate-technique.png" alt="">
+    <div class="kicker">The Woodshed · Technique</div>
+    <h1>Bend &amp; Vibrato Lab</h1>
+    <p class="sub">Bends are only right when they land on pitch. This listens: play the start note, bend to the target, and it grades where you landed and how steady you held it.</p>
+  </div>
+  <hr class="fretline">
+
+  <div class="panel">
+    <div class="controls">
+      <label>Mode
+        <div class="seg mode-seg" id="mode"><button data-m="bend" class="sel">Bend</button><button data-m="vibrato">Vibrato</button></div>
+      </label>
+      <label>Start note <select id="startSel"></select></label>
+      <label id="bendWrap">Bend
+        <div class="seg" id="bendAmt"><button data-c="100">½ step</button><button data-c="200" class="sel">Full step</button><button data-c="300">1½ steps</button></div>
+      </label>
+      <button class="start" id="startBtn"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg> Start mic</button>
+    </div>
+    <div class="status" id="status">Pick a start note and bend target, then start the mic. Play the start note first so it can lock on.</div>
+  </div>
+
+  <div class="panel">
+    <div class="tracewrap"><canvas id="trace" width="1200" height="480"></canvas></div>
+    <div class="live" id="liveBend">
+      <div><div class="big" id="liveCents">—</div><div class="lbl">cents from start</div></div>
+      <div><div class="big" id="liveNote">—</div><div class="lbl">heard</div></div>
+      <div><div class="big" id="liveTarget">+200</div><div class="lbl">target</div></div>
+    </div>
+    <div class="live" id="liveVib" style="display:none">
+      <div><div class="big" id="vibRate">—</div><div class="lbl">rate (Hz)</div></div>
+      <div><div class="big" id="vibWidth">—</div><div class="lbl">width (cents pk-pk)</div></div>
+    </div>
+    <div class="vib-note" id="vibNote" style="display:none">Mayer-style vibrato lives around <b>~5–6 Hz</b> and <b>20–60 cents</b> wide. Sustain the start note and oscillate <em>evenly</em>.</div>
+  </div>
+
+  <div class="panel" id="resultPanel" style="display:none">
+    <h2>Last attempt</h2>
+    <div class="result" id="result">
+      <div class="grade" id="rGrade"></div>
+      <div class="detail" id="rDetail"></div>
+    </div>
+    <ul class="attempts" id="attempts"></ul>
+  </div>
+
+  <div class="panel">
+    <h2>How to drill it</h2>
+    <div class="hint">
+      Set the start note to where your bend begins (for the flagship — <b>Slow Dancing in a Burning Room</b> — a lot
+      of it is full-step bends on the G and B strings around the 7th–10th frets). Play the start note clean, then
+      push the bend up. When you reach the top and <em>hold</em> for a beat, the lab grades the peak against your
+      target: within ±10 cents = <b>Nailed</b>, ±25 = <b>Close</b>, otherwise <b>Off</b> with the direction. It also
+      reports how steady the hold was (lower cents of wobble = steadier) and how long the bend took to reach pitch.
+      Switch to <b>Vibrato</b> mode and sustain near the start note to read your rate and width live.
+    </div>
+  </div>
+</div>
+
+<!-- ============ PURE analysis (mirror of scratch bend-analysis.js) ============ -->
+<script>
+window.BendAnalysis=(function(){
+  'use strict';
+  function mean(a){if(!a.length)return 0;var s=0;for(var i=0;i<a.length;i++)s+=a[i];return s/a.length;}
+  function stddev(a){if(a.length<2)return 0;var m=mean(a),s=0;for(var i=0;i<a.length;i++)s+=(a[i]-m)*(a[i]-m);return Math.sqrt(s/a.length);}
+  function ptp(a){var mn=Infinity,mx=-Infinity;for(var i=0;i<a.length;i++){if(a[i]<mn)mn=a[i];if(a[i]>mx)mx=a[i];}return mx-mn;}
+  // gradeBend(samples,targetCents,opts) — samples:[{t,cents}] cents relative to start note.
+  function gradeBend(samples,targetCents,opts){
+    opts=opts||{};
+    var holdMs=opts.holdMs==null?250:opts.holdMs;
+    var nearStart=opts.nearStart==null?30:opts.nearStart;
+    var sustainBand=opts.sustainBand==null?35:opts.sustainBand;
+    var nailed=opts.nailed==null?10:opts.nailed;
+    var close=opts.close==null?25:opts.close;
+    if(!samples||samples.length<3)return null;
+    var startIdx=-1;
+    for(var i=0;i<samples.length;i++){if(Math.abs(samples[i].cents)<=nearStart){startIdx=i;break;}}
+    if(startIdx===-1)startIdx=0;
+    var peakIdx=startIdx;
+    for(var j=startIdx;j<samples.length;j++){if(samples[j].cents>samples[peakIdx].cents)peakIdx=j;}
+    var peak=samples[peakIdx].cents;
+    if(peak<Math.min(nearStart+10,targetCents*0.4))return null;
+    var lo=peakIdx,hi=peakIdx;
+    while(lo>0&&Math.abs(samples[lo-1].cents-peak)<=sustainBand)lo--;
+    while(hi<samples.length-1&&Math.abs(samples[hi+1].cents-peak)<=sustainBand)hi++;
+    var sustainMs=(samples[hi].t-samples[lo].t)*1000;
+    if(sustainMs<holdMs)return null;
+    var windowCents=[];for(var k=lo;k<=hi;k++)windowCents.push(samples[k].cents);
+    var holdMean=mean(windowCents),stability=stddev(windowCents);
+    var errorCents=holdMean-targetCents,absErr=Math.abs(errorCents);
+    var timeToPitchMs=(samples[lo].t-samples[startIdx].t)*1000;
+    var grade;
+    if(absErr<=nailed)grade='Nailed';
+    else if(absErr<=close)grade='Close';
+    else grade=errorCents>0?'Off — sharp':'Off — flat';
+    return{grade:grade,peak:peak,holdMean:holdMean,errorCents:errorCents,absError:absErr,
+      direction:errorCents>=0?'sharp':'flat',stability:stability,sustainMs:sustainMs,
+      timeToPitchMs:timeToPitchMs,within25:absErr<=close};
+  }
+  // analyzeVibrato(samples,opts) -> {rateHz,widthCents,meanCents,cycles,weak}
+  function analyzeVibrato(samples,opts){
+    opts=opts||{};var minCycles=opts.minCycles==null?1.5:opts.minCycles;
+    if(!samples||samples.length<4)return null;
+    var cents=samples.map(function(s){return s.cents;});
+    var m=mean(cents),tSpan=samples[samples.length-1].t-samples[0].t;
+    if(tSpan<=0)return null;
+    var crossings=0,prev=cents[0]-m;
+    for(var i=1;i<cents.length;i++){var cur=cents[i]-m;if((prev<0&&cur>=0)||(prev>0&&cur<=0))crossings++;prev=cur;}
+    var cycles=crossings/2;
+    if(cycles<minCycles)return{rateHz:cycles/tSpan,widthCents:ptp(cents),meanCents:m,cycles:cycles,weak:true};
+    return{rateHz:cycles/tSpan,widthCents:ptp(cents),meanCents:m,cycles:cycles,weak:false};
+  }
+  return{gradeBend:gradeBend,analyzeVibrato:analyzeVibrato,mean:mean,stddev:stddev};
+})();
+</script>
+
+<!-- ============ Mic + canvas glue (impure; uses BendAnalysis + WoodshedPitch) ============ -->
+<script>
+const $=id=>document.getElementById(id);
+const TOOL='bend-lab';
+const P=window.WoodshedPitch, BA=window.BendAnalysis;
+
+// ---- state ----
+let modeVal='bend';
+let targetCents=200;
+let startMidi=null;      // locked start-note MIDI (int) once we hear a clean sustained note
+let mic=null,running=false,starting=false;
+let trace=[];            // {t, cents} relative to startMidi, last ~6s
+const WINDOW_S=6;
+let lastGradeAt=0;
+let attempts=[];
+let targetFlashUntil=0;  // when >now, the target guide line flashes warm amber (a "Nailed" celebration)
+
+// bend-detection FSM
+let inBend=false;        // currently above start note heading up
+let bendSamples=[];      // samples collected during a bend attempt
+
+// ---- populate start-note dropdown E2..E5 ----
+const START_MIN=40, START_MAX=76; // E2..E5
+(function(){
+  const sel=$('startSel');
+  for(let m=START_MIN;m<=START_MAX;m++){
+    const o=document.createElement('option');o.value=m;o.textContent=P.midiToNoteName(m);
+    if(m===55)o.selected=true; // default G3
+    sel.appendChild(o);
+  }
+})();
+let selectedStartMidi=55;
+$('startSel').onchange=e=>{selectedStartMidi=+e.target.value;resetTrace();};
+
+// ---- controls ----
+document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');
+  modeVal=b.dataset.m;
+  const vib=modeVal==='vibrato';
+  $('bendWrap').style.display=vib?'none':'flex';
+  $('liveBend').style.display=vib?'none':'flex';
+  $('liveVib').style.display=vib?'flex':'none';
+  $('vibNote').style.display=vib?'block':'none';
+  resetTrace();
+});
+document.querySelectorAll('#bendAmt button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#bendAmt button').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');
+  targetCents=+b.dataset.c;$('liveTarget').textContent='+'+targetCents;
+});
+
+function bendLabel(){return targetCents===100?'half step':targetCents===300?'1.5 steps':'full step';}
+
+// ---- canvas ----
+const cv=$('trace'),cx=cv.getContext('2d');
+function cssv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function draw(){
+  const W=cv.width,H=cv.height;
+  cx.clearRect(0,0,W,H);
+  // cents range shown: -50 .. targetCents+120 (or a floor so vibrato is visible)
+  const top=Math.max(targetCents+120,180), bot=-60;
+  const y=c=>H-((c-bot)/(top-bot))*H;
+  const line=cssv('--line')||'#333', steel='#7e95b3', accent=cssv('--accent')||'#e0a52a', muted=cssv('--muted')||'#888';
+  // horizontal guides at 0, +100, +200, +300 (whichever in range) + target amber
+  const flashing=performance.now()<targetFlashUntil;
+  cx.font='12px system-ui';cx.textBaseline='middle';
+  [0,100,200,300].forEach(c=>{
+    if(c>top)return;
+    const isTarget=(modeVal==='bend'&&c===targetCents);
+    const hot=isTarget&&flashing;                 // a landed "Nailed" flashes the target line
+    cx.save();
+    if(hot){ cx.shadowColor=accent; cx.shadowBlur=12; }
+    cx.strokeStyle=isTarget?accent:line;cx.lineWidth=hot?4:(isTarget?2:1);
+    cx.setLineDash(isTarget?[]:[4,5]);
+    cx.beginPath();cx.moveTo(46,y(c));cx.lineTo(W,y(c));cx.stroke();
+    cx.restore();
+    cx.setLineDash([]);
+    cx.fillStyle=isTarget?accent:muted;
+    cx.textAlign='right';cx.fillText((c>0?'+':'')+c,40,y(c));
+  });
+  // trace
+  if(trace.length>1){
+    const now=trace[trace.length-1].t, t0=now-WINDOW_S;
+    const xOf=t=>46+((t-t0)/WINDOW_S)*(W-46);
+    cx.strokeStyle=steel;cx.lineWidth=2.5;cx.lineJoin='round';cx.beginPath();
+    let started=false;
+    trace.forEach(p=>{if(p.t<t0)return;const X=xOf(p.t),Y=y(p.cents);if(!started){cx.moveTo(X,Y);started=true;}else cx.lineTo(X,Y);});
+    cx.stroke();
+    // current point amber
+    const last=trace[trace.length-1];
+    cx.fillStyle=accent;cx.beginPath();cx.arc(xOf(last.t),y(last.cents),5,0,Math.PI*2);cx.fill();
+  }
+}
+
+let rafDraw=null;
+function loopDraw(){draw();rafDraw=requestAnimationFrame(loopDraw);}
+
+function resetTrace(){trace=[];bendSamples=[];inBend=false;startMidi=null;draw();
+  $('liveCents').textContent='—';$('liveNote').textContent='—';$('vibRate').textContent='—';$('vibWidth').textContent='—';}
+
+// ---- frame handler ----
+function onFrame(f){
+  if(f.freq==null){return;}
+  $('liveNote').textContent=f.note;
+  // lock the start note: first clean frame near the selected start note (within a semitone)
+  if(startMidi===null){
+    if(Math.abs(f.midi-selectedStartMidi)<=1){startMidi=selectedStartMidi;$('status').textContent='Locked on '+P.midiToNoteName(startMidi)+' — now bend up to +'+targetCents+' and hold.';$('status').className='status';}
+    else{ return; }
+  }
+  // cents relative to the (equal-tempered) start note
+  const startFreq=P.midiToFreq(startMidi);
+  const relCents=1200*Math.log2(f.freq/startFreq);
+  const t=f.t;
+  trace.push({t,cents:relCents});
+  // trim to window (+small margin)
+  const cutoff=t-WINDOW_S-1;
+  while(trace.length&&trace[0].t<cutoff)trace.shift();
+
+  $('liveCents').textContent=(relCents>0?'+':'')+Math.round(relCents);
+
+  if(modeVal==='vibrato'){handleVibrato();return;}
+  handleBend(relCents,t);
+}
+
+// ---- bend FSM: collect from lift-off near start until it drops back / times out, then grade ----
+function handleBend(relCents,t){
+  const NEAR=30;
+  if(!inBend){
+    if(relCents>NEAR){ // started rising
+      inBend=true;
+      // seed with a synthetic start sample so grader sees the origin
+      bendSamples=[{t:t-0.03,cents:0},{t,cents:relCents}];
+    }
+  }else{
+    bendSamples.push({t,cents:relCents});
+    // end the attempt when it falls back near start OR the buffer got long
+    const span=t-bendSamples[0].t;
+    if(relCents<NEAR||span>4){
+      finishBend();
+    }
+  }
+}
+function finishBend(){
+  const samples=bendSamples;inBend=false;bendSamples=[];
+  const g=BA.gradeBend(samples,targetCents);
+  if(!g)return;
+  if(performance.now()-lastGradeAt<400)return; // debounce double-grades
+  lastGradeAt=performance.now();
+  showGrade(g);
+  Stats.record(TOOL,{correct:g.within25,key:bendLabel()});
+}
+
+const REDUCED_MOTION=matchMedia('(prefers-reduced-motion:reduce)').matches;
+function showGrade(g){
+  $('resultPanel').style.display='';
+  const cls=g.grade==='Nailed'?'nailed':g.grade==='Close'?'close':'off';
+  if(g.grade==='Nailed'&&!REDUCED_MOTION) targetFlashUntil=performance.now()+200; // one warm flash on the target line
+  $('result').className='result '+cls;
+  $('rGrade').textContent=g.grade;
+  const errStr=(g.errorCents>=0?'+':'')+Math.round(g.errorCents)+' cents '+g.direction;
+  $('rDetail').innerHTML='Peak <b>'+Math.round(g.holdMean)+'</b> cents vs target +'+targetCents+
+    ' — <b>'+errStr+'</b>. Hold wobble <b>±'+g.stability.toFixed(0)+'</b> cents · reached pitch in <b>'+
+    Math.round(g.timeToPitchMs)+' ms</b> · held <b>'+Math.round(g.sustainMs)+' ms</b>.';
+  attempts.unshift({grade:g.grade,cls:cls,err:Math.round(g.errorCents),dir:g.direction,wob:g.stability});
+  if(attempts.length>8)attempts.pop();
+  renderAttempts();
+}
+function renderAttempts(){
+  const ul=$('attempts');ul.innerHTML='';
+  attempts.forEach(a=>{
+    const li=document.createElement('li');
+    li.innerHTML='<span class="tag '+a.cls+'">'+a.grade+'</span>'+
+      '<span class="meta">'+(a.err>=0?'+':'')+a.err+' cents '+a.dir+' · wobble ±'+a.wob.toFixed(0)+' cents</span>';
+    ul.appendChild(li);
+  });
+}
+
+// ---- vibrato: analyze the last ~1.2s of trace live ----
+function handleVibrato(){
+  const t=trace.length?trace[trace.length-1].t:0;
+  const win=trace.filter(p=>p.t>=t-1.2);
+  if(win.length<6)return;
+  const v=BA.analyzeVibrato(win);
+  if(!v)return;
+  $('vibRate').textContent=v.weak?'—':v.rateHz.toFixed(1);
+  $('vibWidth').textContent=Math.round(v.widthCents);
+}
+
+// ---- start/stop ----
+const MIC_ICON='<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg> Start mic';
+function start(){
+  if(running||starting)return;            // guard rapid double-taps while the mic is opening
+  starting=true; running=true;
+  resetTrace();
+  $('status').textContent='Listening — play the start note ('+P.midiToNoteName(selectedStartMidi)+')…';
+  $('status').className='status';
+  $('startBtn').classList.add('running');$('startBtn').innerHTML='Stop';
+  if(!rafDraw)loopDraw();
+  const m=P.createMic({
+    onFrame:onFrame,
+    onError:err=>{
+      starting=false;
+      if(mic){mic.stop();mic=null;}
+      running=false;$('startBtn').classList.remove('running');$('startBtn').innerHTML=MIC_ICON;
+      if(rafDraw){cancelAnimationFrame(rafDraw);rafDraw=null;}
+      $('status').textContent='Mic blocked — allow microphone access, then tap Start again.';
+      $('status').className='status err';
+    }
+  });
+  if(!running){ m.stop(); starting=false; return; }  // stopped during the async open
+  mic=m; starting=false;
+  Stats.activity(TOOL);
+}
+function stop(){
+  if(mic){mic.stop();mic=null;}
+  running=false;
+  if(rafDraw){cancelAnimationFrame(rafDraw);rafDraw=null;}
+  $('startBtn').classList.remove('running');$('startBtn').innerHTML=MIC_ICON;
+  $('status').textContent='Stopped.';$('status').className='status';
+  draw();
+}
+$('startBtn').onclick=()=>running?stop():start();
+// release the mic if the tab is hidden or the page is torn down mid-capture
+window.addEventListener('pagehide',()=>{ if(running)stop(); });
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'&&running)stop(); });
+
+// initial paint
+$('liveTarget').textContent='+'+targetCents;
+draw();
+
+// surface the site-wide mic-input picker in the header (mic.js loads async via header.js)
+(function sp(){ if(window.WoodshedMic)WoodshedMic.showPicker(); else setTimeout(sp,150); })();
+</script>
+</body>
+</html>

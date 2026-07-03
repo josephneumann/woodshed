@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="header.js" defer></script>
+<script src="theory.js"></script><script src="audio.js"></script><script src="stats.js"></script>
+<title>Triad & CAGED Trainer · The Woodshed</title>
+<style>
+  :root{--accent2:#7e95b3;--root:#e0655e;--third:#e0b15e;--fifth:#7e95b3}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);padding:24px;display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+  .wrap{width:100%;max-width:880px}
+  a.back{color:var(--muted);text-decoration:none;font-size:14px}a.back:hover{color:var(--ink)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .controls{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  .controls label{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center}
+  select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;cursor:pointer}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{background:var(--panel2);color:var(--muted);border:none;padding:8px 13px;cursor:pointer;font-size:13px;border-right:1px solid var(--line)}
+  .seg button:last-child{border-right:none}.seg button.sel{background:var(--panel);color:var(--ink);font-weight:600;border:1px solid var(--line);box-shadow:0 1px 2px hsl(26 30% 8%/.12)}
+  .board-wrap{overflow-x:auto}
+  svg#board{display:block;min-width:760px;width:100%}
+  .pbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+  .pbtn{background:var(--accent);color:#1a1407;border:none;border-radius:9px;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer}
+  .rbtn{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:10px 14px;font-size:13px;cursor:pointer}
+  .rbtn:hover{border-color:var(--accent)}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:10px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}.swatch{width:13px;height:13px;border-radius:50%}
+  .q{font-size:18px;margin-bottom:6px}.q b{color:var(--accent)}
+  .choices{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .choices button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:11px 16px;font-size:15px;font-weight:600;cursor:pointer}
+  .choices button:hover{border-color:var(--accent)}
+  .choices button.right{background:var(--good);border-color:var(--good);color:#06140b}
+  .choices button.wrong{background:var(--bad);border-color:var(--bad);color:#fff}
+  .choices button:disabled{opacity:.7;cursor:default}
+  .stats{display:flex;gap:24px;flex-wrap:wrap;margin-top:6px}
+  .stat .n{font-size:24px;font-weight:700;line-height:1.1}.stat .n.good{color:var(--good)}.stat .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .hist{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.6}
+  .hint{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:10px}
+  label.cb{display:inline-flex;gap:6px;align-items:center}
+  svg.li{display:inline-block;width:1em;height:1em;min-width:0;max-width:none;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em;flex:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead"><img class="masthead-plate" src="../assets/plates/plate-fretboard.png" alt="">
+    <div class="kicker">The Woodshed &middot; Fretboard</div>
+    <h1>Triad &amp; CAGED Trainer</h1>
+    <p class="sub">Triads and their inversions across string sets &mdash; see them, hear them, and name them.</p>
+  </div>
+  <hr class="fretline">
+
+  <div class="panel">
+    <div class="controls">
+      <label>Mode <div class="seg" id="mode"><button data-m="explore" class="sel">Explore</button><button data-m="quiz">Quiz</button></div></label>
+      <label id="rootWrap">Root <select id="root"></select></label>
+      <label id="qualWrap">Quality <select id="quality"><option value="maj">Major</option><option value="min">Minor</option><option value="dim">Diminished</option><option value="aug">Augmented</option></select></label>
+      <label id="setWrap">Strings <select id="stringset"><option value="3,4,5">G B e (top 3)</option><option value="2,3,4">D G B</option><option value="1,2,3">A D G</option><option value="0,1,2">E A D</option></select></label>
+      <label class="cb"><input type="checkbox" id="audio" checked> <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Audio</label>
+    </div>
+  </div>
+
+  <div class="panel" id="quizPanel" style="display:none">
+    <div class="q" id="question"></div>
+    <div class="pbar"><button class="pbtn" id="newq">New voicing</button><button class="rbtn" id="replayQ"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Replay</button></div>
+    <div class="choices" id="choices"></div>
+    <div class="stats">
+      <div class="stat"><div class="n display-num" id="sCount">0</div><div class="l">Answered</div></div>
+      <div class="stat"><div class="n good display-num" id="sAcc">—</div><div class="l">Accuracy</div></div>
+      <div class="stat"><div class="n display-num" id="sStreak">0</div><div class="l">Streak</div></div>
+    </div>
+    <div class="hist" id="hist"></div>
+  </div>
+
+  <div class="panel">
+    <div class="pbar" id="exploreBar"><button class="pbtn" id="hearAll"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Hear all 3 inversions</button><button class="rbtn" id="hear1">Root pos</button><button class="rbtn" id="hear2">1st inv</button><button class="rbtn" id="hear3">2nd inv</button></div>
+    <div class="board-wrap"><svg id="board" viewBox="0 0 760 230"></svg></div>
+    <div class="legend">
+      <span><span class="swatch" style="background:var(--root)"></span> Root (R)</span>
+      <span><span class="swatch" style="background:var(--third)"></span> 3rd</span>
+      <span><span class="swatch" style="background:var(--fifth)"></span> 5th</span>
+    </div>
+    <div class="hint" id="hint"></div>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+// NOTES · OPEN_SEMI · OPEN_MIDI · STR_NAMES · QUAL come from theory.js · ac()/tone() from audio.js · Stats/DOMAINS from stats.js
+const TOOL='triad-trainer';
+const MAXF=15,NUT=46,FW=46,SG=32,TOP=28; // fretboard geometry for this view (px)
+const INVNAMES=['Root position','1st inversion','2nd inversion'];
+let mode='explore',rootPC=0,curInvs=[];
+
+NOTES.forEach((n,i)=>{const o=document.createElement('option');o.value=i;o.textContent=n;$('root').appendChild(o);});
+function degLabel(iv){return ({0:'R',3:'♭3',4:'3',6:'♭5',7:'5',8:'♯5'})[iv]||'?';}
+function lowestFret(str,pc,minF){for(let f=minF;f<=MAXF;f++)if((OPEN_SEMI[str]+f)%12===pc)return f;return -1;}
+function noteFret(str,pc,nearFret){let best=-1,bd=99;for(let f=0;f<=MAXF;f++){if((OPEN_SEMI[str]+f)%12===pc){const d=Math.abs(f-nearFret);if(d<bd){bd=d;best=f;}}}return best;}
+function voicing(strings,ints,inv,minF){const order=[[0,1,2],[1,2,0],[2,0,1]][inv];const pcs=order.map(o=>(rootPC+ints[o])%12);const lo=lowestFret(strings[0],pcs[0],minF);if(lo<0)return null;const mid=noteFret(strings[1],pcs[1],lo);const hi=noteFret(strings[2],pcs[2],mid);if(mid<0||hi<0)return null;return [{str:strings[0],fret:lo,iv:ints[order[0]]},{str:strings[1],fret:mid,iv:ints[order[1]]},{str:strings[2],fret:hi,iv:ints[order[2]]}];}
+function allInversions(strings,ints){const out=[];let minF=0;for(let inv=0;inv<3;inv++){const v=voicing(strings,ints,inv,minF);if(v){out.push({inv,notes:v});minF=Math.min(...v.map(n=>n.fret))+1;}}return out;}
+
+function drawBoard(groups,showLabels,active){
+  const svg=$('board');svg.innerHTML='';const ns='http://www.w3.org/2000/svg';const boardW=NUT+FW*MAXF;
+  const bg=document.createElementNS(ns,'rect');bg.setAttribute('x',NUT);bg.setAttribute('y',TOP-8);bg.setAttribute('width',FW*MAXF);bg.setAttribute('height',SG*5+16);bg.setAttribute('fill','#241a10');bg.setAttribute('rx',4);svg.appendChild(bg);
+  [3,5,7,9].forEach(f=>{const c=document.createElementNS(ns,'circle');c.setAttribute('cx',NUT+FW*(f-0.5));c.setAttribute('cy',TOP+SG*2.5);c.setAttribute('r',5);c.setAttribute('fill','#3c3020');svg.appendChild(c);});
+  [12].forEach(f=>[1.5,3.5].forEach(s=>{const c=document.createElementNS(ns,'circle');c.setAttribute('cx',NUT+FW*(f-0.5));c.setAttribute('cy',TOP+SG*s);c.setAttribute('r',5);c.setAttribute('fill','#3c3020');svg.appendChild(c);}));
+  for(let f=0;f<=MAXF;f++){const x=NUT+FW*f;const l=document.createElementNS(ns,'line');l.setAttribute('x1',x);l.setAttribute('x2',x);l.setAttribute('y1',TOP-8);l.setAttribute('y2',TOP+SG*5+8);l.setAttribute('stroke',f===0?'#cfd3da':'#5a5043');l.setAttribute('stroke-width',f===0?5:2);svg.appendChild(l);if(f>0){const t=document.createElementNS(ns,'text');t.setAttribute('x',x-FW/2);t.setAttribute('y',TOP+SG*5+24);t.setAttribute('fill','#6b7280');t.setAttribute('font-size','11');t.setAttribute('text-anchor','middle');t.textContent=f;svg.appendChild(t);}}
+  for(let s=0;s<6;s++){const y=TOP+SG*(5-s);const l=document.createElementNS(ns,'line');l.setAttribute('x1',NUT);l.setAttribute('x2',boardW);l.setAttribute('y1',y);l.setAttribute('y2',y);l.setAttribute('stroke','#9aa0aa');l.setAttribute('stroke-width',0.6+s*0.3);svg.appendChild(l);const t=document.createElementNS(ns,'text');t.setAttribute('x',NUT-14);t.setAttribute('y',y+4);t.setAttribute('fill','#6b7280');t.setAttribute('font-size','11');t.setAttribute('text-anchor','end');t.textContent=STR_NAMES[s];svg.appendChild(t);}
+  const color=iv=>iv===0?'var(--root)':(iv===3||iv===4)?'var(--third)':'var(--fifth)';
+  const fx=n=>n.fret===0?NUT-20:NUT+FW*(n.fret-0.5);
+  const isActive=n=>active&&active.has(n.str+','+n.fret);
+  (groups||[]).forEach(grp=>{
+    grp.notes.forEach(n=>{const x=fx(n),y=TOP+SG*(5-n.str);const on=isActive(n);const c=document.createElementNS(ns,'circle');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',on?15:12);c.setAttribute('fill',color(n.iv));c.setAttribute('stroke',on?'#fff':'#0f1115');c.setAttribute('stroke-width',on?3:2);svg.appendChild(c);if(showLabels){const t=document.createElementNS(ns,'text');t.setAttribute('x',x);t.setAttribute('y',y+4);t.setAttribute('fill','#0f1115');t.setAttribute('font-size','11');t.setAttribute('font-weight','700');t.setAttribute('text-anchor','middle');t.textContent=degLabel(n.iv);svg.appendChild(t);}});
+    if(grp.label&&grp.tag){const cx=grp.notes.reduce((a,n)=>a+fx(n),0)/grp.notes.length;const t=document.createElementNS(ns,'text');t.setAttribute('x',cx);t.setAttribute('y',TOP-14);t.setAttribute('fill','var(--muted)');t.setAttribute('font-size','10');t.setAttribute('text-anchor','middle');t.textContent=grp.tag;svg.appendChild(t);}
+  });
+}
+let curGroups=[],curShowLabels=true;
+function show(groups,showLabels){curGroups=groups;curShowLabels=showLabels;drawBoard(groups,showLabels,null);}
+// play a voicing: arpeggiate low→high (each lights), then all together
+function playVoicing(notes){
+  const sorted=[...notes].sort((a,b)=>(OPEN_MIDI[a.str]+a.fret)-(OPEN_MIDI[b.str]+b.fret));
+  let t=0.05;const step=0.34;
+  sorted.forEach((n,i)=>{tone(OPEN_MIDI[n.str]+n.fret,t,step*0.95,0.26);lightAfter(t,new Set([n.str+','+n.fret]),step*0.95);t+=step;});
+  t+=0.12;const allSet=new Set(notes.map(n=>n.str+','+n.fret));sorted.forEach(n=>tone(OPEN_MIDI[n.str]+n.fret,t,1.3,0.2));lightAfter(t,allSet,1.3);
+  return t+1.3;
+}
+function lightAfter(start,set,hold){setTimeout(()=>{drawBoard(curGroups,curShowLabels,set);setTimeout(()=>drawBoard(curGroups,curShowLabels,null),hold*1000);},start*1000);}
+
+function explore(){
+  const strings=$('stringset').value.split(',').map(Number);const ints=QUAL[$('quality').value];
+  curInvs=allInversions(strings,ints);
+  const groups=curInvs.map(g=>({notes:g.notes,label:true,tag:INVNAMES[g.inv].replace('inversion','inv')}));
+  show(groups,true);
+  $('hint').innerHTML=`The three inversions of <b style="color:var(--ink)">${NOTES[rootPC]} ${$('quality').selectedOptions[0].textContent}</b> on the ${$('stringset').selectedOptions[0].textContent.split(' (')[0]} strings. Hear each (R-3-5, then together), then practice gliding between them on one chord.`;
+  Stats.activity(TOOL);
+  savePrefs();
+}
+function hearInv(i){if(curInvs[i])playVoicing(curInvs[i].notes);}
+function hearAll(){let i=0;(function next(){if(i>=curInvs.length)return;const dur=playVoicing(curInvs[i++].notes);setTimeout(next,(dur+0.15)*1000);})();}
+
+// --- quiz ---
+let cur=null,count=0,correct=0,streak=0,qStart=0;
+
+// Bounded newQuiz: try up to MAX_RETRY random combos; fall back to C maj / root pos / top-3 strings.
+const QUIZ_SETS=['3,4,5','2,3,4','1,2,3','0,1,2'];
+const QUIZ_QUALS=['maj','min','dim','aug'];
+const MAX_RETRY=24;
+const FALLBACK={rootPC:0,qk:'maj',ss:'3,4,5'};
+
+function newQuiz(){
+  let foundRootPC=FALLBACK.rootPC,foundQk=FALLBACK.qk,foundSs=FALLBACK.ss,foundInvs=null;
+  // first try a random combo, bound retries so we never hang
+  for(let attempt=0;attempt<MAX_RETRY;attempt++){
+    const tryRoot=Math.floor(Math.random()*12);
+    const tryQk=QUIZ_QUALS[Math.floor(Math.random()*4)];
+    const trySs=QUIZ_SETS[Math.floor(Math.random()*QUIZ_SETS.length)];
+    // temporarily update rootPC to compute voicings
+    const savedRoot=rootPC; rootPC=tryRoot;
+    const tryStrings=trySs.split(',').map(Number);
+    const tryInts=QUAL[tryQk];
+    const tryInvs=allInversions(tryStrings,tryInts);
+    rootPC=savedRoot;
+    if(tryInvs.length>0){foundRootPC=tryRoot;foundQk=tryQk;foundSs=trySs;foundInvs=tryInvs;break;}
+  }
+  // if all retries failed, use fallback combo (C maj on top-3 strings always has voicings)
+  if(!foundInvs){
+    rootPC=FALLBACK.rootPC;
+    const fbStrings=FALLBACK.ss.split(',').map(Number);
+    rootPC=FALLBACK.rootPC;
+    foundInvs=allInversions(fbStrings,QUAL[FALLBACK.qk]);
+    foundRootPC=FALLBACK.rootPC;foundQk=FALLBACK.qk;foundSs=FALLBACK.ss;
+  }
+
+  rootPC=foundRootPC;
+  $('root').value=rootPC;
+  $('quality').value=foundQk;
+  $('stringset').value=foundSs;
+
+  const pick=foundInvs[Math.floor(Math.random()*foundInvs.length)];
+  cur={answer:INVNAMES[pick.inv],notes:pick.notes,qk:foundQk,inv:INVNAMES[pick.inv]};
+  show([{notes:pick.notes}],false);
+  $('question').innerHTML=`<b>${NOTES[rootPC]} ${$('quality').selectedOptions[0].textContent}</b> on ${$('stringset').selectedOptions[0].textContent.split(' (')[0]}. Listen, then name the inversion.`;
+  const ch=$('choices');ch.innerHTML='';INVNAMES.forEach(n=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>ansQuiz(n,b);ch.appendChild(b);});
+  qStart=Date.now();
+  setTimeout(()=>playVoicing(pick.notes),200);
+  Stats.setPref(TOOL,'mode',mode); // persist mode only — don't clobber Explore prefs with quiz-randomized values
+}
+
+function ansQuiz(name,btn){
+  if(!cur||cur.done)return;cur.done=true;
+  const ok=name===cur.answer;
+  [...$('choices').children].forEach(b=>{b.disabled=true;if(b.textContent===cur.answer)b.classList.add('right');});
+  if(!ok)btn.classList.add('wrong');
+  count++;if(ok){correct++;streak++;}else streak=0;
+  $('sCount').textContent=count;$('sAcc').textContent=Math.round(correct/count*100)+'%';$('sStreak').textContent=streak;
+  show([{notes:cur.notes}],true);setTimeout(()=>playVoicing(cur.notes),250);
+  // record to stats
+  const ms=Date.now()-qStart;
+  const statKey=cur.qk+':'+cur.inv;
+  Stats.record(TOOL,{correct:ok,key:statKey,ms,streak});
+  renderHist();
+}
+
+// --- last-30-days summary ---
+function renderHist(){
+  const el=$('hist'); if(!el)return;
+  const t=Stats.totals(TOOL,30);
+  if(!t.answered){el.textContent='';return;}
+  const acc=t.answered?Math.round(t.correct/t.answered*100)+'%':'—';
+  let html=`Last 30 days: <b class="tab-num">${t.answered}</b> answered, <b class="tab-num">${acc}</b> accuracy, best streak <b class="tab-num">${t.bestStreak}</b>.`;
+  const weak=Stats.weakKeys(TOOL,{min:4,worst:3,days:30});
+  if(weak.length){
+    const parts=weak.map(w=>`${w.key} (${Math.round(w.acc*100)}%)`);
+    html+=` Weakest: ${parts.join(', ')}.`;
+  }
+  el.innerHTML=html;
+}
+
+// --- prefs ---
+function savePrefs(){
+  Stats.setPref(TOOL,'rootPC',rootPC);
+  Stats.setPref(TOOL,'quality',$('quality').value);
+  Stats.setPref(TOOL,'stringset',$('stringset').value);
+  Stats.setPref(TOOL,'mode',mode);
+}
+function loadPrefs(){
+  rootPC=Stats.getPref(TOOL,'rootPC',0);
+  const q=Stats.getPref(TOOL,'quality','maj');
+  const ss=Stats.getPref(TOOL,'stringset','3,4,5');
+  const m=Stats.getPref(TOOL,'mode','explore');
+  $('root').value=rootPC;
+  $('quality').value=q;
+  $('stringset').value=ss;
+  // set mode button visual
+  document.querySelectorAll('#mode button').forEach(b=>{b.classList.toggle('sel',b.dataset.m===m);});
+  return m;
+}
+
+function setMode(m){mode=m;$('quizPanel').style.display=m==='quiz'?'block':'none';$('exploreBar').style.display=m==='explore'?'flex':'none';['rootWrap','qualWrap','setWrap'].forEach(id=>$(id).style.display=m==='explore'?'flex':'none');Stats.setPref(TOOL,'mode',mode);if(m==='explore'){loadPrefs();explore();}else{newQuiz();renderHist();}}
+document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');setMode(b.dataset.m);});
+$('root').onchange=e=>{rootPC=+e.target.value;if(mode==='explore'){explore();}else savePrefs();};
+$('quality').onchange=()=>{if(mode==='explore')explore();else savePrefs();};
+$('stringset').onchange=()=>{if(mode==='explore')explore();else savePrefs();};
+$('newq').onclick=newQuiz;$('replayQ').onclick=()=>cur&&playVoicing(cur.notes);
+$('hearAll').onclick=hearAll;$('hear1').onclick=()=>hearInv(0);$('hear2').onclick=()=>hearInv(1);$('hear3').onclick=()=>hearInv(2);
+
+// init: restore prefs, then start in the saved mode
+const initMode=loadPrefs();
+if(initMode==='quiz'){mode='quiz';$('quizPanel').style.display='block';$('exploreBar').style.display='none';['rootWrap','qualWrap','setWrap'].forEach(id=>$(id).style.display='none');newQuiz();renderHist();}else{mode='explore';explore();}
+</script>
+</body>
+</html>

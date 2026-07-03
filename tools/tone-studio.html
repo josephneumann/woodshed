@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tone Studio · The Woodshed</title>
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="stats.js"></script>
+<script src="audio.js"></script>
+<script src="header.js" defer></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);padding:24px;display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+.wrap{width:100%;max-width:1000px}
+input[type=text],textarea,select{background:hsl(var(--card));color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-size:14px;font-family:inherit;width:100%}
+input[type=text]:focus,textarea:focus,select:focus{outline:2px solid hsl(var(--ring));outline-offset:1px}
+textarea{resize:vertical;min-height:48px}
+
+/* lucide inline svgs */
+svg.li{display:inline-block;width:1em;height:1em;min-width:0;max-width:none;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em;flex:none}
+
+.panel{background:hsl(var(--card));border:1px solid var(--line);border-radius:12px;padding:22px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
+.panel-label{font-size:.68rem;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);margin:0 0 14px;display:flex;align-items:center;gap:8px}
+/* bay headers as quiet eyebrows */
+.bay-label{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;display:flex;align-items:center;gap:7px}
+.bay-label::before{content:"";width:12px;height:1px;background:hsl(var(--brand)/.45);flex:none}
+
+/* rig board layout: top row = guitar | amp; chain = full-width strip below */
+.rig-top{display:grid;grid-template-columns:minmax(250px,1fr) minmax(320px,1.5fr);gap:18px;align-items:stretch}
+.bay{background:hsl(var(--secondary)/.5);border:1px solid var(--line);border-radius:10px;padding:16px}
+/* the amp floats centered in its bay so the two-bay row reads balanced */
+#ampBay{display:flex;flex-direction:column}
+#ampBay .amp-head{margin:auto 0;width:100%;max-width:480px;align-self:center}
+
+/* ---- PEDAL SHELF: full-width expanding library grid (scales to 50+ pedals) ---- */
+.shelf-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.shelf-head .panel-label{margin:0}
+.shelf-search{flex:1;min-width:150px;max-width:260px;background:hsl(var(--card));color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 11px;font-size:.82rem;font-family:var(--font-ui)}
+.shelf-search:focus{outline:none;border-color:hsl(var(--brand)/.6)}
+.shelf-filters{display:flex;gap:6px;flex-wrap:wrap}
+.shelf-type{font-size:.68rem;padding:4px 10px;border-radius:14px;border:1px solid var(--line);background:hsl(var(--card));color:var(--muted);cursor:pointer;text-transform:capitalize;transition:.15s}
+.shelf-type:hover{border-color:hsl(var(--brand)/.5);color:var(--ink)}
+.shelf-type.on{border-color:hsl(var(--brand));color:var(--ink);font-weight:600}
+.shelf-count{font-size:.7rem;color:var(--muted);margin-left:auto;font-variant-numeric:tabular-nums}
+.shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:18px 12px;justify-items:center;padding:4px 0}
+.shelf .wsd-pedal{--pedal-w:104px;cursor:grab}
+.shelf .wsd-pedal:active{cursor:grabbing}
+.shelf .wsd-pedal.in-chain{opacity:.4;pointer-events:none}
+.shelf-empty{grid-column:1/-1;color:var(--muted);font-size:.82rem;font-style:italic;padding:14px 4px}
+.shelf-hint{font-size:.72rem;color:var(--muted);margin:10px 0 0;padding-left:2px}
+
+/* ---- THE CHAIN: full-width horizontal strip (the star) ---- */
+.chain-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.chain-flow-note{font-size:.72rem;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.chain-flow-note svg.li{color:hsl(var(--brand-strong))}
+/* wraps into rows like the REAL board: signal enters bottom-right, runs right→left,
+   wraps UP, top row also right→left, out top-left to the amp.
+   row-reverse = fill from the right; wrap-reverse = first line at the bottom. */
+.chain{display:flex;flex-direction:row-reverse;flex-wrap:wrap-reverse;align-items:flex-start;row-gap:20px;min-height:220px;padding:18px 14px;border:1px dashed var(--line);border-radius:12px;background:hsl(var(--secondary)/.35)}
+.chain .wsd-pedal{--pedal-w:150px}
+.chain.drag-over{border-color:hsl(var(--brand)/.6);background:hsl(var(--brand)/.06)}
+/* slot is row-reverse too so each connector arrow lands LEFT of its pedal,
+   i.e. between pedal N (right) and pedal N+1 (left) */
+.chain-slot{display:flex;flex-direction:row-reverse;align-items:center;flex:none;scroll-snap-align:start}
+.chain-item{flex:none;transition:transform .15s ease,opacity .15s ease}
+.chain-item.drag-ghost{opacity:.35}
+/* arrow connector between chain pedals */
+.chain-arrow{flex:none;width:38px;display:flex;align-items:center;justify-content:center;color:var(--muted);opacity:.7;transition:color .28s ease,opacity .28s ease,filter .28s ease}
+.chain-arrow svg.li{width:22px;height:22px}
+/* ambient signal pulse riding the chain (classes stepped by startSignalFlow) */
+.chain-arrow.sig-arrow{color:hsl(var(--brand));opacity:1;filter:drop-shadow(0 0 5px hsl(var(--brand)/.55))}
+.chain .wsd-pedal-led{transition:box-shadow .28s ease,filter .28s ease}
+.chain .wsd-pedal-led.sig-led{box-shadow:0 0 13px 3px var(--pedal-led),inset 0 0 2px rgba(0,0,0,.35);filter:brightness(1.35)}
+/* per-pedal reorder + remove controls under the pedal */
+.ci-ctl{display:flex;justify-content:center;gap:5px;margin-top:8px}
+.ci-num{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:.58rem;font-weight:700;color:hsl(var(--brand-foreground));background:hsl(var(--brand));border-radius:20px;padding:1px 7px;font-variant-numeric:tabular-nums;z-index:3;box-shadow:var(--shadow-sm)}
+.arr-btn{background:hsl(var(--card));border:1px solid var(--line);border-radius:6px;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);flex:none;transition:.15s;padding:0}
+.arr-btn:hover{border-color:hsl(var(--brand)/.6);color:var(--ink)}
+.arr-btn.danger:hover{border-color:hsl(var(--destructive));color:hsl(var(--destructive))}
+.arr-btn:disabled{opacity:.3;cursor:not-allowed}
+/* the wrapper holding a chain pedal + its number badge + controls */
+.chain-pedal-wrap{position:relative;display:flex;flex-direction:column;align-items:center;cursor:grab}
+.chain-pedal-wrap:active{cursor:grabbing}
+/* knobs rendered ON the pedal face when flipped 'open' */
+.ci-face-knobs{display:flex;flex-wrap:wrap;gap:4px 6px;justify-content:center;align-content:center;width:100%;padding:2px}
+.ci-face-knobs .knob-wrap{width:42px;gap:1px}
+.ci-face-knobs .knob{width:38px;height:38px}
+.ci-face-knobs .knob-name{font-size:.5rem;letter-spacing:.02em}
+.ci-face-knobs .knob-val{font-size:.62rem}
+.ci-face-hint{font-size:.58rem;text-transform:uppercase;letter-spacing:.08em;color:hsl(var(--pedal-led,var(--muted)));opacity:.85;text-align:center}
+/* chain empty-state ghost pedal */
+.chain-empty{--pedal-w:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;width:100%;color:var(--muted);padding:12px}
+.ghost-pedal{width:var(--pedal-w);height:calc(var(--pedal-w)*1.5);border:2px dashed hsl(var(--border));border-radius:14px;display:flex;align-items:center;justify-content:center;opacity:.6}
+.ghost-pedal svg.li{width:40px;height:40px;color:var(--muted)}
+.chain-empty-text{font-size:.82rem;letter-spacing:.01em}
+
+/* buttons */
+.icon-btn{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:.8rem;cursor:pointer;color:var(--muted);display:inline-flex;align-items:center;gap:6px;transition:.15s;font-family:inherit}
+.icon-btn:hover{border-color:hsl(var(--brand)/.6);color:var(--ink)}
+.icon-btn.danger:hover{border-color:hsl(var(--destructive));color:hsl(var(--destructive))}
+.icon-btn:disabled{opacity:.32;cursor:not-allowed}
+
+/* the ONE amber action */
+.btn-amber{background:hsl(var(--brand));color:hsl(var(--brand-foreground));border:1px solid hsl(var(--brand));border-radius:8px;padding:9px 16px;font-size:.86rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:.15s;font-family:inherit}
+.btn-amber:hover{filter:brightness(1.05);box-shadow:var(--shadow-md)}
+.btn-amber:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+
+/* pickup / position chips */
+.chip-row{display:flex;flex-wrap:wrap;gap:6px}
+.pk-chip{font-size:.76rem;font-weight:600;padding:5px 11px;border-radius:20px;cursor:pointer;border:1.5px solid var(--line);background:hsl(var(--card));color:var(--muted);transition:.15s;user-select:none}
+.pk-chip:hover{border-color:hsl(var(--brand)/.5);color:var(--ink)}
+.pk-chip.on{border-color:hsl(var(--brand)/.7);color:hsl(var(--brand-strong));background:hsl(var(--brand)/.1)}
+.split-toggle{display:inline-flex;align-items:center;gap:6px;font-size:.76rem;color:var(--muted);cursor:pointer;margin-top:10px;user-select:none}
+.split-toggle input{width:auto;margin:0}
+
+.guitar-meta{font-size:.74rem;color:var(--muted);margin:8px 0 4px;line-height:1.5}
+.guitar-meta strong{color:var(--ink);font-weight:600}
+
+/* knob component */
+.knob-wrap{display:inline-flex;flex-direction:column;align-items:center;gap:3px;width:62px;user-select:none}
+.knob{width:52px;height:52px;cursor:ns-resize;touch-action:none;border-radius:50%;transition:transform .12s ease}
+.knob:focus-visible{outline:2px solid hsl(var(--ring));outline-offset:2px}
+.knob.dragging{transform:scale(1.06)}
+.knob-name{font-size:.62rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);text-align:center;line-height:1.2}
+/* the value doubles as a numeric entry — click it to type */
+.knob-val{font-size:.82rem;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;cursor:text;border-bottom:1px dashed transparent;line-height:1.3;min-height:1.3em}
+.knob-val:hover{border-bottom-color:hsl(var(--brand)/.55)}
+.knob-val-input{width:44px;font-size:.8rem;font-weight:600;text-align:center;padding:0 2px;border:1px solid hsl(var(--brand)/.6);border-radius:5px;background:hsl(var(--card));color:var(--ink);font-family:inherit;font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.knob-val-input::-webkit-outer-spin-button,.knob-val-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.knob-val-input:focus{outline:none}
+.knob-bank{display:flex;flex-wrap:wrap;gap:10px 4px;justify-content:center}
+
+/* amp head visual — the user's TWEED Blues Jr IV: lacquered tweed cabinet,
+   dark top control panel (Volume · Fat · Treble · Bass · Middle · Master · Reverb),
+   oxblood grille below, glossy amber pilot jewel */
+.amp-head{position:relative;border-radius:11px;padding:13px;
+  background:
+    repeating-linear-gradient(52deg,hsl(42 42% 66%/.85) 0 3px,hsl(38 38% 56%/.85) 3px 5px,hsl(44 45% 70%/.85) 5px 8px),
+    repeating-linear-gradient(-52deg,hsl(40 40% 62%/.5) 0 3px,hsl(36 34% 52%/.5) 3px 6px),
+    hsl(40 42% 62%);
+  border:1px solid hsl(30 35% 26%);
+  box-shadow:inset 0 0 0 2px hsl(38 30% 45%/.5),inset 0 1px 0 hsl(46 50% 80%/.5),var(--shadow-md)}
+/* lacquer sheen over the weave */
+.amp-head::before{content:"";position:absolute;inset:0;border-radius:10px;pointer-events:none;
+  background:linear-gradient(115deg,hsl(48 60% 92%/.22) 0 28%,transparent 42%),
+    linear-gradient(180deg,transparent 60%,hsl(28 40% 24%/.18));}
+/* dark control panel strip holding the knobs */
+.amp-panel{position:relative;background:linear-gradient(180deg,hsl(26 12% 13%),hsl(26 14% 8%));
+  border:1px solid hsl(26 14% 4%);border-radius:7px;padding:11px 10px 9px;margin-bottom:11px;
+  box-shadow:inset 0 1px 0 hsl(40 20% 40%/.14),0 1px 3px hsl(20 40% 2%/.5)}
+.amp-plate{position:relative;background:linear-gradient(180deg,hsl(40 34% 90%),hsl(38 28% 82%));color:hsl(26 30% 14%);border-radius:5px;padding:5px 10px;text-align:center;font-family:var(--font-display);font-weight:560;font-size:.84rem;letter-spacing:.01em;margin-bottom:11px;box-shadow:inset 0 0 0 1px hsl(30 20% 60%/.4),0 1px 2px hsl(20 40% 2%/.4)}
+.amp-knobs{position:relative;display:flex;flex-wrap:wrap;gap:8px 4px;justify-content:center;align-items:flex-start}
+.amp-knobs .knob-wrap{width:52px}
+.amp-knobs .knob{width:42px;height:42px}
+/* oxblood grille cloth below the panel */
+.amp-grille{position:relative;height:56px;border-radius:6px;background:
+  repeating-linear-gradient(90deg,hsl(12 32% 24%) 0 1.5px,hsl(10 30% 13%) 1.5px 4px),
+  repeating-linear-gradient(0deg,hsl(14 30% 22%/.55) 0 1.5px,hsl(10 28% 12%/.55) 1.5px 4px);
+  border:1px solid hsl(28 30% 30%);box-shadow:inset 0 1px 4px hsl(20 40% 2%/.55)}
+/* glossy amber pilot jewel on the control panel */
+.amp-jewel{position:absolute;top:14px;right:16px;width:11px;height:11px;border-radius:50%;z-index:2;
+  background:radial-gradient(circle at 35% 30%,hsl(42 100% 82%),hsl(38 96% 54%) 45%,hsl(30 90% 34%) 100%);
+  box-shadow:0 0 7px hsl(38 96% 54%/.75),inset 0 0 0 1px hsl(30 60% 20%/.6)}
+/* FAT switch — little rocker in the knob row */
+.amp-switch{display:inline-flex;flex-direction:column;align-items:center;gap:3px;width:44px;user-select:none;cursor:pointer;padding-top:4px}
+.amp-switch .sw-track{width:16px;height:30px;border-radius:8px;background:linear-gradient(180deg,hsl(26 10% 6%),hsl(26 12% 16%));border:1px solid hsl(26 14% 3%);box-shadow:inset 0 1px 3px hsl(20 40% 2%/.8);position:relative;transition:.15s}
+.amp-switch .sw-nub{position:absolute;left:1.5px;width:11px;height:12px;border-radius:5px;top:15px;transition:top .15s ease,background .15s ease;
+  background:linear-gradient(180deg,hsl(40 12% 72%),hsl(36 10% 46%));box-shadow:0 1px 2px hsl(20 40% 2%/.6),inset 0 1px 0 hsl(46 30% 88%/.7)}
+.amp-switch.on .sw-nub{top:2px;background:linear-gradient(180deg,hsl(42 90% 66%),hsl(36 85% 46%))}
+.amp-switch .knob-name{margin-top:1px}
+.amp-switch .sw-state{font-size:.62rem;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.amp-switch.on .sw-state{color:hsl(var(--brand-strong))}
+
+/* presets */
+.preset-row{display:flex;align-items:flex-start;gap:12px;border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:hsl(var(--card));transition:.15s}
+.preset-row:not(:last-child){margin-bottom:10px}
+.preset-body{flex:1;min-width:0}
+.preset-title{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.preset-title h3{margin:0;font-size:.95rem;font-weight:600;line-height:1.2}
+.preset-desc{font-size:.8rem;color:var(--muted);line-height:1.5;margin-top:4px}
+.badge{font-size:.62rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--muted)}
+.badge.coach{border-color:hsl(var(--brand)/.6);color:hsl(var(--brand-strong));background:hsl(var(--brand)/.1)}
+.preset-actions{display:flex;gap:6px;flex-wrap:wrap;flex:none}
+.confirm-del{border-color:hsl(var(--destructive))!important;color:hsl(var(--destructive))!important}
+
+.save-form{border:1px solid var(--line);border-radius:10px;padding:14px;background:hsl(var(--secondary)/.4);margin-top:12px;display:none}
+.save-form.open{display:block}
+.save-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.save-grid .full{grid-column:1/-1}
+.save-grid label{font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px}
+@media(max-width:560px){.save-grid{grid-template-columns:1fr}}
+
+/* tone guru */
+.guru-row{display:flex;gap:9px;align-items:stretch;flex-wrap:wrap}
+.guru-row input{flex:1;min-width:200px}
+.finePrint{font-size:.74rem;color:var(--muted);line-height:1.55;margin-top:12px;padding-left:2px}
+.finePrint svg.li{color:hsl(var(--brand-strong));margin-right:5px}
+
+/* save status bar */
+.save-bar{position:fixed;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 16px;background:hsl(var(--card)/.95);backdrop-filter:blur(6px);border-top:1px solid var(--line);font-size:.78rem;color:var(--muted);transform:translateY(100%);transition:transform .2s ease;z-index:60}
+.save-bar.show{transform:translateY(0)}
+.save-bar .save-ok{color:var(--good)}
+.save-bar .save-err{color:hsl(var(--destructive))}
+
+.readonly-note{background:hsl(var(--brand)/.07);border:1px solid hsl(var(--brand)/.25);border-radius:8px;padding:10px 14px;font-size:.82rem;color:var(--muted);margin-bottom:14px}
+
+/* marginal illustration: the selected guitar's engraved plate sits in the page
+   margin beside the rig, like a figure in an old manual (wide screens only) */
+.wrap{position:relative}
+.guitar-margin{display:none;position:absolute;left:-160px;width:128px;flex-direction:column;gap:7px;align-items:center;text-align:center}
+@media(min-width:1370px){.guitar-margin{display:flex}}
+.guitar-margin img{width:120px;height:160px;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:#f1e7d3;box-shadow:var(--shadow-md);transition:opacity .25s ease}
+.dark .guitar-margin img{background:hsl(26 20% 7%);border-color:hsl(35 30% 26%);box-shadow:inset 0 0 0 1px hsl(38 40% 40%/.18),var(--shadow-md)}
+.guitar-margin .gm-kicker{font-size:.56rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+.guitar-margin .gm-name{font-family:var(--font-display);font-size:.84rem;font-weight:560;line-height:1.25;color:var(--ink);max-width:126px}
+.mini-knobs{display:flex;gap:14px;margin-top:8px;justify-content:center}
+.mini-knobs .knob-wrap{width:54px}
+.mini-knobs .knob{width:46px;height:46px}
+
+@media(max-width:860px){
+  .rig-top{grid-template-columns:1fr}
+}
+/* phones: shrink pedals so the chain fits ~2-up and the shelf ~3-up */
+@media(max-width:560px){
+  .chain .wsd-pedal,.chain-empty{--pedal-w:108px}
+  .chain{padding:14px 8px;row-gap:16px}
+  .chain-arrow{width:22px}
+  .shelf{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:14px 8px}
+  .shelf .wsd-pedal{--pedal-w:88px}
+}
+@media(max-width:480px){body{padding:14px}.panel{padding:18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <img class="masthead-plate" src="../assets/plates/plate-reference.png" alt="">
+    <div class="kicker">The Woodshed · Tone</div>
+    <h1>Tone Studio</h1>
+    <p class="sub">Build a virtual rig from your real gear — pick a guitar, set the chain, dial the amp. Save tones you love, or ask the Instructor to chase one.</p>
+  </div>
+  <hr class="fretline">
+
+  <aside class="guitar-margin" id="guitarMargin" aria-hidden="true"></aside>
+
+  <div id="readonlyNote" class="readonly-note" style="display:none">
+    <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+    API not available — presets are read-only. Run <code>npm run dev</code> locally to enable saving.
+  </div>
+
+  <!-- ============ RIG BOARD ============ -->
+  <div class="panel">
+    <p class="panel-label" data-collapse="ts1"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h.01M12 8h.01M17 8h.01M7 12h10"/></svg> Rig board</p>
+    <div class="rig-top">
+
+      <!-- GUITAR bay -->
+      <div class="bay" id="guitarBay">
+        <div class="bay-label">Guitar</div>
+        <select id="guitarSelect" aria-label="Guitar"></select>
+        <div class="guitar-meta" id="guitarMeta"></div>
+        <div class="bay-label" style="margin-top:12px">Pickup</div>
+        <div class="chip-row" id="pickupChips"></div>
+        <label class="split-toggle" id="splitWrap" style="display:none">
+          <input type="checkbox" id="splitToggle"> Coil-split
+        </label>
+        <div class="mini-knobs" id="guitarKnobs"></div>
+      </div>
+
+      <!-- AMP bay -->
+      <div class="bay" id="ampBay">
+        <div class="bay-label">Amp</div>
+        <div class="amp-head">
+          <div class="amp-panel">
+            <span class="amp-jewel"></span>
+            <div class="amp-plate" id="ampPlate">Amp</div>
+            <div class="amp-knobs" id="ampKnobs"></div>
+          </div>
+          <div class="amp-grille"></div>
+        </div>
+        <div id="ampChannelWrap" style="display:none;margin-top:12px">
+          <div class="bay-label">Channel</div>
+          <div class="chip-row" id="ampChannelChips"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ THE CHAIN (the star) ============ -->
+  <div class="panel">
+    <div class="chain-panel-head">
+      <p class="panel-label" data-collapse="ts2" style="margin:0"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><path d="M8 12h8"/></svg> The chain</p>
+      <span class="chain-flow-note">
+        <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg>
+        in at bottom right · out top left to the amp — like your board
+      </span>
+    </div>
+    <div class="chain" id="chain"></div>
+  </div>
+
+  <!-- ============ PEDAL SHELF (the library) ============ -->
+  <div class="panel" id="pedalBay">
+    <div class="shelf-head">
+      <p class="panel-label" data-collapse="ts3"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> Pedal shelf</p>
+      <input class="shelf-search" id="shelfSearch" type="search" placeholder="Search pedals…" aria-label="Search pedals">
+      <div class="shelf-filters" id="shelfFilters"></div>
+      <span class="shelf-count" id="shelfCount"></span>
+    </div>
+    <div class="shelf" id="pedalShelf"></div>
+    <p class="shelf-hint">Click a pedal to add it to the chain, or drag it up onto the board.</p>
+  </div>
+
+  <!-- ============ PRESETS ============ -->
+  <div class="panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+      <p class="panel-label" data-collapse="ts4" style="margin:0"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Saved tones</p>
+      <button class="icon-btn" id="saveToggleBtn" aria-expanded="false">
+        <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+        Save current tone
+      </button>
+    </div>
+
+    <div class="save-form" id="saveForm">
+      <div class="save-grid">
+        <div>
+          <label for="saveName">Name <span style="color:hsl(var(--destructive))">*</span></label>
+          <input type="text" id="saveName" placeholder="e.g. Cranked Blues Jr" autocomplete="off">
+        </div>
+        <div>
+          <label for="saveDesc">Description</label>
+          <input type="text" id="saveDesc" placeholder="What it's for" autocomplete="off">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="icon-btn" id="saveCancelBtn">Cancel</button>
+        <button class="icon-btn" id="saveConfirmBtn" style="border-color:hsl(var(--brand)/.5);color:hsl(var(--brand-strong))">
+          <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save preset
+        </button>
+      </div>
+    </div>
+
+    <div id="presetList" style="margin-top:14px"></div>
+  </div>
+
+  <!-- ============ TONE GURU ============ -->
+  <div class="panel">
+    <p class="panel-label" data-collapse="ts5"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0-6 6c0 2 1 3 2 4l1 2h6l1-2c1-1 2-2 2-4a6 6 0 0 0-6-6z"/><path d="M9 21h6"/><path d="M10 18h4"/></svg> Tone guru</p>
+    <div class="guru-row">
+      <input type="text" id="guruInput" placeholder="Song, artist, or YouTube link…" autocomplete="off">
+      <button class="btn-amber" id="chaseBtn">
+        <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        Chase this tone
+      </button>
+    </div>
+    <div style="margin-top:10px">
+      <button class="icon-btn" id="critiqueBtn">
+        <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+        Ask about my current settings
+      </button>
+    </div>
+    <p class="finePrint">
+      <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+      The Instructor researches known rigs and settings for the song — it maps them onto your actual gear. It can't hear the video's audio (yet).
+    </p>
+  </div>
+
+</div>
+
+<div class="save-bar" id="saveBar" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const clamp10 = v => Math.max(0, Math.min(10, Math.round(v * 10) / 10));
+
+// ---------- knob component (reused everywhere) ----------
+// Builds an SVG rotary: tick arc + amber pointer, drag-vertical or click to step.
+// Rotates 240° across 0-10 (from -120° to +120° from top). Returns the wrapper el;
+// call knob.setValue(v)/knob.getValue(). onChange(v) fires on any change.
+function makeKnob(opts) {
+  opts = opts || {};
+  const min = 0, max = 10, step = opts.step || 0.5;
+  let val = clamp10(opts.value == null ? 5 : opts.value);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'knob-wrap';
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 100 100');
+  svg.setAttribute('class', 'knob');
+  svg.setAttribute('role', 'slider');
+  svg.setAttribute('tabindex', '0');
+  svg.setAttribute('aria-label', opts.name || 'Knob');
+  svg.setAttribute('aria-valuemin', '0');
+  svg.setAttribute('aria-valuemax', '10');
+
+  const A0 = -120, A1 = 120; // sweep degrees from top (12 o'clock)
+  const polar = (deg, r) => {
+    const rad = (deg - 90) * Math.PI / 180;
+    return [50 + r * Math.cos(rad), 50 + r * Math.sin(rad)];
+  };
+  const arc = (from, to, r) => {
+    const [x0, y0] = polar(from, r), [x1, y1] = polar(to, r);
+    const large = Math.abs(to - from) > 180 ? 1 : 0;
+    return `M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+  };
+
+  // body
+  const body = document.createElementNS(NS, 'circle');
+  body.setAttribute('cx', 50); body.setAttribute('cy', 50); body.setAttribute('r', 30);
+  body.setAttribute('fill', 'hsl(var(--secondary))');
+  body.setAttribute('stroke', 'hsl(var(--border))');
+  body.setAttribute('stroke-width', '2');
+  svg.appendChild(body);
+
+  // background tick arc
+  const track = document.createElementNS(NS, 'path');
+  track.setAttribute('d', arc(A0, A1, 40));
+  track.setAttribute('fill', 'none');
+  track.setAttribute('stroke', 'hsl(var(--border))');
+  track.setAttribute('stroke-width', '3');
+  track.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(track);
+
+  // active (amber) arc — the ONE amber accent allowed on knobs
+  const fill = document.createElementNS(NS, 'path');
+  fill.setAttribute('fill', 'none');
+  fill.setAttribute('stroke', 'hsl(var(--brand))');
+  fill.setAttribute('stroke-width', '3');
+  fill.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(fill);
+
+  // pointer
+  const ptr = document.createElementNS(NS, 'line');
+  ptr.setAttribute('stroke', 'hsl(var(--brand))');
+  ptr.setAttribute('stroke-width', '3.5');
+  ptr.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(ptr);
+
+  const name = document.createElement('div');
+  name.className = 'knob-name';
+  name.textContent = opts.name || '';
+  const valEl = document.createElement('div');
+  valEl.className = 'knob-val';
+
+  wrap.appendChild(svg); wrap.appendChild(valEl); wrap.appendChild(name);
+
+  function angleFor(v) { return A0 + (v - min) / (max - min) * (A1 - A0); }
+  function draw() {
+    const ang = angleFor(val);
+    fill.setAttribute('d', arc(A0, ang, 40));
+    const [px, py] = polar(ang, 24), [cx, cy] = polar(ang, 8);
+    ptr.setAttribute('x1', cx.toFixed(1)); ptr.setAttribute('y1', cy.toFixed(1));
+    ptr.setAttribute('x2', px.toFixed(1)); ptr.setAttribute('y2', py.toFixed(1));
+    valEl.textContent = Number.isInteger(val) ? String(val) : val.toFixed(1);
+    svg.setAttribute('aria-valuenow', String(val));
+  }
+  function set(v, fire) {
+    const nv = clamp10(v);
+    if (nv === val && fire !== 'force') { draw(); return; }
+    val = nv; draw();
+    if (fire !== false && typeof opts.onChange === 'function') opts.onChange(val);
+  }
+
+  // ----- interaction: drag (pointer capture), wheel, keyboard, type-a-number -----
+  // Drag vertical: ~150px = full sweep; hold Shift for fine control (5× finer).
+  let dragging = false, moved = false, startY = 0, startV = 0;
+  svg.addEventListener('pointerdown', e => {
+    dragging = true; moved = false; startY = e.clientY; startV = val;
+    svg.setPointerCapture(e.pointerId);
+    svg.classList.add('dragging');
+    e.preventDefault();
+  });
+  svg.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const dy = startY - e.clientY;
+    if (Math.abs(dy) > 3) moved = true;
+    const px = e.shiftKey ? 75 : 15; // px per unit
+    set(startV + dy / px, true);
+  });
+  function endDrag(e) {
+    if (!dragging) return;
+    dragging = false;
+    svg.classList.remove('dragging');
+    try { svg.releasePointerCapture(e.pointerId); } catch (_) {}
+  }
+  svg.addEventListener('pointerup', endDrag);
+  svg.addEventListener('pointercancel', endDrag);
+  // a plain click (no drag) just focuses — no surprise value jumps
+  svg.addEventListener('click', () => { if (!moved) svg.focus({ preventScroll: true }); });
+  // scroll wheel: step per notch, Shift = 0.1
+  svg.addEventListener('wheel', e => {
+    e.preventDefault();
+    const d = (e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? 0.1 : step);
+    set(val + d, true);
+  }, { passive: false });
+  svg.addEventListener('keydown', e => {
+    const fine = e.shiftKey ? 0.1 : step;
+    if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { set(val + fine, true); e.preventDefault(); }
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { set(val - fine, true); e.preventDefault(); }
+    else if (e.key === 'Home') { set(min, true); e.preventDefault(); }
+    else if (e.key === 'End') { set(max, true); e.preventDefault(); }
+  });
+  // click the value to type an exact number (Enter/blur commits, Esc cancels)
+  valEl.title = 'Click to type a value';
+  valEl.addEventListener('click', () => {
+    if (wrap.querySelector('.knob-val-input')) return;
+    const inp = document.createElement('input');
+    inp.type = 'number'; inp.className = 'knob-val-input';
+    inp.min = '0'; inp.max = '10'; inp.step = '0.1';
+    inp.value = Number.isInteger(val) ? String(val) : val.toFixed(1);
+    valEl.style.display = 'none';
+    valEl.after(inp);
+    inp.focus(); inp.select();
+    let done = false;
+    const commit = ok => {
+      if (done) return; done = true;
+      if (ok && inp.value !== '') set(parseFloat(inp.value), true);
+      inp.remove();
+      valEl.style.display = '';
+    };
+    inp.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter') { commit(true); svg.focus({ preventScroll: true }); }
+      else if (ev.key === 'Escape') commit(false);
+      ev.stopPropagation();
+    });
+    inp.addEventListener('blur', () => commit(true));
+    // keep pedal-face / chain click handlers from reacting
+    inp.addEventListener('click', ev => ev.stopPropagation());
+  });
+
+  draw();
+  wrap.setValue = v => set(v, false);
+  wrap.getValue = () => val;
+  return wrap;
+}
+
+// ---------- state ----------
+let gear = { gear: [] };
+let guitars = [], pedals = [], amp = null;
+let presets = [];
+let apiAvailable = false;
+let saveTimer = null;
+
+// live board state
+const board = {
+  guitarId: '',
+  pickup: '',
+  split: false,
+  volume: 8,
+  tone: 7,
+  chain: [],   // [{gearId, settings:{knob:val}, _open:bool}]
+  // Blues Jr IV panel order (left→right on the real amp):
+  // Volume · FAT · Treble · Bass · Middle · Master · Reverb
+  amp: { volume: 5, fat: false, treble: 5, bass: 5, middle: 5, master: 5, reverb: 3, channel: '' },
+};
+const ampKnobRefs = {};   // name -> knob el
+const guitarKnobRefs = {};
+
+// ---------- pedal type → family (shared component enamel tint) ----------
+// theme.css owns .fam-* styling; we only map gear.json's type → family class.
+const TYPE_FAMILY = {
+  tuner:'tuner', compressor:'comp', overdrive:'drive', fuzz:'fuzz',
+  modulation:'mod', delay:'delay', reverb:'reverb', eq:'eq', gate:'gate',
+};
+function familyFor(p) {
+  const t = (p && p.specs && p.specs.type || '').toLowerCase();
+  return TYPE_FAMILY[t] || 'drive';
+}
+// how many knob dots to show on the little face (1-3, cosmetic)
+function knobCountFor(p) {
+  const t = (p && p.specs && p.specs.type || '').toLowerCase();
+  if (t === 'tuner') return 1;
+  if (t === 'gate') return 2;
+  return 3;
+}
+// a tiny lucide glyph per family for the pedal face
+const FAMILY_ICON = {
+  tuner:'<path d="M12 3v18"/><path d="M8 7l4-4 4 4"/><path d="M8 17l4 4 4-4"/>',
+  comp:'<path d="M4 12h4l2-5 4 10 2-5h4"/>',
+  drive:'<path d="M13 2 3 14h7l-1 8 10-12h-7z"/>',
+  fuzz:'<path d="M12 2 15 8l6 .5-4.5 4 1.5 6-6-3.2L6 18.5l1.5-6L3 8.5 9 8z"/>',
+  mod:'<path d="M2 12c3-6 5 6 8 0s5 6 8 0"/>',
+  delay:'<path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v5h5"/>',
+  reverb:'<path d="M4 12a8 8 0 0 1 16 0"/><path d="M7 12a5 5 0 0 1 10 0"/><path d="M10 12a2 2 0 0 1 4 0"/>',
+  eq:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><circle cx="4" cy="12" r="2"/><circle cx="12" cy="10" r="2"/><circle cx="20" cy="14" r="2"/>',
+  gate:'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9v6M15 9v6"/>',
+};
+// Default knob sets per pedal type (used when settings text isn't parseable).
+const TYPE_KNOBS = {
+  compressor:['Sustain','Level','Tone'], overdrive:['Drive','Tone','Level'],
+  fuzz:['Sustain','Tone','Volume'], modulation:['Speed','Depth','Level'],
+  delay:['Time','Feedback','Mix'], reverb:['Decay','Tone','Mix'],
+  eq:['Low','Mid','High'], gate:['Threshold','Decay'], tuner:[],
+};
+function knobsForPedal(p) {
+  // Try to parse "Knob: 6, Other: 4" style from gear.json settings text.
+  const raw = (p.specs && p.specs.settings || '').trim();
+  const parsed = [];
+  if (raw) {
+    raw.split(/[,;\n]/).forEach(seg => {
+      const m = seg.match(/([A-Za-z][A-Za-z /]*?)\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)/);
+      if (m) parsed.push({ name: m[1].trim(), value: clamp10(parseFloat(m[2])) });
+    });
+  }
+  if (parsed.length) return parsed;
+  const names = TYPE_KNOBS[(p.specs && p.specs.type) || ''] || ['Level', 'Tone', 'Drive'];
+  return names.map(n => ({ name: n, value: 5 }));
+}
+
+// ---------- shared pedal component ----------
+// Emits the SHARED CONTRACT markup (theme.css owns .wsd-pedal / .fam-* enamel).
+// `faceHTML` overrides the default icon face (used to render open knobs on the face).
+function pedalMarkup(p, opts) {
+  opts = opts || {};
+  const fam = familyFor(p);
+  const n = knobCountFor(p);
+  const knobs = Array.from({ length: n }, () =>
+    '<svg class="wsd-knob-mini" viewBox="0 0 20 20" aria-hidden="true">' +
+    '<circle cx="10" cy="10" r="7"/><line x1="10" y1="10" x2="10" y2="4.5"/></svg>').join('');
+  const face = opts.faceHTML != null ? opts.faceHTML :
+    ('<svg class="li" viewBox="0 0 24 24" aria-hidden="true">' + (FAMILY_ICON[fam] || FAMILY_ICON.drive) + '</svg>');
+  const cls = 'wsd-pedal fam-' + fam + (opts.extraClass ? ' ' + opts.extraClass : '');
+  return '' +
+    '<div class="' + cls + '"' + (opts.attrs || '') + ' role="' + (opts.role || 'button') + '"' +
+      (opts.label ? ' aria-label="' + esc(opts.label) + '"' : '') + '>' +
+      '<div class="wsd-pedal-knobs">' + knobs + '</div>' +
+      '<span class="wsd-pedal-led"></span>' +
+      '<div class="wsd-pedal-face">' + face + '</div>' +
+      '<div class="wsd-pedal-label">' + esc(shortName(p)) + '</div>' +
+      '<span class="wsd-pedal-switch"></span>' +
+    '</div>';
+}
+
+// ---------- API ----------
+async function loadGear() {
+  try {
+    const r = await fetch('../student/gear.json');
+    if (r.ok) gear = await r.json();
+  } catch (e) {}
+  const items = Array.isArray(gear.gear) ? gear.gear : [];
+  guitars = items.filter(g => g.kind === 'guitar');
+  pedals = items.filter(g => g.kind === 'pedal');
+  amp = items.find(g => g.kind === 'amp') || null;
+}
+let presetDoc = { version: 1 }; // full server doc — echoed back on save so _comment etc. survive
+async function loadPresets() {
+  try {
+    const r = await fetch('/api/tones');
+    if (!r.ok) throw new Error(r.status);
+    presetDoc = await r.json();
+    presets = Array.isArray(presetDoc.presets) ? presetDoc.presets : [];
+    apiAvailable = true;
+  } catch (e) {
+    apiAvailable = false;
+    $('readonlyNote').style.display = 'block';
+  }
+}
+function scheduleSave() {
+  if (!apiAvailable) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(doSave, 500);
+}
+function showSave(cls, msg) {
+  const bar = $('saveBar');
+  bar.innerHTML = `<span class="${cls}">${msg}</span>`;
+  bar.classList.add('show');
+  setTimeout(() => bar.classList.remove('show'), 2600);
+}
+async function doSave() {
+  if (!apiAvailable) return;
+  try {
+    const r = await fetch('/api/tones', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign({}, presetDoc, { presets })),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    showSave('save-ok', '✓ Saved');
+  } catch (e) {
+    showSave('save-err', '✗ Save failed — ' + (e && e.message ? e.message : 'network error'));
+  }
+}
+
+// ---------- GUITAR bay ----------
+function pickupOptions(g) {
+  const pk = ((g && g.specs && g.specs.pickups) || '').toLowerCase();
+  const nPk = (pk.match(/[hs]/g) || []).length;
+  // HH / SS → Neck / (Both) / Bridge; SSS or 3 → Neck / Middle / Bridge.
+  if (nPk >= 3) return ['Neck', 'Middle', 'Bridge'];
+  if (nPk === 2) return pk.includes('hh') ? ['Neck', 'Both', 'Bridge'] : ['Neck', 'Both', 'Bridge'];
+  if (nPk === 1) return ['Neck'];
+  return []; // acoustic / none
+}
+function hasCoilSplit(g) {
+  const s = ((g && g.specs && g.specs.pickups || '') + ' ' + (g && g.notes || '')).toLowerCase();
+  return /coil.?split|split.?coil/.test(s);
+}
+function renderGuitarBay() {
+  const sel = $('guitarSelect');
+  sel.innerHTML = guitars.map(g =>
+    `<option value="${esc(g.id)}">${esc(g.name)}</option>`).join('');
+  sel.value = board.guitarId;
+  const g = guitars.find(x => x.id === board.guitarId);
+
+  const tuning = g && g.specs && g.specs.tuning || 'E Standard';
+  const pk = g && g.specs && g.specs.pickups || '—';
+  $('guitarMeta').innerHTML =
+    `<strong>${esc(tuning)}</strong> · ${esc(pk)}`;
+
+  // pickup chips
+  const opts = pickupOptions(g);
+  if (!opts.includes(board.pickup)) board.pickup = opts[0] || '';
+  $('pickupChips').innerHTML = opts.length
+    ? opts.map(o => `<span class="pk-chip ${o === board.pickup ? 'on' : ''}" data-pk="${esc(o)}">${esc(o)}</span>`).join('')
+    : '<span style="font-size:.76rem;color:var(--muted)">Acoustic — no pickup selector</span>';
+
+  // coil-split
+  const split = hasCoilSplit(g);
+  $('splitWrap').style.display = split ? 'inline-flex' : 'none';
+  if (!split) board.split = false;
+  $('splitToggle').checked = board.split;
+
+  // mini volume/tone knobs
+  const kb = $('guitarKnobs'); kb.innerHTML = '';
+  ['Volume', 'Tone'].forEach(nm => {
+    const key = nm.toLowerCase();
+    const k = makeKnob({ name: nm, value: board[key], onChange: v => { board[key] = v; } });
+    guitarKnobRefs[key] = k;
+    kb.appendChild(k);
+  });
+  renderGuitarMargin(g);
+}
+
+// the marginal plate beside the rig — theme-aware engraved portrait of the selection
+function renderGuitarMargin(g) {
+  const m = $('guitarMargin');
+  if (!m) return;
+  if (!g) { m.innerHTML = ''; return; }
+  const dark = document.documentElement.classList.contains('dark') ? '-dark' : '';
+  m.innerHTML =
+    '<img src="../assets/guitars/' + esc(g.id) + dark + '-thumb.png" alt="" decoding="async">' +
+    '<span class="gm-kicker">On the bench</span>' +
+    '<span class="gm-name">' + esc(g.name || g.model || 'Guitar') + '</span>';
+  const img = m.querySelector('img');
+  img.onerror = () => {
+    if (dark && !img.dataset.retried) { img.dataset.retried = '1'; img.src = '../assets/guitars/' + esc(g.id) + '-thumb.png'; }
+    else m.innerHTML = '';
+  };
+  // sit level with the rig board panel
+  const rig = document.querySelector('.panel');
+  if (rig) m.style.top = rig.offsetTop + 'px';
+}
+// theme flips swap the plate finish
+new MutationObserver(() => {
+  const g = guitars.find(x => x.id === board.guitarId);
+  if (g) renderGuitarMargin(g);
+}).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+$('guitarSelect').addEventListener('change', e => {
+  board.guitarId = e.target.value;
+  board.pickup = ''; // reset to first valid on re-render
+  renderGuitarBay();
+});
+$('pickupChips').addEventListener('click', e => {
+  const c = e.target.closest('[data-pk]'); if (!c) return;
+  board.pickup = c.dataset.pk;
+  renderGuitarBay();
+});
+$('splitToggle').addEventListener('change', e => { board.split = e.target.checked; });
+
+// ---------- AMP bay ----------
+// Control layouts per amp, in REAL left→right panel order. 'switch' entries render
+// as a rocker. Falls back to a generic 5-knob face for amps we don't know.
+const AMP_PANELS = [
+  { match: /blues\s*jr|blues\s*junior/i, controls: [
+    { key: 'volume', name: 'Volume' },
+    { key: 'fat',    name: 'Fat', kind: 'switch' },
+    { key: 'treble', name: 'Treble' },
+    { key: 'bass',   name: 'Bass' },
+    { key: 'middle', name: 'Middle' },
+    { key: 'master', name: 'Master' },
+    { key: 'reverb', name: 'Reverb' },
+  ] },
+];
+const GENERIC_PANEL = [
+  { key: 'volume', name: 'Volume' }, { key: 'bass', name: 'Bass' },
+  { key: 'middle', name: 'Middle' }, { key: 'treble', name: 'Treble' },
+  { key: 'reverb', name: 'Reverb' },
+];
+function ampPanelFor(a) {
+  const s = ((a && a.name || '') + ' ' + (a && a.model || ''));
+  const hit = AMP_PANELS.find(p => p.match.test(s));
+  return hit ? hit.controls : GENERIC_PANEL;
+}
+function renderAmpBay() {
+  $('ampPlate').textContent = amp ? amp.name : 'No amp on file';
+  const kb = $('ampKnobs'); kb.innerHTML = '';
+  ampPanelFor(amp).forEach(ctl => {
+    if (ctl.kind === 'switch') {
+      const on = !!board.amp[ctl.key];
+      const sw = document.createElement('div');
+      sw.className = 'amp-switch' + (on ? ' on' : '');
+      sw.setAttribute('role', 'switch');
+      sw.setAttribute('tabindex', '0');
+      sw.setAttribute('aria-label', ctl.name);
+      sw.setAttribute('aria-checked', on ? 'true' : 'false');
+      sw.innerHTML = '<span class="sw-track"><span class="sw-nub"></span></span>' +
+        '<span class="sw-state">' + (on ? 'on' : 'off') + '</span>' +
+        '<div class="knob-name">' + esc(ctl.name) + '</div>';
+      const flip = () => { board.amp[ctl.key] = !board.amp[ctl.key]; uiThunk(180, 0.09); renderAmpBay(); };
+      sw.addEventListener('click', flip);
+      sw.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { flip(); e.preventDefault(); } });
+      ampKnobRefs[ctl.key] = sw;
+      kb.appendChild(sw);
+      return;
+    }
+    if (typeof board.amp[ctl.key] !== 'number') board.amp[ctl.key] = 5;
+    const k = makeKnob({ name: ctl.name, value: board.amp[ctl.key], onChange: v => { board.amp[ctl.key] = v; } });
+    ampKnobRefs[ctl.key] = k;
+    kb.appendChild(k);
+  });
+  // channel toggle only if gear.json shows one
+  const ch = amp && amp.specs && amp.specs.channel;
+  const chStr = (ch == null ? '' : String(ch)).trim();
+  if (chStr && /\//.test(chStr)) {
+    const opts = chStr.split('/').map(s => s.trim()).filter(Boolean);
+    if (!board.amp.channel) board.amp.channel = opts[0];
+    $('ampChannelWrap').style.display = 'block';
+    $('ampChannelChips').innerHTML = opts.map(o =>
+      `<span class="pk-chip ${o === board.amp.channel ? 'on' : ''}" data-ch="${esc(o)}">${esc(o)}</span>`).join('');
+  } else {
+    $('ampChannelWrap').style.display = 'none';
+    board.amp.channel = '';
+  }
+}
+$('ampChannelChips').addEventListener('click', e => {
+  const c = e.target.closest('[data-ch]'); if (!c) return;
+  board.amp.channel = c.dataset.ch;
+  renderAmpBay();
+});
+
+// ---------- PEDAL shelf ----------
+// shelf library filters — search + type chips scale the shelf to a 50-pedal collection
+let shelfQuery = '';
+let shelfType = 'all';
+function pedalType(p) {
+  return ((p.specs && p.specs.type) || (p.tags && p.tags[0]) || 'other').toLowerCase();
+}
+function renderShelfFilters() {
+  const types = [...new Set(pedals.map(pedalType))].sort();
+  const wrap = $('shelfFilters');
+  if (!wrap) return;
+  wrap.innerHTML = ['all', ...types].map(t =>
+    `<button type="button" class="shelf-type${t === shelfType ? ' on' : ''}" data-t="${esc(t)}">${esc(t)}</button>`
+  ).join('');
+}
+function renderShelf() {
+  const shelf = $('pedalShelf');
+  const q = shelfQuery.trim().toLowerCase();
+  const visible = pedals.filter(p => {
+    if (shelfType !== 'all' && pedalType(p) !== shelfType) return false;
+    if (!q) return true;
+    return ((p.name || '') + ' ' + (p.brand || '') + ' ' + (p.model || '') + ' ' + pedalType(p)).toLowerCase().includes(q);
+  });
+  shelf.innerHTML = visible.length ? visible.map(p => {
+    const inChain = board.chain.some(c => c.gearId === p.id);
+    return pedalMarkup(p, {
+      attrs: ` draggable="true" data-gid="${esc(p.id)}"`,
+      extraClass: inChain ? 'in-chain' : '',
+      label: 'Add ' + shortName(p) + ' to chain',
+    });
+  }).join('') : '<div class="shelf-empty">No pedals match — clear the search or add gear in the Gear Library.</div>';
+  const count = $('shelfCount');
+  if (count) count.textContent = visible.length === pedals.length
+    ? pedals.length + ' pedals'
+    : visible.length + ' of ' + pedals.length;
+  renderShelfFilters();
+}
+(function wireShelfFilters() {
+  const s = $('shelfSearch');
+  if (s) s.addEventListener('input', () => { shelfQuery = s.value; renderShelf(); });
+  const f = $('shelfFilters');
+  if (f) f.addEventListener('click', e => {
+    const b = e.target.closest('.shelf-type');
+    if (!b) return;
+    shelfType = b.dataset.t;
+    renderShelf();
+  });
+})();
+function shortName(p) {
+  // Drop the brand prefix when the name repeats it, to keep cards compact.
+  return p.name || p.model || p.id;
+}
+function pedalById(id) { return pedals.find(p => p.id === id) || null; }
+
+// click-to-add
+$('pedalShelf').addEventListener('click', e => {
+  const card = e.target.closest('[data-gid]');
+  if (!card) return;
+  addToChain(card.dataset.gid);
+});
+// drag from shelf
+$('pedalShelf').addEventListener('dragstart', e => {
+  const card = e.target.closest('[data-gid]');
+  if (!card) return;
+  e.dataTransfer.setData('text/plain', 'shelf:' + card.dataset.gid);
+  e.dataTransfer.effectAllowed = 'copy';
+});
+
+// ---------- sound design: tiny physical sounds, gated by the global mute ----------
+// A muted-string THUNK when a pedal lands on the board; a mechanical CLUNK for the
+// fat switch. Quiet, short, and skippable — they ride audio.js's shared context+mute.
+function uiThunk(lowHz, gain) {
+  try {
+    if (typeof getMuted === 'function' && getMuted()) return;
+    const a = ac(), t = a.currentTime;
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(lowHz, t);
+    o.frequency.exponentialRampToValueAtTime(Math.max(30, lowHz * 0.55), t + 0.07);
+    g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.1);
+    // a whisper of noise for the attack
+    const n = a.createBufferSource(), buf = a.createBuffer(1, 441, a.sampleRate);
+    const ch = buf.getChannelData(0); for (let i = 0; i < ch.length; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / ch.length);
+    const ng = a.createGain(); ng.gain.setValueAtTime(gain * 0.35, t); ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+    n.buffer = buf; n.connect(ng).connect(a.destination); n.start(t);
+  } catch (e) {}
+}
+function addToChain(gearId) {
+  if (board.chain.some(c => c.gearId === gearId)) return; // one instance each
+  const p = pedalById(gearId); if (!p) return;
+  const settings = {};
+  knobsForPedal(p).forEach(k => { settings[k.name] = k.value; });
+  board.chain.push({ gearId, settings, _open: false });
+  uiThunk(95, 0.16);
+  renderChain(); renderShelf();
+}
+function removeFromChain(i) { board.chain.splice(i, 1); uiThunk(70, 0.1); renderChain(); renderShelf(); }
+function moveChain(from, to) {
+  if (to < 0 || to >= board.chain.length) return;
+  const [it] = board.chain.splice(from, 1);
+  board.chain.splice(to, 0, it);
+  renderChain();
+}
+
+// ---------- CHAIN (horizontal strip — the star) ----------
+let dragIdx = null;
+// signal runs right→left on the board, so connectors point LEFT
+const ARROW_SVG = '<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg>';
+function renderChain() {
+  const el = $('chain');
+  if (!board.chain.length) {
+    el.innerHTML = '<div class="chain-empty">' +
+      '<div class="ghost-pedal" aria-hidden="true"><svg class="li" viewBox="0 0 24 24">' +
+      '<rect x="6" y="2" width="12" height="20" rx="2"/><circle cx="12" cy="17" r="2.5"/>' +
+      '<path d="M9 6h.01M12 6h.01M15 6h.01"/></svg></div>' +
+      '<div class="chain-empty-text">Drag a pedal in — or click one on the shelf.</div>' +
+      '</div>';
+    return;
+  }
+  el.innerHTML = board.chain.map((c, i) => {
+    const p = pedalById(c.gearId) || { name: c.gearId, specs: {} };
+    const last = i === board.chain.length - 1;
+    // when 'open', render adjustable knobs ON the pedal face
+    let faceHTML = null;
+    if (c._open) {
+      faceHTML = '<div class="ci-face-knobs" data-knobs="' + i + '"></div>';
+    }
+    const pedal = pedalMarkup(p, {
+      faceHTML,
+      extraClass: 'chain-item' + (c._open ? ' is-open' : ''),
+      attrs: ` data-idx="${i}" draggable="true"`,
+      role: 'group',
+      label: shortName(p) + (c._open ? ', knobs open' : ''),
+    });
+    return '<div class="chain-slot">' +
+      '<div class="chain-pedal-wrap" data-wrap="' + i + '">' +
+        '<span class="ci-num" aria-hidden="true">' + (i + 1) + '</span>' +
+        pedal +
+        // signal flows right→left, so the buttons read spatially: leftmost moves the
+        // pedal left (later, toward the amp), rightmost moves it right (earlier, input)
+        '<div class="ci-ctl">' +
+          '<button class="arr-btn" data-cact="down" data-idx="' + i + '" aria-label="Move ' + esc(shortName(p)) + ' later (toward the amp)"' + (last ? ' disabled' : '') + '>' +
+            '<svg class="li" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg></button>' +
+          '<button class="arr-btn" data-cact="toggle" data-idx="' + i + '" aria-label="Toggle knobs" aria-pressed="' + (c._open ? 'true' : 'false') + '">' +
+            '<svg class="li" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></button>' +
+          '<button class="arr-btn danger" data-cact="remove" data-idx="' + i + '" aria-label="Remove ' + esc(shortName(p)) + '">' +
+            '<svg class="li" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>' +
+          '<button class="arr-btn" data-cact="up" data-idx="' + i + '" aria-label="Move ' + esc(shortName(p)) + ' earlier (toward the input)"' + (i === 0 ? ' disabled' : '') + '>' +
+            '<svg class="li" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg></button>' +
+        '</div>' +
+      '</div>' +
+      (last ? '' : '<span class="chain-arrow" aria-hidden="true">' + ARROW_SVG + '</span>') +
+    '</div>';
+  }).join('');
+  // mount adjustable knobs on the face of open pedals (real, reused makeKnob)
+  board.chain.forEach((c, i) => {
+    if (!c._open) return;
+    const holder = el.querySelector(`[data-knobs="${i}"]`);
+    if (!holder) return;
+    const names = Object.keys(c.settings);
+    if (!names.length) {
+      holder.innerHTML = '<span class="ci-face-hint">no knobs</span>';
+      return;
+    }
+    names.forEach(name => {
+      const k = makeKnob({ name, value: c.settings[name], onChange: v => { c.settings[name] = v; } });
+      holder.appendChild(k);
+    });
+  });
+  startSignalFlow();
+}
+
+// ---------- ambient signal-flow animation ----------
+// A quiet amber pulse rides the chain in SIGNAL ORDER (pedal 1 → amp): each pedal's
+// LED swells, then the connector arrow after it lights, on to the next. One JS ticker
+// (CSS keyframes can't express per-index sequencing across a variable-length chain).
+let flowTimer = null;
+function startSignalFlow() {
+  clearInterval(flowTimer); flowTimer = null;
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const n = board.chain.length;
+  if (!n) return;
+  let step = -2; // -2/-1 = rest beats before the pulse re-enters at the input
+  const STEP_MS = 340;
+  flowTimer = setInterval(() => {
+    if (document.hidden) return;
+    const el = $('chain');
+    el.querySelectorAll('.sig-led, .sig-arrow').forEach(x => x.classList.remove('sig-led', 'sig-arrow'));
+    step = step >= n - 1 ? -3 : step + 1;
+    if (step < 0) return; // rest between sweeps
+    const wrap = el.querySelector(`.chain-pedal-wrap[data-wrap="${step}"]`);
+    if (wrap) wrap.querySelector('.wsd-pedal-led')?.classList.add('sig-led');
+    // the arrow that FOLLOWS pedal i in signal order lives in slot i (points left)
+    const slot = wrap && wrap.closest('.chain-slot');
+    slot?.querySelector('.chain-arrow')?.classList.add('sig-arrow');
+  }, STEP_MS);
+}
+$('chain').addEventListener('click', e => {
+  const b = e.target.closest('[data-cact]');
+  if (b) {
+    const i = parseInt(b.dataset.idx, 10), act = b.dataset.cact;
+    if (act === 'up') moveChain(i, i - 1);
+    else if (act === 'down') moveChain(i, i + 1);
+    else if (act === 'remove') removeFromChain(i);
+    else if (act === 'toggle') { board.chain[i]._open = !board.chain[i]._open; renderChain(); }
+    return;
+  }
+  // clicking the pedal face (open) hosts adjustable knobs — don't toggle then
+  if (e.target.closest('.ci-face-knobs')) return;
+  // otherwise: click the pedal body to flip it open/closed
+  const item = e.target.closest('.chain-item');
+  if (!item) return;
+  const i = parseInt(item.dataset.idx, 10);
+  board.chain[i]._open = !board.chain[i]._open;
+  renderChain();
+});
+// drag reorder within chain + accept drop from shelf
+$('chain').addEventListener('dragstart', e => {
+  const item = e.target.closest('.chain-item'); if (!item) return;
+  dragIdx = parseInt(item.dataset.idx, 10);
+  e.dataTransfer.setData('text/plain', 'chain:' + dragIdx);
+  e.dataTransfer.effectAllowed = 'move';
+  item.classList.add('drag-ghost');
+});
+$('chain').addEventListener('dragend', e => {
+  const item = e.target.closest('.chain-item'); if (item) item.classList.remove('drag-ghost');
+});
+$('chain').addEventListener('dragover', e => { e.preventDefault(); $('chain').classList.add('drag-over'); });
+$('chain').addEventListener('dragleave', e => { if (e.target === $('chain')) $('chain').classList.remove('drag-over'); });
+$('chain').addEventListener('drop', e => {
+  e.preventDefault();
+  $('chain').classList.remove('drag-over');
+  const raw = e.dataTransfer.getData('text/plain') || '';
+  const overSlot = e.target.closest('.chain-slot');
+  const overItem = e.target.closest('.chain-item') || (overSlot && overSlot.querySelector('.chain-item'));
+  const overIdx = overItem ? parseInt(overItem.dataset.idx, 10) : board.chain.length;
+  if (raw.startsWith('shelf:')) {
+    addToChain(raw.slice(6));
+  } else if (raw.startsWith('chain:')) {
+    const from = parseInt(raw.slice(6), 10);
+    let to = overIdx;
+    if (from < to) to--;
+    moveChain(from, Math.max(0, Math.min(board.chain.length - 1, to)));
+  }
+  dragIdx = null;
+});
+
+// ---------- board state read/apply ----------
+function currentBoardState() {
+  return {
+    guitarId: board.guitarId,
+    pickup: board.pickup + (board.split ? ' (split)' : ''),
+    volume: board.volume,
+    tone: board.tone,
+    chain: board.chain.map(c => ({ gearId: c.gearId, settings: Object.assign({}, c.settings) })),
+    amp: Object.assign({}, board.amp),
+  };
+}
+function applyPreset(p) {
+  if (p.guitarId && guitars.some(g => g.id === p.guitarId)) board.guitarId = p.guitarId;
+  // pickup may carry a "(split)" suffix
+  const pkRaw = String(p.pickup || '');
+  board.split = /\(split\)/i.test(pkRaw);
+  board.pickup = pkRaw.replace(/\s*\(split\)\s*/i, '').trim();
+  if (typeof p.volume === 'number') board.volume = clamp10(p.volume);
+  if (typeof p.tone === 'number') board.tone = clamp10(p.tone);
+  board.chain = Array.isArray(p.chain) ? p.chain
+    .filter(c => pedalById(c.gearId))
+    .map(c => ({ gearId: c.gearId, settings: Object.assign({}, c.settings || {}), _open: false })) : [];
+  if (p.amp) {
+    // current keys, plus legacy migration: gain→volume, mid→middle
+    ['volume', 'bass', 'middle', 'treble', 'master', 'reverb'].forEach(k => {
+      if (typeof p.amp[k] === 'number') board.amp[k] = clamp10(p.amp[k]);
+    });
+    if (typeof p.amp.gain === 'number' && typeof p.amp.volume !== 'number') board.amp.volume = clamp10(p.amp.gain);
+    if (typeof p.amp.mid === 'number' && typeof p.amp.middle !== 'number') board.amp.middle = clamp10(p.amp.mid);
+    board.amp.fat = !!p.amp.fat;
+    if (p.amp.channel) board.amp.channel = p.amp.channel;
+  }
+  renderAll();
+}
+
+// ---------- PRESETS ----------
+function uid() { return Math.random().toString(36).slice(2, 10); }
+function guitarName(id) { const g = guitars.find(x => x.id === id); return g ? g.name : id; }
+let confirmDel = null;
+function renderPresets() {
+  const el = $('presetList');
+  if (!presets.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:6px 0">No saved tones yet — dial the board and hit Save current tone, or ask the guru below.</div>';
+    return;
+  }
+  el.innerHTML = presets.map((p, i) => {
+    const coach = p.createdBy === 'coach';
+    const chainStr = (p.chain || []).map(c => { const pe = pedalById(c.gearId); return pe ? shortName(pe) : c.gearId; }).join(' → ') || 'no pedals';
+    const del = confirmDel === p.id;
+    return `<div class="preset-row">
+      <div class="preset-body">
+        <div class="preset-title">
+          <h3>${esc(p.name)}</h3>
+          <span class="badge ${coach ? 'coach' : ''}">${coach ? 'Coach' : 'You'}</span>
+        </div>
+        ${p.desc ? `<div class="preset-desc">${esc(p.desc)}</div>` : ''}
+        <div class="preset-desc">${esc(guitarName(p.guitarId))}${p.pickup ? ' · ' + esc(p.pickup) : ''} · ${esc(chainStr)}</div>
+      </div>
+      <div class="preset-actions">
+        <button class="icon-btn" data-pact="load" data-id="${esc(p.id)}">
+          <svg class="li" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Load
+        </button>
+        <button class="icon-btn danger ${del ? 'confirm-del' : ''}" data-pact="del" data-id="${esc(p.id)}">
+          <svg class="li" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+          ${del ? 'Confirm?' : 'Delete'}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+$('presetList').addEventListener('click', e => {
+  const b = e.target.closest('[data-pact]'); if (!b) return;
+  const id = b.dataset.id, act = b.dataset.pact;
+  if (act === 'load') { const p = presets.find(x => x.id === id); if (p) applyPreset(p); confirmDel = null; renderPresets(); }
+  else if (act === 'del') {
+    if (confirmDel === id) { presets = presets.filter(x => x.id !== id); confirmDel = null; renderPresets(); scheduleSave(); }
+    else { confirmDel = id; renderPresets(); }
+  }
+});
+
+// save form
+$('saveToggleBtn').onclick = () => {
+  const f = $('saveForm'), open = !f.classList.contains('open');
+  f.classList.toggle('open', open);
+  $('saveToggleBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (open) $('saveName').focus();
+};
+$('saveCancelBtn').onclick = () => {
+  $('saveForm').classList.remove('open');
+  $('saveToggleBtn').setAttribute('aria-expanded', 'false');
+  $('saveName').value = ''; $('saveDesc').value = '';
+};
+$('saveConfirmBtn').onclick = () => {
+  const name = $('saveName').value.trim();
+  if (!name) { $('saveName').focus(); return; }
+  const st = currentBoardState();
+  presets.push({
+    id: uid(), name, desc: $('saveDesc').value.trim(),
+    guitarId: st.guitarId, pickup: st.pickup,
+    volume: st.volume, tone: st.tone,
+    chain: st.chain, amp: st.amp,
+    notes: '', createdBy: 'user',
+    added: new Date().toISOString().slice(0, 10),
+  });
+  $('saveCancelBtn').click();
+  renderPresets();
+  scheduleSave();
+};
+
+// ---------- TONE GURU ----------
+function openCoach(extra, fallbackPrefill) {
+  if (window.WoodshedCoach && typeof WoodshedCoach.open === 'function') {
+    WoodshedCoach.open(extra);
+  } else {
+    location.href = 'coach.html';
+  }
+}
+$('chaseBtn').onclick = () => {
+  const v = $('guruInput').value.trim();
+  if (!v) { $('guruInput').focus(); return; }
+  openCoach({
+    tone: currentBoardState(),
+    prefill: 'Chase this tone: ' + v + ' — research the rig, then build it from MY gear (read student/gear.json + student/tone-presets.json) and propose exact settings for my board. Save as a preset only after I confirm.',
+  });
+};
+$('critiqueBtn').onclick = () => {
+  openCoach({
+    tone: currentBoardState(),
+    prefill: 'Critique my current tone settings.',
+  });
+};
+
+// ---------- render all ----------
+function renderAll() {
+  renderGuitarBay();
+  renderShelf();
+  renderChain();
+  renderAmpBay();
+  renderPresets();
+}
+
+// ---------- boot ----------
+(async function boot() {
+  await loadGear();
+  board.guitarId = gear.currentGuitarId && guitars.some(g => g.id === gear.currentGuitarId)
+    ? gear.currentGuitarId : (guitars[0] && guitars[0].id) || '';
+  await loadPresets();
+  renderAll();
+  Stats.activity('tone');
+})();
+</script>
+</body>
+</html>

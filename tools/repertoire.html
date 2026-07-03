@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Repertoire · The Woodshed</title>
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="stats.js"></script>
+<script src="header.js" defer></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);padding:24px;display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+.wrap{width:100%;max-width:860px}
+input[type=text],input[type=url],textarea,select{background:hsl(var(--card));color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-size:14px;font-family:inherit;width:100%}
+input[type=text]:focus,input[type=url]:focus,textarea:focus,select:focus{outline:2px solid hsl(var(--ring));outline-offset:1px}
+textarea{resize:vertical;min-height:56px}
+
+/* status chips */
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;letter-spacing:.03em;padding:3px 9px;border-radius:20px;cursor:pointer;border:1.5px solid transparent;user-select:none;transition:.15s;background:none;font-family:inherit;color:inherit}
+.chip-learning{border-color:hsl(var(--brand));color:hsl(var(--brand-strong));background:hsl(var(--brand)/.1)}
+.chip-performing{border-color:var(--good);color:var(--good);background:color-mix(in srgb,var(--good) 12%,transparent)}
+.chip-queued{border-color:var(--line);color:var(--muted);background:hsl(var(--secondary))}
+.chip-paused{border-color:var(--line);color:var(--muted);background:hsl(var(--secondary))}
+.chip-retired{border-color:var(--line);color:var(--muted);background:transparent;opacity:.6}
+
+/* section chips (smaller) */
+.schip{font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:12px;cursor:pointer;border:1px solid transparent;transition:.15s;background:none;font-family:inherit;color:inherit}
+.schip-queued{border-color:var(--line);color:var(--muted)}
+.schip-learning{border-color:hsl(var(--brand)/.7);color:hsl(var(--brand-strong))}
+.schip-done{border-color:var(--good);color:var(--good)}
+
+/* queue cards */
+.q-list{display:flex;flex-direction:column;gap:12px;margin-top:18px}
+.q-card{background:hsl(var(--card));border:1px solid var(--line);border-radius:12px;padding:18px;transition:.15s;position:relative}
+.q-card.focus-card{border-color:hsl(var(--brand)/.45);box-shadow:0 0 0 3px hsl(var(--brand)/.09)}
+.q-card-top{display:flex;align-items:flex-start;gap:12px}
+.q-card-body{flex:1;min-width:0}
+.q-card-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.q-card-title h3{margin:0;font-size:1rem;font-weight:600;line-height:1.2}
+.q-artist{font-size:.82rem;color:var(--muted);margin-bottom:8px}
+.q-why{font-size:.82rem;color:var(--muted);line-height:1.5;margin-bottom:6px}
+.q-notes{font-size:.8rem;color:var(--muted);font-style:italic;line-height:1.4}
+.q-card-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px}
+
+/* order arrows */
+.arr-btn{background:none;border:1px solid var(--line);border-radius:7px;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);flex:none;transition:.15s;padding:0}
+.arr-btn:hover{border-color:hsl(var(--brand)/.6);color:var(--ink)}
+.arr-btn:disabled{opacity:.3;cursor:not-allowed}
+
+/* icon buttons */
+.icon-btn{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:.8rem;cursor:pointer;color:var(--muted);display:inline-flex;align-items:center;gap:6px;transition:.15s;font-family:inherit}
+.icon-btn:hover{border-color:hsl(var(--brand)/.6);color:var(--ink)}
+.icon-btn.danger:hover{border-color:hsl(var(--destructive));color:hsl(var(--destructive))}
+
+/* laurel */
+.laurel{width:40px;height:40px;object-fit:contain;opacity:.85;flex:none;margin-top:2px}
+
+/* expand sections */
+.sections-area{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.sections-label{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.section-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid hsl(var(--border)/.5);font-size:.85rem}
+.section-row:last-of-type{border-bottom:0}
+.section-name{flex:1;min-width:0}
+.add-section{display:flex;gap:6px;margin-top:8px}
+.add-section input{flex:1;font-size:.82rem;padding:5px 9px}
+
+/* save status bar */
+.save-bar{position:fixed;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 16px;background:hsl(var(--card)/.95);backdrop-filter:blur(6px);border-top:1px solid var(--line);font-size:.78rem;color:var(--muted);transform:translateY(100%);transition:transform .2s ease;z-index:60}
+.save-bar.show{transform:translateY(0)}
+.save-bar .save-ok{color:var(--good)}
+.save-bar .save-err{color:hsl(var(--destructive))}
+
+/* add form */
+.add-panel{background:hsl(var(--card));border:1px solid var(--line);border-radius:12px;padding:18px;margin-top:14px}
+.add-panel h3{margin:0 0 12px;font-size:.92rem;font-weight:600}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-grid .full{grid-column:1/-1}
+.form-grid label{font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px}
+@media(max-width:580px){.form-grid{grid-template-columns:1fr}}
+
+/* read-only note */
+.readonly-note{background:hsl(var(--brand)/.07);border:1px solid hsl(var(--brand)/.25);border-radius:8px;padding:10px 14px;font-size:.82rem;color:var(--muted);margin-bottom:14px}
+
+/* lucide inline svgs */
+svg.li{display:inline-block;width:1em;height:1em;min-width:0;max-width:none;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em;flex:none}
+
+/* coach btn */
+.coach-btn{width:100%;text-align:left}
+
+.toprow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.toprow h2{margin:0}
+
+/* section rows made clickable for the workbench */
+.section-main{display:flex;align-items:center;gap:8px;flex:1;min-width:0;cursor:pointer;background:none;border:0;padding:0;font:inherit;color:inherit;text-align:left}
+.section-main:hover .section-name{color:hsl(var(--brand-strong))}
+.wb-caret{width:.85em;height:.85em;color:var(--muted);transition:transform .15s;flex:none}
+.wb-caret.open{transform:rotate(90deg)}
+
+/* workbench inset panel */
+.workbench{margin:8px 0 4px;padding:14px;background:hsl(var(--secondary));border:1px solid var(--line);border-radius:10px}
+.bay-label{font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;display:flex;align-items:center;gap:7px}
+.bay-label::after{content:"";flex:1;height:1px;background:var(--line)}
+.wb-bay{margin-bottom:16px}
+.wb-bay:last-child{margin-bottom:0}
+.wb-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.wb-btn{background:hsl(var(--card));border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:.78rem;cursor:pointer;color:var(--ink);display:inline-flex;align-items:center;gap:6px;transition:.15s;font-family:inherit}
+.wb-btn:hover{border-color:hsl(var(--brand)/.6)}
+.wb-btn:disabled{opacity:.45;cursor:not-allowed}
+.wb-btn.on{border-color:hsl(var(--brand));color:hsl(var(--brand-strong));background:hsl(var(--brand)/.1)}
+.wb-btn.primary{border-color:hsl(var(--brand)/.5);color:hsl(var(--brand-strong))}
+.wb-audio{width:100%;margin:2px 0 8px;height:36px}
+.wb-seek{width:100%;accent-color:hsl(var(--brand))}
+.wb-time{font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums;min-width:96px}
+.wb-loopinfo{font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.wb-speed{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--ink)}
+.wb-speed input[type=range]{width:120px}
+.wb-speedval{min-width:38px;font-variant-numeric:tabular-nums;color:var(--muted)}
+/* tempo ladder */
+.ladder{display:flex;gap:5px;flex-wrap:wrap;align-items:flex-end;margin:8px 0}
+.ladder-step{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.68rem;color:var(--muted)}
+.ladder-bar{width:26px;background:hsl(var(--brand)/.35);border-radius:3px 3px 0 0;min-height:6px}
+.ladder-step.latest .ladder-bar{background:hsl(var(--brand))}
+.ladder-step.latest{color:hsl(var(--brand-strong));font-weight:700}
+.wb-target{width:74px;padding:5px 8px;font-size:.82rem}
+.mastery-wrap{margin-top:8px}
+.mastery-track{height:8px;background:var(--line);border-radius:5px;overflow:hidden}
+.mastery-fill{height:100%;background:hsl(var(--brand));border-radius:5px;transition:width .2s;position:relative;overflow:hidden}
+.mastery-lbl{font-size:.74rem;color:var(--muted);margin-top:4px}
+/* mastered section: a small amber check beside the name */
+.sec-check{color:hsl(var(--brand-strong));width:.85em;height:.85em;vertical-align:-.06em}
+/* delight: a brief amber shimmer rides the mastery fill when a clean pass reaches the target */
+@keyframes mastery-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(220%)}}
+.mastery-fill.shimmer::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,hsl(var(--brand-foreground)/.55) 50%,transparent 70%);animation:mastery-shimmer 1s ease-out 1}
+@media(prefers-reduced-motion:reduce){.mastery-fill.shimmer::after{animation:none;content:none}}
+/* takes list */
+.wb-take{display:flex;align-items:center;gap:10px;padding:6px 2px;border-bottom:1px solid hsl(var(--border)/.5);font-size:.8rem;flex-wrap:wrap}
+.wb-take:last-child{border-bottom:0}
+.wb-take .tk-when{color:var(--ink);min-width:96px}
+.wb-take .tk-meta{color:var(--muted);font-variant-numeric:tabular-nums}
+.wb-take a{color:hsl(var(--brand-strong));text-decoration:none;font-size:.76rem}
+.wb-take a:hover{text-decoration:underline}
+.wb-empty{font-size:.78rem;color:var(--muted);padding:4px 2px}
+.wb-note{font-size:.74rem;color:var(--muted);line-height:1.5;margin-top:6px;font-style:italic}
+/* chart display */
+.chart-item{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.chart-thumb{max-width:100%;max-height:280px;border:1px solid var(--line);border-radius:8px;display:block;margin-top:6px}
+.wb-file{font-size:.76rem}
+
+@media(max-width:480px){body{padding:14px}.wb-row{gap:7px}.wb-speed input[type=range]{width:90px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <img class="masthead-plate" src="../assets/plates/plate-reference.png" alt="">
+    <div class="kicker">The Woodshed · Repertoire</div>
+    <h1>Repertoire</h1>
+    <p class="sub">Your song library and learning queue — ordered like a playlist. The top item is your current focus. Synced with the Instructor.</p>
+  </div>
+  <hr class="fretline">
+
+  <div id="readonlyNote" class="readonly-note" style="display:none">
+    <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+    API not available — serving read-only. Run <code>npm run dev</code> locally to enable saving.
+  </div>
+
+  <div class="toprow">
+    <h2>Queue</h2>
+    <button class="icon-btn" id="addToggleBtn" aria-expanded="false">
+      <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+      Add song
+    </button>
+  </div>
+
+  <div id="addPanel" class="add-panel" style="display:none" aria-label="Add song form">
+    <h3>Add to queue</h3>
+    <div class="form-grid">
+      <div>
+        <label for="addTitle">Title <span style="color:hsl(var(--destructive))">*</span></label>
+        <input type="text" id="addTitle" placeholder="Song title" autocomplete="off">
+      </div>
+      <div>
+        <label for="addArtist">Artist</label>
+        <input type="text" id="addArtist" placeholder="Artist name" autocomplete="off">
+      </div>
+      <div class="full">
+        <label for="addUrl">YouTube / source URL</label>
+        <input type="url" id="addUrl" placeholder="https://…">
+      </div>
+      <div class="full">
+        <label for="addWhy">Why this song?</label>
+        <textarea id="addWhy" rows="2" placeholder="What technique or musical goal does this serve?"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="icon-btn" id="addCancelBtn">Cancel</button>
+      <button class="icon-btn" id="addSaveBtn" style="border-color:hsl(var(--brand)/.5);color:hsl(var(--brand-strong))">
+        <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Add to queue
+      </button>
+    </div>
+  </div>
+
+  <div class="q-list" id="qList"></div>
+
+  <hr class="fretline">
+
+  <button class="icon-btn coach-btn" id="coachBtn" style="margin-top:4px;padding:12px 14px;font-size:.88rem">
+    <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+    Ask the Instructor for song ideas
+  </button>
+
+</div>
+
+<!-- save status bar -->
+<div class="save-bar" id="saveBar" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const STATUS_ORDER = ['learning','queued','paused','performing','retired'];
+const SECTION_ORDER = ['queued','learning','done'];
+
+const STATUS_LABEL = {learning:'Learning',queued:'Queued',paused:'Paused',performing:'Performing',retired:'Retired'};
+const SECTION_LABEL = {queued:'Queued',learning:'Learning',done:'Done'};
+
+function chipClass(s) { return 'chip chip-' + (STATUS_ORDER.includes(s) ? s : 'queued'); }
+function schipClass(s) { return 'schip schip-' + (SECTION_ORDER.includes(s) ? s : 'queued'); }
+
+function nextStatus(s) {
+  const i = STATUS_ORDER.indexOf(s);
+  return STATUS_ORDER[(i + 1) % STATUS_ORDER.length];
+}
+function nextSectionStatus(s) {
+  const i = SECTION_ORDER.indexOf(s);
+  return SECTION_ORDER[(i + 1) % SECTION_ORDER.length];
+}
+
+// ---- data state ----
+let data = { version: 1, updated: '', items: [] };
+let apiAvailable = false;
+let saveTimer = null;
+// which section's workbench is open (accordion: at most one across the whole page)
+let openWorkbench = { itemId: null, si: -1 };
+
+function uid() { return Math.random().toString(36).slice(2, 10); }
+
+// ---- API ----
+async function loadFromApi() {
+  try {
+    const r = await fetch('/api/repertoire');
+    if (!r.ok) throw new Error(r.status);
+    data = await r.json();
+    if (!Array.isArray(data.items)) data.items = [];
+    apiAvailable = true;
+  } catch (e) {
+    apiAvailable = false;
+    $('readonlyNote').style.display = 'block';
+  }
+  render();
+}
+
+function scheduleSave() {
+  if (!apiAvailable) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(doSave, 800);
+}
+
+function showSave(cls, msg) {
+  const bar = $('saveBar');
+  bar.innerHTML = `<span class="${cls}">${msg}</span>`;
+  bar.classList.add('show');
+  setTimeout(() => bar.classList.remove('show'), 2800);
+}
+
+async function doSave() {
+  if (!apiAvailable) return;
+  try {
+    const r = await fetch('/api/repertoire', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    showSave('save-ok', '✓ Saved');
+  } catch (e) {
+    showSave('save-err', '✗ Save failed — ' + (e && e.message ? e.message : 'network error'));
+  }
+}
+
+// ---- render ----
+function render() {
+  // a full re-render replaces the DOM the open workbench lived in; drop the audio ref
+  // (openWorkbench state is preserved so it re-expands when its Sections area is opened)
+  teardownWorkbench();
+  const list = $('qList');
+  if (!data.items.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:.88rem;padding:18px 0">No songs yet — add one above.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  data.items.forEach((item, idx) => {
+    const card = document.createElement('div');
+    card.className = 'q-card' + (idx === 0 && item.status === 'learning' ? ' focus-card' : '');
+    card.dataset.id = item.id;
+
+    // laurel for top learning item
+    const laurel = (idx === 0 && item.status === 'learning')
+      ? `<img src="../assets/stamps/stamp-laurel.png" alt="Current focus" class="laurel" title="Current focus">`
+      : '';
+
+    // sections HTML
+    const sectionsHtml = buildSectionsHtml(item, idx);
+
+    const url = (item.url || '').trim();
+    const isHttpUrl = /^https?:/i.test(url);
+
+    card.innerHTML = `
+      <div class="q-card-top">
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:center;padding-top:2px">
+          <button class="arr-btn" data-action="up" data-idx="${idx}" aria-label="Move up" ${idx === 0 ? 'disabled' : ''}>
+            <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+          </button>
+          <button class="arr-btn" data-action="down" data-idx="${idx}" aria-label="Move down" ${idx === data.items.length - 1 ? 'disabled' : ''}>
+            <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12l7 7 7-7"/></svg>
+          </button>
+        </div>
+        ${laurel}
+        <div class="q-card-body">
+          <div class="q-card-title">
+            <h3>${esc(item.title)}</h3>
+            <button type="button" class="${esc(chipClass(item.status))}" data-action="cycleStatus" data-idx="${idx}" title="Click to change status">
+              ${esc(STATUS_LABEL[item.status] || item.status)}
+            </button>
+          </div>
+          ${item.artist ? `<div class="q-artist">${esc(item.artist)}</div>` : ''}
+          ${item.why ? `<div class="q-why">${esc(item.why)}</div>` : ''}
+          ${item.notes ? `<div class="q-notes">${esc(item.notes)}</div>` : ''}
+          <div class="q-card-actions">
+            ${isHttpUrl ? `<a class="icon-btn" href="${esc(url)}" target="_blank" rel="noopener" aria-label="Open source">
+              <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>
+              Open
+            </a>` : (url ? `<span style="font-size:.8rem;color:var(--muted);word-break:break-all">${esc(url)}</span>` : '')}
+            <button class="icon-btn" data-action="toggleSections" data-idx="${idx}" aria-expanded="false">
+              <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              Sections
+            </button>
+            <button class="icon-btn" data-action="edit" data-idx="${idx}">
+              <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+              Edit
+            </button>
+            <button class="icon-btn danger" data-action="delete" data-idx="${idx}">
+              <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="sections-area" id="sections-${item.id}" style="display:none">
+        ${sectionsHtml}
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function buildSectionsHtml(item, idx) {
+  const openKey = item.id + ':' + openWorkbench.si;   // which section's workbench is open (accordion)
+  const rows = (item.sections || []).map((sec, si) => {
+    const isOpen = openWorkbench.itemId === item.id && openWorkbench.si === si;
+    // mastered: a clean pass has reached (or passed) the target BPM — persists from data
+    const mastered = Number(sec.targetBpm) > 0 && latestCleanBpm(sec.ladder) >= Number(sec.targetBpm);
+    return `
+    <div class="section-row">
+      <button type="button" class="section-main" data-action="toggleWorkbench" data-idx="${idx}" data-si="${si}" aria-expanded="${isOpen ? 'true' : 'false'}">
+        <svg class="li wb-caret${isOpen ? ' open' : ''}" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+        <span class="section-name">${esc(sec.name)}${mastered ? ' <svg class="li sec-check" viewBox="0 0 24 24" aria-hidden="true" title="Clean at target tempo"><path d="M20 6 9 17l-5-5"/></svg>' : ''}</span>
+      </button>
+      <button type="button" class="${esc(schipClass(sec.status))}" data-action="cycleSectionStatus" data-idx="${idx}" data-si="${si}" title="Click to change status">
+        ${esc(SECTION_LABEL[sec.status] || sec.status)}
+      </button>
+    </div>
+    ${isOpen ? `<div class="workbench" data-wb="${item.id}:${si}">${buildWorkbenchHtml(item, idx, si)}</div>` : ''}
+  `;
+  }).join('');
+  return `
+    <div class="sections-label">Sections</div>
+    ${rows || '<div style="font-size:.82rem;color:var(--muted);margin-bottom:6px">No sections yet.</div>'}
+    <div class="add-section">
+      <input type="text" placeholder="New section name" data-addsec="${idx}">
+      <button class="icon-btn" data-action="addSection" data-idx="${idx}">
+        <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+        Add
+      </button>
+    </div>
+    ${buildChartBay(item, idx)}
+  `;
+}
+
+// ---- workbench: pure-logic helpers (also unit-tested in Node) ----
+// mastery %: latest clean-pass BPM / targetBpm, capped at 100. 0 if no target or no clean pass.
+function masteryPct(ladder, targetBpm) {
+  const t = Number(targetBpm) || 0;
+  if (t <= 0) return 0;
+  const cleans = (ladder || []).filter(e => e && e.clean && Number(e.bpm) > 0);
+  if (!cleans.length) return 0;
+  const latest = Number(cleans[cleans.length - 1].bpm) || 0;
+  return Math.max(0, Math.min(100, Math.round(latest / t * 100)));
+}
+function latestCleanBpm(ladder) {
+  const cleans = (ladder || []).filter(e => e && e.clean && Number(e.bpm) > 0);
+  return cleans.length ? Number(cleans[cleans.length - 1].bpm) : 0;
+}
+// loop clamp: given playhead t (s), loopA, loopB → time to seek to, or null (leave alone).
+function loopClamp(t, loopA, loopB) {
+  const a = Number(loopA), b = Number(loopB);
+  if (!(a >= 0) || !(b > a)) return null;   // no valid A<B loop
+  if (t >= b) return a;                      // past the end → back to A
+  if (t < a) return a;                       // before the start → snap to A
+  return null;                               // inside → leave alone
+}
+const fmtT = s => { s = Math.max(0, Number(s) || 0); const m = Math.floor(s / 60); const sec = (s % 60); return m + ':' + (sec < 10 ? '0' : '') + sec.toFixed(1); };
+
+function buildWorkbenchHtml(item, idx, si) {
+  const sec = item.sections[si];
+  const ladder = sec.ladder || [];
+  const target = sec.targetBpm || '';
+  const lc = latestCleanBpm(ladder);
+  const pct = masteryPct(ladder, target);
+  // AUDIO bay
+  let audioBay;
+  if (item.audio) {
+    const hasLoop = typeof sec.loopA === 'number' && typeof sec.loopB === 'number' && sec.loopB > sec.loopA;
+    audioBay = `
+      <div class="wb-bay">
+        <div class="bay-label">Loop player</div>
+        <audio class="wb-audio" data-role="audio" src="/${esc(item.audio)}" preload="metadata" controls></audio>
+        <div class="wb-row">
+          <input type="range" class="wb-seek" data-role="seek" min="0" max="100" step="0.1" value="0" aria-label="Seek">
+        </div>
+        <div class="wb-row">
+          <span class="wb-time" data-role="time">0:00.0 / 0:00.0</span>
+          <button class="wb-btn" data-action="wbSetA" data-idx="${idx}" data-si="${si}" title="Set loop start at playhead">Set A</button>
+          <button class="wb-btn" data-action="wbSetB" data-idx="${idx}" data-si="${si}" title="Set loop end at playhead">Set B</button>
+          <button class="wb-btn" data-action="wbClearLoop" data-idx="${idx}" data-si="${si}">Clear loop</button>
+          <span class="wb-loopinfo" data-role="loopinfo">${hasLoop ? 'A ' + fmtT(sec.loopA) + ' – B ' + fmtT(sec.loopB) : 'no loop set'}</span>
+        </div>
+        <div class="wb-row">
+          <label class="wb-speed">Speed <input type="range" data-role="speed" min="50" max="100" step="5" value="100"><span class="wb-speedval" data-role="speedval">100%</span></label>
+          <button class="wb-btn" data-role="countin" data-action="wbCountin" title="Toggle a 4-click count-in before the loop">Count-in: off</button>
+        </div>
+        <div class="wb-note">Pitch-preserving slow-down. Loop jumps back to A automatically once the playhead passes B.</div>
+      </div>`;
+  } else {
+    audioBay = `
+      <div class="wb-bay">
+        <div class="bay-label">Loop player</div>
+        <div class="wb-empty">No audio attached to this song yet.</div>
+        <div class="wb-row">
+          <input type="file" class="wb-file" data-role="audiofile" accept="audio/mpeg,audio/wav,audio/webm,audio/ogg,audio/mp4,audio/x-m4a,audio/aac,audio/flac,audio/*">
+          <button class="wb-btn primary" data-action="wbUploadAudio" data-idx="${idx}">Attach audio</button>
+        </div>
+        <div class="wb-note">Attach an audio file for this song (up to ~25MB). It powers the loop player for every section.</div>
+      </div>`;
+  }
+  // TEMPO LADDER bay
+  const maxBpm = Math.max(target || 0, ...ladder.map(e => Number(e.bpm) || 0), 1);
+  const steps = ladder.map((e, i) => {
+    const h = Math.round(8 + (Number(e.bpm) || 0) / maxBpm * 52);
+    const latest = i === ladder.length - 1;
+    return `<div class="ladder-step${latest ? ' latest' : ''}" title="${esc(e.date || '')}${e.clean ? ' · clean' : ''}"><div class="ladder-bar" style="height:${h}px"></div>${e.bpm}</div>`;
+  }).join('');
+  const ladderBay = `
+      <div class="wb-bay">
+        <div class="bay-label">Tempo ladder</div>
+        <div class="wb-row">
+          <label class="wb-speed">Target BPM <input type="number" class="wb-target" data-role="target" data-idx="${idx}" data-si="${si}" min="20" max="320" value="${esc(target)}" placeholder="—"></label>
+          <label class="wb-speed">Pass at <input type="number" class="wb-pass" data-idx="${idx}" data-si="${si}" min="20" max="320" value="${esc(suggestedPass(sec))}" placeholder="BPM"></label>
+          <button class="wb-btn primary" data-action="wbLogClean" data-idx="${idx}" data-si="${si}" title="Log a clean pass at today's tempo — climb toward the target">Log clean pass</button>
+        </div>
+        <div class="ladder">${steps || '<span class="wb-empty">No clean passes logged yet.</span>'}</div>
+        <div class="mastery-wrap">
+          <div class="mastery-track"><div class="mastery-fill" style="width:${pct}%"></div></div>
+          <div class="mastery-lbl">Mastery ${pct}%${lc ? ' — latest clean ' + lc + ' BPM' : ''}${target ? ' of ' + target + ' target' : ''}</div>
+        </div>
+      </div>`;
+  // TAKES bay — populated async (IndexedDB) after render
+  const takesBay = `
+      <div class="wb-bay" data-role="takesbay">
+        <div class="bay-label">Linked takes</div>
+        <div data-role="takeslist"><div class="wb-empty">Loading takes…</div></div>
+      </div>`;
+  return audioBay + ladderBay + takesBay;
+}
+
+function buildChartBay(item, idx) {
+  const charts = item.charts || [];
+  const rows = charts.map((c, ci) => {
+    const isPdf = /\.pdf$/i.test(c.path);
+    const disp = isPdf
+      ? `<a class="wb-file" href="/${esc(c.path)}" target="_blank" rel="noopener">Open PDF ↗</a>`
+      : `<a class="wb-file" href="/${esc(c.path)}" target="_blank" rel="noopener">Open ↗</a>`;
+    return `
+      <div class="chart-item">
+        <span class="section-name" style="flex:1;min-width:0">${esc(c.name || c.path.split('/').pop())}</span>
+        ${disp}
+        <button class="wb-btn" data-action="wbDeleteChart" data-idx="${idx}" data-ci="${ci}" title="Remove chart">Remove</button>
+      </div>
+      ${isPdf ? '' : `<img class="chart-thumb" src="/${esc(c.path)}" alt="${esc(c.name || 'chart')}" loading="lazy">`}
+    `;
+  }).join('');
+  return `
+    <div class="wb-bay" style="margin-top:14px">
+      <div class="bay-label">Charts &amp; tabs</div>
+      ${rows || '<div class="wb-empty">No charts attached.</div>'}
+      <div class="wb-row" style="margin-top:8px">
+        <input type="file" class="wb-file" data-role="chartfile" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf">
+        <button class="wb-btn primary" data-action="wbUploadChart" data-idx="${idx}">Attach chart</button>
+      </div>
+    </div>
+  `;
+}
+
+// ---- delegate events on the list ----
+$('qList').addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const action = el.dataset.action;
+  const idx = parseInt(el.dataset.idx, 10);
+
+  if (action === 'up') { moveItem(idx, idx - 1); return; }
+  if (action === 'down') { moveItem(idx, idx + 1); return; }
+  if (action === 'cycleStatus') { cycleStatus(idx); return; }
+  if (action === 'cycleSectionStatus') { cycleSectionStatus(idx, parseInt(el.dataset.si, 10)); return; }
+  if (action === 'toggleSections') { toggleSections(data.items[idx], el); return; }
+  if (action === 'addSection') { addSection(idx, el); return; }
+  if (action === 'edit') { editItem(idx); return; }
+  if (action === 'delete') { deleteItem(idx); return; }
+  // ---- workbench actions ----
+  const si = el.dataset.si != null ? parseInt(el.dataset.si, 10) : -1;
+  if (action === 'toggleWorkbench') { toggleWorkbench(idx, si, el); return; }
+  if (action === 'wbSetA') { wbSetLoop(idx, si, 'A'); return; }
+  if (action === 'wbSetB') { wbSetLoop(idx, si, 'B'); return; }
+  if (action === 'wbClearLoop') { wbClearLoop(idx, si); return; }
+  if (action === 'wbCountin') { wbToggleCountin(el); return; }
+  if (action === 'wbLogClean') { wbLogClean(idx, si); return; }
+  if (action === 'wbUploadAudio') { wbUploadAudio(idx, el); return; }
+  if (action === 'wbUploadChart') { wbUploadChart(idx, el); return; }
+  if (action === 'wbDeleteChart') { wbDeleteChart(idx, parseInt(el.dataset.ci, 10)); return; }
+});
+
+// changes to number inputs (target BPM) — commit on input
+$('qList').addEventListener('input', e => {
+  const el = e.target.closest('[data-role="target"]');
+  if (!el) return;
+  const idx = parseInt(el.dataset.idx, 10), si = parseInt(el.dataset.si, 10);
+  const item = data.items[idx]; if (!item || !item.sections || !item.sections[si]) return;
+  const v = parseInt(el.value, 10);
+  if (v > 0) item.sections[si].targetBpm = v; else delete item.sections[si].targetBpm;
+  // live-update the mastery bar without a full re-render (keeps the audio playing)
+  const wb = document.querySelector('[data-wb="' + item.id + ':' + si + '"]');
+  if (wb) {
+    const pct = masteryPct(item.sections[si].ladder, item.sections[si].targetBpm);
+    const fill = wb.querySelector('.mastery-fill'); if (fill) fill.style.width = pct + '%';
+  }
+  scheduleSave();
+});
+
+function moveItem(from, to) {
+  if (to < 0 || to >= data.items.length) return;
+  const arr = data.items;
+  const [item] = arr.splice(from, 1);
+  arr.splice(to, 0, item);
+  render();
+  scheduleSave();
+}
+
+function cycleStatus(idx) {
+  const item = data.items[idx];
+  item.status = nextStatus(item.status);
+  render();
+  scheduleSave();
+}
+
+function cycleSectionStatus(idx, si) {
+  const item = data.items[idx];
+  if (!item.sections || !item.sections[si]) return;
+  item.sections[si].status = nextSectionStatus(item.sections[si].status);
+  // re-render sections area only
+  const area = $('sections-' + item.id);
+  if (area) area.innerHTML = buildSectionsHtml(item, idx);
+  scheduleSave();
+}
+
+function toggleSections(item, btn) {
+  const area = $('sections-' + item.id);
+  if (!area) return;
+  const open = area.style.display === 'none';
+  area.style.display = open ? 'block' : 'none';
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  // if a workbench is open for this song, (re)wire its player + takes now that it's visible
+  if (open && openWorkbench.itemId === item.id && openWorkbench.si >= 0) {
+    const idx = data.items.indexOf(item);
+    if (idx >= 0) initWorkbench(item, idx, openWorkbench.si);
+  } else if (!open && wbCtx && wbCtx.itemId === item.id) {
+    teardownWorkbench();
+  }
+}
+
+function addSection(idx, btn) {
+  const input = btn.closest('.add-section').querySelector('input');
+  const name = (input && input.value.trim()) || '';
+  if (!name) return;
+  const item = data.items[idx];
+  if (!Array.isArray(item.sections)) item.sections = [];
+  item.sections.push({ name, status: 'queued' });
+  input.value = '';
+  const area = $('sections-' + item.id);
+  if (area) area.innerHTML = buildSectionsHtml(item, idx);
+  scheduleSave();
+}
+
+function deleteItem(idx) {
+  if (!confirm('Remove "' + data.items[idx].title + '" from the queue?')) return;
+  data.items.splice(idx, 1);
+  render();
+  scheduleSave();
+}
+
+// ---- inline edit (simple: re-renders a mini form in place) ----
+function editItem(idx) {
+  const item = data.items[idx];
+  const card = $('qList').children[idx];
+  if (!card) return;
+  // build an edit form inside the card
+  card.innerHTML = `
+    <div class="form-grid" style="padding:4px 0">
+      <div>
+        <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Title *</label>
+        <input type="text" id="et_title" value="${esc(item.title)}">
+      </div>
+      <div>
+        <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Artist</label>
+        <input type="text" id="et_artist" value="${esc(item.artist || '')}">
+      </div>
+      <div class="full">
+        <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">URL</label>
+        <input type="url" id="et_url" value="${esc(item.url || '')}">
+      </div>
+      <div class="full">
+        <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Why</label>
+        <textarea id="et_why" rows="2">${esc(item.why || '')}</textarea>
+      </div>
+      <div class="full">
+        <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Notes</label>
+        <textarea id="et_notes" rows="2">${esc(item.notes || '')}</textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="icon-btn" id="et_cancel">Cancel</button>
+      <button class="icon-btn" id="et_save" style="border-color:hsl(var(--brand)/.5);color:hsl(var(--brand-strong))">Save</button>
+    </div>
+  `;
+  $('et_cancel').onclick = () => render();
+  $('et_save').onclick = () => {
+    const title = $('et_title').value.trim();
+    if (!title) { $('et_title').focus(); return; }
+    item.title = title;
+    item.artist = $('et_artist').value.trim();
+    item.url = $('et_url').value.trim();
+    item.why = $('et_why').value.trim();
+    item.notes = $('et_notes').value.trim();
+    render();
+    scheduleSave();
+  };
+}
+
+// ==================== WORKBENCH ====================
+// Per-open-workbench runtime state (audio element, loop enforcement, count-in).
+let wbCtx = null;   // { itemId, si, audio, countin:false, rafActive }
+let wbAudioCtx = null;
+
+function toggleWorkbench(idx, si, btn) {
+  const item = data.items[idx];
+  if (!item) return;
+  const same = openWorkbench.itemId === item.id && openWorkbench.si === si;
+  const prevId = openWorkbench.itemId;   // a workbench open on a DIFFERENT song must collapse too
+  teardownWorkbench();
+  openWorkbench = same ? { itemId: null, si: -1 } : { itemId: item.id, si };
+  // if the previously-open workbench belonged to another song, re-render its area so it collapses
+  if (prevId && prevId !== item.id) {
+    const prevIdx = data.items.findIndex(i => i.id === prevId);
+    const prevArea = $('sections-' + prevId);
+    if (prevIdx >= 0 && prevArea && prevArea.style.display !== 'none') prevArea.innerHTML = buildSectionsHtml(data.items[prevIdx], prevIdx);
+  }
+  // re-render only this song's sections area (keeps the rest of the page steady)
+  const area = $('sections-' + item.id);
+  if (area) area.innerHTML = buildSectionsHtml(item, idx);
+  if (!same) initWorkbench(item, idx, si);
+}
+
+function teardownWorkbench() {
+  if (wbCtx && wbCtx.audio) { try { wbCtx.audio.pause(); } catch (e) {} }
+  wbCtx = null;
+}
+
+// Wire the just-rendered audio player + load takes for the open workbench.
+function initWorkbench(item, idx, si) {
+  const wb = document.querySelector('[data-wb="' + item.id + ':' + si + '"]');
+  if (!wb) return;
+  loadTakesInto(wb, item);
+  const audio = wb.querySelector('[data-role="audio"]');
+  if (!audio) return;
+  const sec = item.sections[si];
+  wbCtx = { itemId: item.id, si, audio, countin: false };
+  // pitch-preserving speed (both vendor flags)
+  const seek = wb.querySelector('[data-role="seek"]');
+  const timeEl = wb.querySelector('[data-role="time"]');
+  const speed = wb.querySelector('[data-role="speed"]');
+  const speedVal = wb.querySelector('[data-role="speedval"]');
+  function applyRate() {
+    const r = (parseInt(speed.value, 10) || 100) / 100;
+    audio.playbackRate = r;
+    audio.preservesPitch = true;
+    audio.webkitPreservesPitch = true;
+    if (speedVal) speedVal.textContent = speed.value + '%';
+  }
+  speed.addEventListener('input', applyRate);
+  applyRate();
+  audio.addEventListener('loadedmetadata', () => {
+    if (seek) seek.max = String(audio.duration || 0);
+    updTime();
+  });
+  function updTime() {
+    if (timeEl) timeEl.textContent = fmtT(audio.currentTime) + ' / ' + fmtT(audio.duration || 0);
+    if (seek && !seeking) seek.value = String(audio.currentTime || 0);
+  }
+  let seeking = false;
+  if (seek) {
+    seek.addEventListener('mousedown', () => { seeking = true; });
+    seek.addEventListener('touchstart', () => { seeking = true; });
+    seek.addEventListener('input', () => { audio.currentTime = parseFloat(seek.value) || 0; });
+    seek.addEventListener('change', () => { seeking = false; });
+  }
+  // loop enforcement on timeupdate
+  audio.addEventListener('timeupdate', () => {
+    const s = currentSection();
+    if (s) {
+      const jump = loopClamp(audio.currentTime, s.loopA, s.loopB);
+      if (jump != null && Math.abs(audio.currentTime - jump) > 0.02) audio.currentTime = jump;
+    }
+    updTime();
+  });
+}
+function currentSection() {
+  if (!openWorkbench.itemId) return null;
+  const item = data.items.find(i => i.id === openWorkbench.itemId);
+  return item && item.sections ? item.sections[openWorkbench.si] : null;
+}
+
+// ---- loop set/clear ----
+function wbSetLoop(idx, si, which) {
+  const item = data.items[idx], sec = item && item.sections && item.sections[si];
+  if (!sec || !wbCtx || !wbCtx.audio) return;
+  const t = +wbCtx.audio.currentTime.toFixed(2);
+  if (which === 'A') sec.loopA = t;
+  else sec.loopB = t;
+  // guard ordering both ways: A must sit before B on the timeline, else drop the offending edge
+  if (typeof sec.loopA === 'number' && typeof sec.loopB === 'number' && sec.loopB <= sec.loopA) {
+    if (which === 'B') { showSave('save-err', 'Set B after A on the timeline.'); delete sec.loopB; }
+    else { showSave('save-err', 'Set A before B on the timeline.'); delete sec.loopA; }
+    updLoopInfo(item, si); return;
+  }
+  updLoopInfo(item, si);
+  scheduleSave();
+}
+function wbClearLoop(idx, si) {
+  const item = data.items[idx], sec = item && item.sections && item.sections[si];
+  if (!sec) return;
+  delete sec.loopA; delete sec.loopB;
+  updLoopInfo(item, si);
+  scheduleSave();
+}
+function updLoopInfo(item, si) {
+  const wb = document.querySelector('[data-wb="' + item.id + ':' + si + '"]');
+  const el = wb && wb.querySelector('[data-role="loopinfo"]');
+  if (!el) return;
+  const sec = item.sections[si];
+  const has = typeof sec.loopA === 'number' && typeof sec.loopB === 'number' && sec.loopB > sec.loopA;
+  el.textContent = has ? 'A ' + fmtT(sec.loopA) + ' – B ' + fmtT(sec.loopB) : (typeof sec.loopA === 'number' ? 'A ' + fmtT(sec.loopA) + ' – B —' : 'no loop set');
+}
+
+// ---- count-in: 4 WebAudio clicks, then start the loop from A ----
+function wbToggleCountin(btn) {
+  if (!wbCtx || !wbCtx.audio) return;
+  wbCtx.countin = !wbCtx.countin;
+  btn.textContent = 'Count-in: ' + (wbCtx.countin ? 'on' : 'off');
+  btn.classList.toggle('on', wbCtx.countin);
+  if (wbCtx.countin) playCountInThenLoop();
+}
+function ensureAudioCtx() {
+  if (!wbAudioCtx) wbAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (wbAudioCtx.state === 'suspended') wbAudioCtx.resume();
+  return wbAudioCtx;
+}
+function playCountInThenLoop() {
+  const sec = currentSection();
+  const audio = wbCtx.audio;
+  const ac = ensureAudioCtx();
+  const startAt = (sec && typeof sec.loopA === 'number') ? sec.loopA : 0;
+  const bpm = (sec && latestCleanBpm(sec.ladder)) || (sec && sec.targetBpm) || 90;
+  const beat = 60 / Math.max(40, Math.min(240, bpm));
+  audio.pause();
+  const t0 = ac.currentTime + 0.08;
+  for (let i = 0; i < 4; i++) {
+    const osc = ac.createOscillator(), g = ac.createGain();
+    osc.frequency.value = i === 0 ? 1320 : 880;   // accent the downbeat
+    g.gain.setValueAtTime(0.0001, t0 + i * beat);
+    g.gain.exponentialRampToValueAtTime(0.4, t0 + i * beat + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + i * beat + 0.09);
+    osc.connect(g).connect(ac.destination);
+    osc.start(t0 + i * beat); osc.stop(t0 + i * beat + 0.1);
+  }
+  setTimeout(() => {
+    if (!wbCtx || wbCtx.audio !== audio) return;
+    try { audio.currentTime = startAt; audio.play(); } catch (e) {}
+  }, Math.round((t0 - ac.currentTime + 4 * beat) * 1000));
+}
+
+// ---- tempo ladder ----
+// next rung suggestion: latest clean +4 BPM (capped at target), else ~60% of target
+function suggestedPass(sec) {
+  const target = Number(sec.targetBpm) || 0;
+  const ladder = Array.isArray(sec.ladder) ? sec.ladder : [];
+  const lc = ladder.length ? Number(ladder[ladder.length - 1].bpm) || 0 : 0;
+  if (lc) return target ? Math.min(target, lc + 4) : lc + 4;
+  return target ? Math.max(20, Math.round(target * 0.6)) : '';
+}
+function wbLogClean(idx, si) {
+  const item = data.items[idx], sec = item && item.sections && item.sections[si];
+  if (!sec) return;
+  const passIn = document.querySelector('.wb-pass[data-idx="' + idx + '"][data-si="' + si + '"]');
+  const bpm = Number(passIn && passIn.value) || Number(sec.targetBpm) || 0;
+  if (!bpm) { showSave('save-err', 'Enter the BPM you passed at (or set a target).'); return; }
+  if (!Array.isArray(sec.ladder)) sec.ladder = [];
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  const date = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  sec.ladder.push({ bpm, date, clean: true });
+  if (typeof Stats !== 'undefined' && Stats.tempo) {
+    Stats.tempo('repertoire', { bpm, label: item.title + ' — ' + sec.name });
+  }
+  // did this pass just reach the target? (for the mastery shimmer delight)
+  const reachedTarget = Number(sec.targetBpm) > 0 && bpm >= Number(sec.targetBpm);
+  // re-render this section's workbench (ladder + mastery) in place
+  const area = $('sections-' + item.id);
+  if (area) { area.innerHTML = buildSectionsHtml(item, idx); initWorkbench(item, idx, si); }
+  if (reachedTarget) {
+    const wb = document.querySelector('[data-wb="' + item.id + ':' + si + '"]');
+    const fill = wb && wb.querySelector('.mastery-fill');
+    if (fill) { fill.classList.add('shimmer'); fill.addEventListener('animationend', () => fill.classList.remove('shimmer'), { once: true }); }
+  }
+  scheduleSave();
+  showSave('save-ok', reachedTarget ? '✓ Clean at target — ' + bpm + ' BPM' : '✓ Logged clean pass at ' + bpm + ' BPM');
+}
+
+// ---- uploads (audio + charts) ----
+function readFileB64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => { const s = String(r.result); resolve(s.slice(s.indexOf(',') + 1)); };
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+async function uploadFile(file) {
+  const b64 = await readFileB64(file);
+  const r = await fetch('/api/repertoire/upload', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: file.name, mime: file.type, data: b64 }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+  return j.path;
+}
+async function wbUploadAudio(idx, btn) {
+  const wb = btn.closest('.workbench');
+  const input = wb && wb.querySelector('[data-role="audiofile"]');
+  const file = input && input.files && input.files[0];
+  if (!file) { showSave('save-err', 'Pick an audio file first.'); return; }
+  btn.disabled = true;
+  try {
+    const path = await uploadFile(file);
+    data.items[idx].audio = path;
+    await doSave();
+    // full re-render of this song so the player appears
+    const item = data.items[idx];
+    const area = $('sections-' + item.id);
+    if (area) { area.innerHTML = buildSectionsHtml(item, idx); initWorkbench(item, idx, openWorkbench.si); }
+    showSave('save-ok', '✓ Audio attached');
+  } catch (e) {
+    showSave('save-err', '✗ Upload failed — ' + (e.message || 'error'));
+  } finally { btn.disabled = false; }
+}
+async function wbUploadChart(idx, btn) {
+  const wb = btn.closest('.wb-bay');
+  const input = wb && wb.querySelector('[data-role="chartfile"]');
+  const file = input && input.files && input.files[0];
+  if (!file) { showSave('save-err', 'Pick a chart file first.'); return; }
+  btn.disabled = true;
+  try {
+    const path = await uploadFile(file);
+    const item = data.items[idx];
+    if (!Array.isArray(item.charts)) item.charts = [];
+    item.charts.push({ name: file.name, path });
+    await doSave();
+    const area = $('sections-' + item.id);
+    if (area) { area.innerHTML = buildSectionsHtml(item, idx); if (openWorkbench.itemId === item.id) initWorkbench(item, idx, openWorkbench.si); }
+    showSave('save-ok', '✓ Chart attached');
+  } catch (e) {
+    showSave('save-err', '✗ Upload failed — ' + (e.message || 'error'));
+  } finally { btn.disabled = false; }
+}
+function wbDeleteChart(idx, ci) {
+  const item = data.items[idx];
+  if (!item.charts || !item.charts[ci]) return;
+  if (!confirm('Remove this chart from the song? (The file stays on disk.)')) return;
+  item.charts.splice(ci, 1);
+  const area = $('sections-' + item.id);
+  if (area) { area.innerHTML = buildSectionsHtml(item, idx); if (openWorkbench.itemId === item.id) initWorkbench(item, idx, openWorkbench.si); }
+  scheduleSave();
+}
+
+// ---- linked takes (IndexedDB woodshedTakes/takes) ----
+// Transcribe stores takes as NOTES ONLY (no audio blob) — {ts, source, durationSec,
+// noteCount, report, notes, meta}. There's no per-take title field, so we match a take
+// to a song when the song title appears (case-insensitive) in its source or report text,
+// and link out to transcribe.html rather than offering blob A/B compare.
+function loadTakesInto(wb, item) {
+  const listEl = wb.querySelector('[data-role="takeslist"]');
+  if (!listEl) return;
+  let req;
+  try { req = indexedDB.open('woodshedTakes'); }
+  catch (e) { listEl.innerHTML = '<div class="wb-empty">Takes archive unavailable.</div>'; return; }
+  req.onerror = () => { listEl.innerHTML = '<div class="wb-empty">No takes recorded yet.</div>'; };
+  req.onsuccess = () => {
+    const db = req.result;
+    if (!db.objectStoreNames.contains('takes')) { listEl.innerHTML = '<div class="wb-empty">No takes recorded yet.</div>'; return; }
+    let all;
+    try { all = db.transaction('takes', 'readonly').objectStore('takes').getAll(); }
+    catch (e) { listEl.innerHTML = '<div class="wb-empty">No takes recorded yet.</div>'; return; }
+    all.onsuccess = (e) => {
+      const takes = (e.target.result || []).sort((a, b) => (b.ts || b.id || 0) - (a.ts || a.id || 0));
+      const title = (item.title || '').toLowerCase();
+      const matched = takes.filter(t => {
+        const hay = ((t.source || '') + ' ' + (t.report || '')).toLowerCase();
+        return title && hay.includes(title);
+      });
+      const shown = matched.length ? matched : takes.slice(0, 6);
+      if (!shown.length) { listEl.innerHTML = '<div class="wb-empty">No takes yet — record one in Transcribe.</div>'; return; }
+      const note = matched.length
+        ? matched.length + ' take' + (matched.length === 1 ? '' : 's') + ' mention this song.'
+        : 'No takes mention this song by name — showing recent takes. (Transcribe saves note data only, not audio, so takes link out rather than play here.)';
+      listEl.innerHTML = '<div class="wb-note" style="margin:0 0 6px">' + esc(note) + '</div>' + shown.map(t => {
+        const d = t.ts ? new Date(t.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '—';
+        const dur = t.durationSec ? Math.round(t.durationSec) + 's' : '—';
+        return '<div class="wb-take"><span class="tk-when">' + esc(d) + '</span>' +
+          '<span class="tk-meta">' + esc(t.source || 'take') + ' · ' + (t.noteCount || 0) + ' notes · ' + dur + '</span>' +
+          '<a href="transcribe.html#take=' + esc(t.id) + '" title="Open in Transcribe">Open ↗</a></div>';
+      }).join('');
+    };
+    all.onerror = () => { listEl.innerHTML = '<div class="wb-empty">Could not read takes.</div>'; };
+  };
+}
+
+// ---- add form ----
+$('addToggleBtn').onclick = () => {
+  const panel = $('addPanel');
+  const open = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+  $('addToggleBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (open) $('addTitle').focus();
+};
+$('addCancelBtn').onclick = () => {
+  $('addPanel').style.display = 'none';
+  $('addToggleBtn').setAttribute('aria-expanded', 'false');
+  $('addTitle').value = ''; $('addArtist').value = '';
+  $('addUrl').value = ''; $('addWhy').value = '';
+};
+$('addSaveBtn').onclick = () => {
+  const title = $('addTitle').value.trim();
+  if (!title) { $('addTitle').focus(); return; }
+  const item = {
+    id: uid(),
+    title,
+    artist: $('addArtist').value.trim(),
+    url: $('addUrl').value.trim(),
+    source: '',
+    status: 'queued',
+    sections: [],
+    why: $('addWhy').value.trim(),
+    notes: '',
+    added: new Date().toISOString().slice(0, 10),
+  };
+  data.items.push(item);
+  $('addCancelBtn').click();
+  render();
+  scheduleSave();
+};
+
+// ---- coach button ----
+$('coachBtn').onclick = () => {
+  const prefill = "Research 3 song candidates for my queue: my level, my current block, my taste (check my files). Propose, don't add yet.";
+  if (window.WoodshedCoach && typeof WoodshedCoach.open === 'function') {
+    WoodshedCoach.open();
+    // dispatch prefill event — coach.js may ignore detail.prefill today, but drawer opens
+    document.dispatchEvent(new CustomEvent('coach:open', { detail: { prefill } }));
+  } else {
+    // fallback: go to coach page
+    location.href = 'coach.html';
+  }
+};
+
+// ---- audio lifecycle ----
+// Pause the workbench player and suspend the count-in context when the tab is hidden
+// or the page unloads, so nothing keeps sounding in a backgrounded tab.
+function haltWorkbenchAudio() {
+  if (wbCtx && wbCtx.audio) { try { wbCtx.audio.pause(); } catch (e) {} }
+  if (wbAudioCtx && wbAudioCtx.state === 'running') { try { wbAudioCtx.suspend(); } catch (e) {} }
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) haltWorkbenchAudio(); });
+window.addEventListener('pagehide', haltWorkbenchAudio);
+
+// ---- boot ----
+loadFromApi();
+</script>
+</body>
+</html>

@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="header.js" defer></script>
+<script src="theory.js"></script><script src="audio.js"></script><script src="stats.js"></script>
+<title>Technique & Drills Library · The Woodshed</title>
+<style>
+  :root{--accent2:#7e95b3}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);padding:24px;display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+  .wrap{width:100%;max-width:1000px}
+  a.back{color:var(--muted);text-decoration:none;font-size:14px}a.back:hover{color:var(--ink)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .filters{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{background:var(--panel2);color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-size:12.5px;cursor:pointer}
+  .chip.sel{background:var(--panel);color:var(--ink);border-color:var(--accent);font-weight:600}
+  input[type=search]{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;min-width:180px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{background:var(--panel2);color:var(--muted);border:none;padding:7px 11px;cursor:pointer;font-size:12.5px;border-right:1px solid var(--line)}
+  .seg button:last-child{border-right:none}
+  .seg button.sel{background:var(--panel);color:var(--ink);border:1px solid var(--line);font-weight:600;box-shadow:0 1px 2px hsl(26 30% 8%/.12)}
+  .counts{font-size:12.5px;color:var(--muted);margin-left:auto}
+  .session{display:none}
+  .session.show{display:block}
+  .session h2,.list h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 10px}
+  .srow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .srow:last-child{border:none}
+  .srow input{accent-color:var(--good);width:16px;height:16px}
+  .srow .x{margin-left:auto;color:var(--muted);cursor:pointer;font-size:16px}
+  .srow .x:hover{color:var(--bad)}
+  .stime{color:var(--muted);font-size:12.5px}
+  .sactions{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}
+  .btn{background:var(--accent);color:#1a1407;border:none;border-radius:8px;padding:9px 14px;font-size:13.5px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line);font-weight:500}
+  .btn.ghost:hover{border-color:var(--accent)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+  .card.mastered{border-color:var(--good)}
+  .chead{display:flex;align-items:center;gap:10px;cursor:pointer}
+  .chead .nm{font-size:16px;font-weight:600}
+  .badge{font-size:10.5px;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--accent2);white-space:nowrap}
+  .badge.lvl1{color:var(--good)}.badge.lvl2{color:var(--accent)}.badge.lvl3{color:var(--bad)}
+  .chead .sp{margin-left:auto;display:flex;gap:6px;align-items:center}
+  /* phones: let the card header wrap instead of pushing the buttons off-screen */
+  @media(max-width:480px){.chead{flex-wrap:wrap}.chead .nm{flex:1 1 100%;min-width:0}}
+  .iconbtn{background:none;border:1px solid var(--line);border-radius:7px;color:var(--muted);cursor:pointer;font-size:14px;padding:5px 9px}
+  .iconbtn.on{color:var(--accent);border-color:var(--accent)}
+  .iconbtn.done{color:var(--good);border-color:var(--good)}
+  .targets{color:var(--muted);font-size:13px;margin-top:6px}
+  .body{display:none;margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+  .body.show{display:block}
+  .body .how{font-size:14px;line-height:1.6;white-space:pre-line}
+  .meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12.5px;color:var(--muted)}
+  .meta b{color:var(--ink)}
+  .add{margin-top:10px}
+  .empty{color:var(--muted);font-size:13px;padding:10px 0}
+  .ex{margin-top:12px}
+  .ex h4{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:0 0 6px}
+  .exctrl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  .exbtn{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer}
+  .exbtn:hover{border-color:var(--accent)}
+  .exbtn.play{background:var(--accent);color:#1a1407;border-color:var(--accent)}
+  .exbtn.on{color:var(--accent);border-color:var(--accent)}
+  .extempo{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
+  .extempo input{width:96px}
+  .exboard{overflow-x:auto}
+  .exboard svg{display:block;width:100%;min-width:440px;max-width:660px}
+  .exboard{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .exnote{font-size:12.5px;color:var(--muted);margin-top:6px;min-height:16px}
+  svg.li{display:inline-block;width:1em;height:1em;min-width:0;max-width:none;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em;flex:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead"><img class="masthead-plate" src="../assets/plates/plate-technique.png" alt="">
+    <div class="kicker">The Woodshed · Technique</div>
+    <h1>Technique &amp; Drills Library</h1>
+    <p class="sub">Filter, expand the how-to, track what's in your rotation, and build a session.</p>
+  </div>
+  <hr class="fretline">
+
+  <div class="panel">
+    <div class="filters">
+      <input type="search" id="search" placeholder="Search drills…">
+      <div class="seg" id="lvl">
+        <button data-l="all" class="sel">All levels</button>
+        <button data-l="1">Beginner</button>
+        <button data-l="2">Intermediate</button>
+        <button data-l="3">Advanced</button>
+      </div>
+      <label style="font-size:12.5px;color:var(--muted);display:flex;gap:6px;align-items:center"><input type="checkbox" id="rotOnly"> In rotation only</label>
+      <span class="counts" id="counts"></span>
+      <button class="btn ghost" id="randomDrill" style="margin-left:auto"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.8-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/></svg> Random drill</button>
+    </div>
+    <div class="chips" id="cats" style="margin-top:14px"></div>
+  </div>
+
+  <div class="panel session" id="sessionPanel">
+    <h2>Today's session (<span id="sessTime">0</span> min)</h2>
+    <div id="sessList"></div>
+    <div class="sactions">
+      <a class="btn" href="metronome.html" target="_blank">Open metronome →</a>
+      <button class="btn ghost" id="markAllDone"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Mark all done</button>
+      <button class="btn ghost" id="clearSession">Clear session</button>
+    </div>
+    <div id="sessHistory" style="font-size:12.5px;color:var(--muted);margin-top:10px;padding-top:8px;border-top:1px solid var(--line)"></div>
+  </div>
+
+  <div class="list">
+    <h2 id="listHead">All drills</h2>
+    <div id="drills"></div>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+// domain: A Technique, B Fretboard, C Ear, D Time, E Improv, F Repertoire
+const DRILLS=[
+// WARM-UP / SYNCHRONIZATION
+{id:'chromatic1234',name:'Chromatic 1-2-3-4 (Spider Warm-up)',cat:'Warm-up',lvl:1,dom:'A',min:5,targets:'Hand sync, finger economy, alternate picking. The universal warm-up.',tempo:60,src:'Classic',
+ how:`One finger per fret (e.g. frets 1·2·3·4). Ascend low E → high e playing 1-2-3-4 on each string; descend high e → low E playing 4-3-2-1.\n• Strict alternate picking (down-up-down-up).\n• Keep all fingers low and close to the strings, minimal motion.\n• Pick stroke and fret-finger must land at the same instant.`},
+{id:'spiderwalk',name:'Spider Walk (string pairs)',cat:'Synchronization',lvl:2,dom:'A',min:5,targets:'Finger independence + left-hand economy across strings.',tempo:50,src:'Classic',
+ how:`Finger 1 → string 6 fret 1, finger 2 → string 5 fret 2, finger 3 → string 6 fret 3, finger 4 → string 5 fret 4. Then crawl up the neck and across string pairs.\n• Keep each finger DOWN until you must move it.\n• Slow and deliberate. This one exposes lazy fingers.`},
+{id:'permutations',name:'24 Finger Permutations',cat:'Synchronization',lvl:2,dom:'A',min:5,targets:'Every finger-transition, including the weak ones (3-4, 2-4).',tempo:55,src:'Classic',
+ how:`On one string, play all 24 orderings of fingers 1-2-3-4: 1234, 1243, 1324, 1342, … Pick a few per day.\n• The awkward ones (e.g. 1-4-2-3) reveal your weakest transitions, so spend the most time there.`},
+{id:'synccheck',name:'Pick/Fret Sync Check',cat:'Synchronization',lvl:1,dom:'A',min:4,targets:'Exposes hand-sync flams you can\'t feel.',tempo:70,src:'The Instructor',
+ how:`One note. Play strict 8ths, then 16ths, with the metronome.\n• Listen for the click and the note landing EXACTLY together.\n• A "flam" (slight smear) = your hands are out of sync. Drop the tempo until every note is a single clean attack.`},
+// ALTERNATE PICKING
+{id:'single16',name:'Single-String 16ths',cat:'Alternate Picking',lvl:1,dom:'A',min:4,targets:'The picking-hand foundation: even down-up motion.',tempo:70,src:'Classic',
+ how:`One note, four notes per click (16ths): down-up-down-up.\n• Even volume and even spacing on every stroke.\n• Small motion from the wrist, not the elbow. Relaxed.`},
+{id:'insideoutside',name:'Inside & Outside Picking',cat:'Alternate Picking',lvl:2,dom:'A',min:5,targets:'String-crossing in both pick orientations.',tempo:65,src:'Classic',
+ how:`Two notes per string on two adjacent strings.\n• "Outside" picking: the pick crosses on the outside of the string pair.\n• "Inside" picking: the pick is trapped between the two strings (harder).\nDrill both directions. Most players have one weak side.`},
+{id:'pentapick',name:'Pentatonic Alternate-Picking Run',cat:'Alternate Picking',lvl:2,dom:'A',min:5,targets:'Speed + accuracy through a familiar box.',tempo:80,src:'Paul Davids L3.2',
+ how:`Run a pentatonic box ascending and descending with strict alternate picking.\n• Count in sixes (triplets), not threes, so the picking stays even across string changes.\n• Raise the tempo only with the accuracy gate.`},
+// ECONOMY / SWEEP
+{id:'triadsweep',name:'3-String Triad Sweep',cat:'Economy & Sweep',lvl:3,dom:'A',min:6,targets:'Sweep picking + left-hand muting/rolling.',tempo:50,src:'Classic',
+ how:`Major or minor triad on the top 3 strings, one note per string. Sweep down in one continuous downstroke, then up in one upstroke.\n• Each note must sound SEPARATELY (no chord ring). Roll the fretting finger and mute behind it.\n• Start painfully slow. Clean separation before any speed.`},
+{id:'econscale',name:'Economy-Picking Scale Runs',cat:'Economy & Sweep',lvl:3,dom:'A',min:6,targets:'Efficient pick direction on string changes.',tempo:70,src:'Classic',
+ how:`Play a 3-note-per-string scale using economy picking: when changing strings in the same direction, let the pick continue (a tiny sweep) instead of reversing.\n• Keep the motion small and the rhythm dead even.`},
+// LEGATO
+{id:'trills',name:'Hammer-on / Pull-off Trills',cat:'Legato',lvl:1,dom:'A',min:5,targets:'Fretting-hand strength + endurance, finger by finger.',tempo:null,src:'Classic',
+ how:`Trill each finger pair for ~30s: 1-2, 1-3, 1-4, 2-3, 2-4, 3-4.\n• Even volume on the hammer and the pull (the pull-off is a slight sideways flick, not just a lift).\n• 2-4 and 3-4 will feel weak. That's the point.`},
+{id:'legatoscale',name:'Legato Scale Runs (3 NPS)',cat:'Legato',lvl:2,dom:'A',min:5,targets:'Smooth, connected lines; left-hand stamina.',tempo:65,src:'Paul Davids L4.2',
+ how:`3-notes-per-string scale. Pick ONLY the first note on each string; hammer-on the other two ascending, pull-off descending.\n• Match the volume of the slurred notes to the picked note. That's the hard part.`},
+// FRETTING HAND
+{id:'minpressure',name:'Minimal Pressure Drill',cat:'Fretting Hand',lvl:1,dom:'A',min:3,targets:'Removes excess tension. Unlocks speed and tone everywhere.',tempo:null,src:'The Instructor',
+ how:`Fret a note and press as LIGHTLY as possible. Back off until it buzzes, then add just enough to ring clean. That's your target pressure.\n• Most players press 2–3× harder than needed. Find the floor and use it everywhere.`},
+{id:'independence',name:'Hold-and-Move Independence',cat:'Fretting Hand',lvl:2,dom:'A',min:4,targets:'Finger independence under load.',tempo:null,src:'Classic',
+ how:`Hold fingers 1 & 3 down on a string. Without moving them, lift and replace fingers 2 & 4. Rotate the held/moving pairs (hold 2&4, move 1&3, etc.).`},
+{id:'stretch',name:'1-Finger-Per-Fret Stretch Builder',cat:'Fretting Hand',lvl:2,dom:'A',min:3,targets:'Reach and hand-span, built safely.',tempo:null,src:'Classic',
+ how:`One finger per fret. Start around fret 5 (wider frets are easier on the hand) and over weeks work toward fret 1.\n• Stretch to the edge of comfortable, NEVER to pain. Warm up first.`},
+// BENDING
+{id:'bendpitch',name:'Bends to Pitch (tone / semitone)',cat:'Bending',lvl:1,dom:'A',min:5,targets:'Bend intonation. The #1 thing that makes bends sound amateur.',tempo:null,src:'Paul Davids L2.4',
+ how:`Play the TARGET note first (e.g. fret 9). Then from 2 frets below bend a whole-tone up to match it (or 1 fret for a semitone).\n• Bend with the ring finger, middle + index supporting, thumb over the top.\n• Record yourself. Your ear lies about bend pitch in the moment.`},
+{id:'prebend',name:'Pre-Bend & Release',cat:'Bending',lvl:2,dom:'A',min:4,targets:'Hearing the target before you sound it.',tempo:null,src:'Classic',
+ how:`Silently bend the string up first, then pick, then RELEASE down to pitch. You have to hear the target internally before you play it.`},
+{id:'unison',name:'Unison Bends',cat:'Bending',lvl:2,dom:'A',min:4,targets:'Bend accuracy against a reference note.',tempo:null,src:'Classic',
+ how:`Hold a fretted note on the higher string; bend the lower string up until both ring in unison. Your ear gets instant feedback on the bend pitch.`},
+// VIBRATO
+{id:'vibratowidth',name:'Vibrato Width & Speed Control',cat:'Vibrato',lvl:2,dom:'A',min:5,targets:'Controlled vibrato. Vibrato is rhythm, not a wiggle.',tempo:60,src:'Paul Davids',
+ how:`With the metronome: bend up-and-back exactly once per beat (slow, wide). Then twice per beat, then 8ths.\n• Deliberately control WIDTH (how far) and SPEED (how fast) separately.\n• Vibrato comes from the wrist rotating, not the finger.`},
+// STRING SKIPPING
+{id:'skiparp',name:'String-Skip Arpeggios',cat:'String Skipping',lvl:3,dom:'A',min:6,targets:'Picking accuracy + right-hand control over gaps.',tempo:55,src:'Classic',
+ how:`Play an arpeggio that skips a string between notes (e.g. strings 6 → 4 → 2). Mute the skipped string with the picking-hand palm / fretting-hand touch.\n• Accuracy over speed. Every note clean, no skipped-string ring.`},
+// SPEED / ENDURANCE
+{id:'speedladder',name:'Speed Ladder (Accuracy Gate)',cat:'Speed & Endurance',lvl:2,dom:'A',min:8,targets:'The honest way to actually get faster.',tempo:null,src:'The Instructor (§5)',
+ how:`Pick any lick. Metronome at a tempo you can play perfectly and relaxed.\n• 5 clean, relaxed consecutive reps → bump +4 BPM.\n• ONE sloppy or tense rep resets the count to zero.\n• Stop while it's still clean. Use the metronome tool's built-in gate.`},
+{id:'bursts',name:'Speed Bursts',cat:'Speed & Endurance',lvl:3,dom:'A',min:5,targets:'Moving the hands fast without endurance masking technique.',tempo:null,src:'Classic',
+ how:`Play a short fragment (2–4 notes) as a fast BURST, then rest a beat. Gradually lengthen the burst.\n• Teaches the hands top speed in small doses before stringing it together.`},
+// PICKING HAND / RHYTHM
+{id:'pickmetronome',name:'Picking Hand as Metronome',cat:'Picking Hand & Rhythm',lvl:2,dom:'D',min:5,targets:'Rock-solid timing through constant pick motion.',tempo:90,src:'Paul Davids L5.1',
+ how:`Keep the picking hand moving down-up CONTINUOUSLY, even on rests. The hand is the metronome and only "connects" with the string when a note sounds.\n• Play a syncopated figure while the hand never stops its steady up/down.`},
+{id:'palmmute',name:'Palm-Mute Chugs',cat:'Picking Hand & Rhythm',lvl:1,dom:'D',min:4,targets:'Tight, even muted rhythm + tone control.',tempo:80,src:'Classic',
+ how:`Palm-muted down-strokes on a low string, even 8ths then 16ths, with the metronome.\n• Keep every chug the same length, volume, and mute depth. Tighten the palm position for a consistent tone.`},
+// CHORD CHANGES
+{id:'oneminute',name:'One-Minute Changes',cat:'Chord Changes',lvl:1,dom:'A',min:4,targets:'Raw chord-change speed, measured.',tempo:null,src:'JustinGuitar',
+ how:`Pick two chords. Count how many clean changes you can make in 60 seconds (strum once per change). Write the number down and beat it next time.\n• Targets the specific change that's slow. Choose your worst pair.`},
+{id:'airchanges',name:'Air Changes',cat:'Chord Changes',lvl:1,dom:'A',min:3,targets:'Pre-forming the next shape in time.',tempo:70,src:'JustinGuitar',
+ how:`Strum a chord for a bar; in the last beat lift OFF the strings and form the next shape in the air, landing exactly on beat 1 of the next bar.\n• Trains your hand to travel as a pre-formed shape, not finger-by-finger.`},
+];
+const CATS=[...new Set(DRILLS.map(d=>d.cat))];
+const DOMNAME={A:'Technique',B:'Fretboard',C:'Ear',D:'Time',E:'Improv',F:'Repertoire'};
+
+/* ---------- animated examples ----------
+   note: {s:string 0=lowE..5=highe, f:fret, fin:finger 0-4, tech?, bend?}
+   tech: h hammer-on · p pull-off · b bend · pb pre-bend · br release · v vibrato · pm palm-mute
+   step: {n:[note,...], d:beats, lbl?}  (empty n = rest) */
+const _n=(s,f,fin,tech,bend)=>{const o={s,f,fin:fin||0};if(tech)o.tech=tech;if(bend)o.bend=bend;return o;};
+const _s=(n,d,lbl)=>({n:n||[],d:d==null?1:d,lbl:lbl||''});   // default = one note per beat (matches the BPM)
+const _chrom=sf=>{const a=[];for(let s=0;s<6;s++)for(let k=0;k<4;k++)a.push(_s([_n(s,sf+k,k+1)]));return a;};
+const _rep=(note,n,d)=>{const a=[];for(let i=0;i<n;i++)a.push(_s([note],d));return a;};
+const TECHLBL={h:'hammer-on',p:'pull-off',b:'bend up',pb:'pre-bend',br:'release',v:'vibrato',pm:'palm mute'};
+
+const EX={
+ chromatic1234:{tempo:60,hint:'Frets 1·2·3·4, one finger each — low E → high e, strict alternate picking.',steps:_chrom(1)},
+ spiderwalk:{tempo:50,hint:'1-2-3-4 crawling across string pairs; keep each finger down until you must move it.',steps:[
+   _s([_n(0,1,1)]),_s([_n(1,2,2)]),_s([_n(0,3,3)]),_s([_n(1,4,4)]),
+   _s([_n(1,1,1)]),_s([_n(2,2,2)]),_s([_n(1,3,3)]),_s([_n(2,4,4)]),
+   _s([_n(2,1,1)]),_s([_n(3,2,2)]),_s([_n(2,3,3)]),_s([_n(3,4,4)])]},
+ permutations:{tempo:55,hint:'Finger orderings on one string: 1-2-3-4, then 1-2-4-3, then 1-3-2-4.',steps:[
+   _s([_n(3,5,1)]),_s([_n(3,6,2)]),_s([_n(3,7,3)]),_s([_n(3,8,4)]),
+   _s([_n(3,5,1)]),_s([_n(3,6,2)]),_s([_n(3,8,4)]),_s([_n(3,7,3)]),
+   _s([_n(3,5,1)]),_s([_n(3,7,3)]),_s([_n(3,6,2)]),_s([_n(3,8,4)])]},
+ synccheck:{tempo:70,hint:'One note: four 8ths, then eight 16ths — every note dead-on the click.',steps:_rep(_n(3,5,1),4,0.5).concat(_rep(_n(3,5,1),8,0.25))},
+ single16:{tempo:70,hint:'One note, even 16ths, down-up-down-up from the wrist.',steps:_rep(_n(3,5,1),8,0.25)},
+ insideoutside:{tempo:65,hint:'Two notes per string across a string pair — drill inside & outside picking.',steps:[
+   _s([_n(2,5,1)]),_s([_n(2,7,3)]),_s([_n(3,5,1)]),_s([_n(3,7,3)]),
+   _s([_n(3,7,3)]),_s([_n(3,5,1)]),_s([_n(2,7,3)]),_s([_n(2,5,1)])]},
+ pentapick:{tempo:80,hint:'A-minor pentatonic box, up then down, strict alternate picking.',steps:(function(){const p=[[0,5,1],[0,8,4],[1,5,1],[1,7,3],[2,5,1],[2,7,3],[3,5,1],[3,7,3],[4,5,1],[4,8,4],[5,5,1],[5,8,4]];const a=p.map(x=>_s([_n(x[0],x[1],x[2])]));return a.concat(p.slice(0,-1).reverse().map(x=>_s([_n(x[0],x[1],x[2])])));})()},
+ triadsweep:{tempo:50,hint:'A-minor triad on the top 3 strings — sweep down then up, each note separate.',steps:[_s([_n(5,5,1)]),_s([_n(4,5,1)]),_s([_n(3,5,1)]),_s([_n(4,5,1)]),_s([_n(5,5,1)])]},
+ econscale:{tempo:70,hint:'3-notes-per-string scale fragment with economy picking on the string change.',steps:[_s([_n(2,5,1)]),_s([_n(2,7,2)]),_s([_n(2,9,4)]),_s([_n(3,5,1)]),_s([_n(3,7,2)]),_s([_n(3,9,4)])]},
+ trills:{tempo:60,hint:'Hammer-on / pull-off trill, fingers 1 and 3 — even volume both ways.',steps:[_s([_n(3,5,1)]),_s([_n(3,7,3,'h')]),_s([_n(3,5,1,'p')]),_s([_n(3,7,3,'h')]),_s([_n(3,5,1,'p')]),_s([_n(3,7,3,'h')]),_s([_n(3,5,1,'p')])]},
+ legatoscale:{tempo:65,hint:'3-NPS scale: pick only the first note of each string, hammer-on the rest.',steps:[_s([_n(2,5,1)]),_s([_n(2,7,2,'h')]),_s([_n(2,9,4,'h')]),_s([_n(3,5,1)]),_s([_n(3,7,2,'h')]),_s([_n(3,9,4,'h')])]},
+ minpressure:{tempo:60,hint:'One note, pressing as lightly as possible — back off until it buzzes, then add a hair.',steps:[_s([_n(3,7,3)],2),_s([],1),_s([_n(3,7,3)],2)]},
+ independence:{tempo:60,hint:'Hold fingers 1 & 3; lift and replace 2 & 4 without moving the held pair.',steps:[_s([_n(1,5,1),_n(3,7,3)],1),_s([_n(2,6,2),_n(4,8,4)],1),_s([_n(1,5,1),_n(3,7,3)],1),_s([_n(2,6,2),_n(4,8,4)],1)]},
+ stretch:{tempo:55,hint:'One finger per fret — stretch to the edge of comfort, never pain.',steps:[_s([_n(3,5,1)]),_s([_n(3,6,2)]),_s([_n(3,7,3)]),_s([_n(3,8,4)])]},
+ bendpitch:{tempo:60,hint:'Play the target (fret 9) first, then bend up a whole-tone from fret 7 to match it.',steps:[_s([_n(4,9,3)],1),_s([_n(4,7,3,'b',2)],2)]},
+ prebend:{tempo:60,hint:'Silently bend up first, then pick, then release down to pitch.',steps:[_s([_n(4,7,3,'pb',2)],1.5),_s([_n(4,7,3,'br',2)],1.5)]},
+ unison:{tempo:60,hint:'Hold the high-string note; bend the lower string up until both ring in unison.',steps:[_s([_n(5,5,1),_n(4,8,3,'b',2)],3)]},
+ vibratowidth:{tempo:60,hint:'Vibrato from the wrist — controlled width and speed, here once per beat.',steps:[_s([_n(3,7,3,'v')],4)]},
+ skiparp:{tempo:55,hint:'Arpeggio that skips a string between notes — mute the skipped string.',steps:[_s([_n(0,5,1)]),_s([_n(2,5,1)]),_s([_n(4,5,1)]),_s([_n(2,5,1)]),_s([_n(0,5,1)])]},
+ speedladder:{tempo:80,hint:'Pick a short lick; play it perfectly & relaxed. 5 clean reps → +4 BPM (use the metronome gate).',steps:[_s([_n(0,5,1)]),_s([_n(0,8,4)]),_s([_n(1,5,1)]),_s([_n(1,7,3)])]},
+ bursts:{tempo:80,hint:'A short fast burst, then rest a beat. Lengthen the burst over time.',steps:[_s([_n(3,5,1)],0.125),_s([_n(3,6,2)],0.125),_s([_n(3,7,3)],0.125),_s([_n(3,8,4)],0.125),_s([],1)]},
+ pickmetronome:{tempo:90,hint:'Picking hand moves down-up continuously, even on rests — it only connects on a note.',steps:[_s([_n(0,5,1)],0.5),_s([],0.5),_s([_n(0,5,1)],0.5),_s([_n(0,5,1)],0.5),_s([],0.5),_s([_n(0,5,1)],0.5),_s([],0.5),_s([_n(0,5,1)],0.5)]},
+ palmmute:{tempo:80,hint:'Palm-muted down-strokes on the low E — even, tight, consistent tone.',steps:_rep(_n(0,0,0,'pm'),8,0.5)},
+ oneminute:{tempo:60,hint:'Count clean changes in 60s. Here: C ↔ G. Choose your slowest pair.',steps:[
+   _s([_n(1,3,3),_n(2,2,2),_n(3,0,0),_n(4,1,1),_n(5,0,0)],2,'C'),
+   _s([_n(0,3,2),_n(1,2,1),_n(2,0,0),_n(3,0,0),_n(4,0,0),_n(5,3,4)],2,'G')]},
+ airchanges:{tempo:70,hint:'Strum a chord, lift OFF and form the next shape in the air, land on beat 1.',steps:[
+   _s([_n(1,3,3),_n(2,2,2),_n(3,0,0),_n(4,1,1),_n(5,0,0)],3,'C'),_s([],1,'air →'),
+   _s([_n(1,0,0),_n(2,2,2),_n(3,2,3),_n(4,1,1),_n(5,0,0)],3,'Am'),_s([],1,'air →')]},
+};
+
+// build the animated fretboard player into `box` for an example `ex`
+function mountExample(box, ex){
+  const totalBeats=ex.steps.reduce((a,st)=>a+st.d,0);
+  let hi=5; ex.steps.forEach(st=>st.n.forEach(nt=>{ hi=Math.max(hi, nt.f+(nt.bend||0)); }));
+  hi=Math.min(15,hi+1);
+  const NUT=34, FW=Math.max(30,Math.min(46,Math.round(520/hi))), SG=20, TOP=16, OPENX=NUT-14;
+  const W=NUT+FW*hi+8, H=TOP+SG*5+30;
+  const cx=f=> f===0?OPENX : NUT+FW*(f-0.5);
+  const cy=s=> TOP+SG*(5-s);
+  // unique fretted positions (faint dots), keyed s:f
+  const pos=new Map();
+  ex.steps.forEach(st=>st.n.forEach(nt=>{const k=nt.s+':'+nt.f; if(!pos.has(k)) pos.set(k,nt);}));
+
+  function svg(active){
+    const act=new Set(active>=0?ex.steps[active].n.map(nt=>nt.s+':'+nt.f):[]);
+    let g=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+    g+=`<rect x="${NUT}" y="${TOP-6}" width="${FW*hi}" height="${SG*5+12}" fill="#241a10" rx="4"/>`;
+    [3,5,7,9,12].filter(f=>f<=hi).forEach(f=> g+=`<circle cx="${NUT+FW*(f-0.5)}" cy="${TOP+SG*2.5}" r="2.6" fill="#3c3020"/>`);
+    for(let f=0;f<=hi;f++){const x=NUT+FW*f; g+=`<line x1="${x}" y1="${TOP-6}" x2="${x}" y2="${TOP+SG*5+6}" stroke="${f===0?'#cfd3da':'#5a5043'}" stroke-width="${f===0?4:1.4}"/>`; if(f>0) g+=`<text x="${x-FW/2}" y="${TOP+SG*5+18}" fill="#6b7280" font-size="9" text-anchor="middle">${f}</text>`;}
+    for(let s=0;s<6;s++){const y=cy(s); g+=`<line x1="${NUT}" y1="${y}" x2="${NUT+FW*hi}" y2="${y}" stroke="#9aa0aa" stroke-width="${(0.6+s*0.2).toFixed(2)}"/>`; g+=`<text x="${NUT-24}" y="${y+3}" fill="#6b7280" font-size="9" text-anchor="middle">${STR_NAMES[s]}</text>`;}
+    // technique cues (slur arcs, bend arrows, vibrato, palm-mute) from the sequence
+    const lastF={}; let pm=false;
+    ex.steps.forEach(st=>{ st.n.forEach(nt=>{
+      const x=cx(nt.f), y=cy(nt.s);
+      if((nt.tech==='h'||nt.tech==='p') && lastF[nt.s]!=null){ const x0=cx(lastF[nt.s]), mx=(x0+x)/2;
+        g+=`<path d="M${x0} ${y-8} Q ${mx} ${y-17} ${x} ${y-8}" stroke="var(--accent2)" fill="none" stroke-width="1.4"/><text x="${mx}" y="${y-18}" fill="var(--accent2)" font-size="8" text-anchor="middle">${nt.tech==='h'?'H':'P'}</text>`; }
+      if(nt.tech==='b'||nt.tech==='pb'){
+        g+=`<line x1="${x}" y1="${y-9}" x2="${x}" y2="${y-21}" stroke="var(--accent)" stroke-width="1.4"/><path d="M${x-3} ${y-18} L${x} ${y-23} L${x+3} ${y-18}" fill="none" stroke="var(--accent)" stroke-width="1.4"/><text x="${x+6}" y="${y-15}" fill="var(--accent)" font-size="8">${nt.bend===1?'½':'full'}</text>`; }
+      if(nt.tech==='v') g+=`<text x="${x}" y="${y-9}" fill="var(--accent2)" font-size="10" text-anchor="middle">∿</text>`;
+      if(nt.tech==='pm') pm=true;
+    }); st.n.forEach(nt=>{ lastF[nt.s]=nt.f; }); });
+    if(pm) g+=`<text x="${NUT}" y="${TOP-9}" fill="var(--muted)" font-size="8.5">P.M. ‑ ‑ ‑ ‑</text>`;
+    // dots
+    pos.forEach(nt=>{ const k=nt.s+':'+nt.f, on=act.has(k), x=cx(nt.f), y=cy(nt.s);
+      g+=`<circle cx="${x}" cy="${y}" r="${on?9:7}" fill="${on?'var(--accent)':'#caa15a'}" opacity="${on?1:0.42}" stroke="${on?'#fff':'#0f1115'}" stroke-width="${on?2:1}"/>`;
+      const lbl=nt.fin?nt.fin:(nt.f===0?'○':'');
+      g+=`<text x="${x}" y="${y+3}" fill="#1a1407" font-size="9" font-weight="700" text-anchor="middle" opacity="${on?1:0.6}">${lbl}</text>`; });
+    return g+`</svg>`;
+  }
+  function stepDesc(st){ if(!st.n.length) return st.lbl||'(rest)'; if(st.lbl) return st.lbl; if(st.n.length===1){const nt=st.n[0]; return `${STR_NAMES[nt.s]} string · fret ${nt.f}`+(nt.fin?` · finger ${nt.fin}`:'')+(nt.tech?` · ${TECHLBL[nt.tech]||nt.tech}`:''); } return st.n.length+' notes together'; }
+
+  const SVG_PLAY='<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
+  const SVG_STOP='<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg>';
+  const SVG_LOOP='<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>';
+  box.innerHTML=`<h4>Watch it played</h4>
+    <div class="exctrl">
+      <button class="exbtn play" data-x="play" aria-label="Play">${SVG_PLAY} Play</button>
+      <button class="exbtn on" data-x="loop" aria-label="Loop">${SVG_LOOP} Loop</button>
+      <span class="extempo">Tempo <input type="range" min="30" max="160" value="${ex.tempo||60}"><b data-x="bpm">${ex.tempo||60}</b> BPM</span>
+    </div>
+    <div class="exboard" data-x="board"></div>
+    <div class="exnote" data-x="note">${ex.hint||''}</div>`;
+  const board=box.querySelector('[data-x=board]'), playBtn=box.querySelector('[data-x=play]'),
+        loopBtn=box.querySelector('[data-x=loop]'), tempo=box.querySelector('.extempo input'),
+        bpm=box.querySelector('[data-x=bpm]'), note=box.querySelector('[data-x=note]');
+  board.innerHTML=svg(-1);
+  let playing=false, raf=null, cycleStart=0, loop=true, bus=null;
+
+  function startCycle(){ const a=ac(); if(a.resume)a.resume(); const spb=60/(+tempo.value); cycleStart=a.currentTime+0.06; let b=0;
+    ex.steps.forEach(st=>{ st.n.forEach(nt=>{ const midi=OPEN_MIDI[nt.s]+nt.f+((nt.tech==='b'||nt.tech==='pb')?(nt.bend||0):0); tone(midi,(cycleStart-a.currentTime)+b*spb,Math.max(0.1,st.d*spb*0.95),0.28,bus); }); b+=st.d; }); }
+  function frame(){ if(!playing)return; const a=ac(), spb=60/(+tempo.value); let el=a.currentTime-cycleStart;
+    if(el>=totalBeats*spb){ if(loop){ startCycle(); el=0; } else { stop(); return; } }
+    const beat=Math.max(0,el)/spb; let acc=0, active=-1;
+    for(let i=0;i<ex.steps.length;i++){ if(beat>=acc && beat<acc+ex.steps[i].d){active=i;break;} acc+=ex.steps[i].d; }
+    board.innerHTML=svg(active); note.textContent=active>=0?stepDesc(ex.steps[active]):'';
+    raf=requestAnimationFrame(frame); }
+  function play(){ const a=ac(); bus=a.createGain(); bus.connect(a.destination); playing=true; playBtn.innerHTML=SVG_STOP+' Stop'; startCycle(); frame(); }
+  function stop(){ playing=false; if(raf)cancelAnimationFrame(raf); raf=null; if(bus){ try{bus.disconnect();}catch(e){} bus=null; } playBtn.innerHTML=SVG_PLAY+' Play'; board.innerHTML=svg(-1); note.textContent=ex.hint||''; }
+  playBtn.onclick=()=>{ if(playing){stop();}else{Stats.activity(TOOL_KEY);play();} };
+  loopBtn.onclick=()=>{ loop=!loop; loopBtn.classList.toggle('on',loop); };
+  tempo.oninput=()=>{ bpm.textContent=tempo.value; if(playing){ stop(); play(); } };
+  box._stop=stop;
+}
+const TOOL_KEY='technique-drills';
+let catFilter=Stats.getPref(TOOL_KEY,'catFilter','all');
+let lvlFilter=Stats.getPref(TOOL_KEY,'lvlFilter','all');
+let rotOnly=Stats.getPref(TOOL_KEY,'rotOnly',false);
+let q='';
+
+function ls(k){try{return JSON.parse(localStorage.getItem(k)||'[]');}catch(e){return[];}}
+function save(k,v){localStorage.setItem(k,JSON.stringify(v));}
+function rotation(){return new Set(ls('techRotation'));}
+function mastered(){return new Set(ls('techMastered'));}
+function session(){return ls('techSession');}
+
+/* ---- session history log ---- */
+function todayStr(){const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
+function getSessionLog(){try{return JSON.parse(localStorage.getItem('techSessionLog')||'[]');}catch(e){return[];}}
+function saveSessionLog(log){localStorage.setItem('techSessionLog',JSON.stringify(log));}
+function logDrillDone(id){
+  const today=todayStr(); const log=getSessionLog();
+  const idx=log.findIndex(e=>e.date===today);
+  if(idx>=0){if(!log[idx].done.includes(id))log[idx].done.push(id);}
+  else log.push({date:today,done:[id]});
+  // keep only last 90 days
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()-90);
+  const cutStr=cutoff.getFullYear()+'-'+String(cutoff.getMonth()+1).padStart(2,'0')+'-'+String(cutoff.getDate()).padStart(2,'0');
+  const trimmed=log.filter(e=>e.date>=cutStr);
+  saveSessionLog(trimmed);
+}
+function removeDrillDone(id){
+  const today=todayStr(); const log=getSessionLog();
+  const idx=log.findIndex(e=>e.date===today);
+  if(idx>=0){log[idx].done=log[idx].done.filter(x=>x!==id);saveSessionLog(log);}
+}
+function todayDone(){
+  const today=todayStr(); const log=getSessionLog();
+  const entry=log.find(e=>e.date===today);
+  return entry?new Set(entry.done):new Set();
+}
+function last7Count(){
+  const log=getSessionLog(); const d=new Date(); const dates=new Set();
+  for(let i=0;i<7;i++){const t=new Date(d);t.setDate(d.getDate()-i);const p=n=>String(n).padStart(2,'0');dates.add(t.getFullYear()+'-'+p(t.getMonth()+1)+'-'+p(t.getDate()));}
+  let total=0;
+  log.forEach(e=>{if(dates.has(e.date))total+=e.done.length;});
+  return total;
+}
+
+function renderCats(){
+  const wrap=$('cats');wrap.innerHTML='';
+  const mk=(val,label)=>{const c=document.createElement('div');c.className='chip'+(catFilter===val?' sel':'');c.textContent=label;c.onclick=()=>{catFilter=val;Stats.setPref(TOOL_KEY,'catFilter',catFilter);render();};return c;};
+  wrap.appendChild(mk('all','All categories'));
+  CATS.forEach(c=>wrap.appendChild(mk(c,c)));
+}
+function visible(){
+  const rot=rotation();
+  return DRILLS.filter(d=>
+    (catFilter==='all'||d.cat===catFilter)&&
+    (lvlFilter==='all'||d.lvl===+lvlFilter)&&
+    (!rotOnly||rot.has(d.id))&&
+    (!q||(d.name+' '+d.targets+' '+d.how+' '+d.cat).toLowerCase().includes(q))
+  );
+}
+function render(){
+  // stop any playing animated examples before their DOM is detached (audio would loop forever)
+  document.querySelectorAll('.ex').forEach(b=>{ if(b._stop){ try{b._stop();}catch(e){} } });
+  renderCats();
+  const rot=rotation(),mas=mastered();
+  const list=visible();
+  $('listHead').textContent=`${catFilter==='all'?'All drills':catFilter} (${list.length})`;
+  $('counts').innerHTML=`<b style="color:var(--accent)">${rot.size}</b> in rotation · <b style="color:var(--good)">${mas.size}</b> mastered · ${DRILLS.length} total`;
+  const wrap=$('drills');wrap.innerHTML='';
+  if(!list.length){wrap.innerHTML='<div class="empty">No drills match. Try clearing filters.</div>';}
+  list.forEach(d=>{
+    const inRot=rot.has(d.id),done=mas.has(d.id),inSess=session().includes(d.id);
+    const card=document.createElement('div');card.className='card'+(done?' mastered':'');
+    card.innerHTML=`
+      <div class="chead">
+        <span class="nm">${d.name}</span>
+        <span class="badge lvl${d.lvl}">${['','Beginner','Intermediate','Advanced'][d.lvl]}</span>
+        <span class="badge">${DOMNAME[d.dom]}</span>
+        <span class="sp">
+          <button class="iconbtn ${inRot?'on':''}" data-act="rot" title="In rotation" aria-label="In rotation"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" ${inRot?'fill="currentColor"':''}/></svg></button>
+          <button class="iconbtn ${done?'done':''}" data-act="master" title="Mastered" aria-label="Mastered"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button>
+        </span>
+      </div>
+      <div class="targets">${d.targets}</div>
+      <div class="body">
+        <div class="how">${d.how}</div>
+        ${EX[d.id]?'<div class="ex"></div>':''}
+        <div class="meta"><span>Category: <b>${d.cat}</b></span>${d.tempo?`<span>Start tempo: <b>${d.tempo} BPM</b></span>`:''}<span>~${d.min} min</span><span>Source: <b>${d.src}</b></span></div>
+        <div class="add"><button class="btn ghost" data-act="add">${inSess?'<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> In session':'+ Add to session'}</button></div>
+      </div>`;
+    const head=card.querySelector('.chead'),body=card.querySelector('.body');
+    head.onclick=e=>{if(e.target.closest('.iconbtn'))return;
+      const showing=body.classList.toggle('show');const exbox=card.querySelector('.ex');
+      if(showing){ if(exbox&&!exbox.dataset.m&&EX[d.id]){ exbox.dataset.m='1'; mountExample(exbox,EX[d.id]); } }
+      else if(exbox&&exbox._stop){ exbox._stop(); }
+    };
+    card.querySelector('[data-act=rot]').onclick=()=>{const s=rotation();s.has(d.id)?s.delete(d.id):s.add(d.id);save('techRotation',[...s]);render();};
+    card.querySelector('[data-act=master]').onclick=()=>{const s=mastered();s.has(d.id)?s.delete(d.id):s.add(d.id);save('techMastered',[...s]);render();};
+    card.querySelector('[data-act=add]').onclick=()=>{let s=session();if(s.includes(d.id))s=s.filter(x=>x!==d.id);else s.push(d.id);save('techSession',s);render();renderSession();};
+    wrap.appendChild(card);
+  });
+  renderSession();
+}
+function renderSession(){
+  const s=session();const panel=$('sessionPanel');
+  panel.classList.toggle('show',s.length>0);
+  const list=$('sessList');list.innerHTML='';
+  let total=0;
+  const done=todayDone();
+  s.forEach(id=>{const d=DRILLS.find(x=>x.id===id);if(!d)return;total+=d.min;
+    const row=document.createElement('div');row.className='srow';
+    const checked=done.has(id);
+    row.innerHTML=`<input type="checkbox"${checked?' checked':''}> <span${checked?' style="text-decoration:line-through;color:var(--muted)"':''}>${d.name}</span> <span class="stime">${d.tempo?d.tempo+' BPM · ':''}~${d.min} min</span><span class="x" title="Remove">✕</span>`;
+    const cb=row.querySelector('input');
+    cb.onchange=()=>{
+      // record into the unified stats layer too (byKey=drill id), so the
+      // dashboard + Instructor export can see WHICH drills were done
+      if(cb.checked){logDrillDone(id);Stats.record(TOOL_KEY,{correct:true,key:id});}
+      else removeDrillDone(id);
+      renderSession();
+    };
+    row.querySelector('.x').onclick=()=>{save('techSession',session().filter(x=>x!==id));render();};
+    list.appendChild(row);
+  });
+  $('sessTime').textContent=total;
+  // 7-day summary
+  const hist=$('sessHistory');
+  if(s.length>0){const n=last7Count();hist.innerHTML='Last 7 days: <span class="tab-num">'+n+'</span> drill'+(n===1?'':'s')+' completed';}
+  else hist.textContent='';
+}
+$('search').oninput=e=>{q=e.target.value.toLowerCase().trim();render();};
+// restore level filter UI
+document.querySelectorAll('#lvl button').forEach(b=>{
+  if(b.dataset.l===lvlFilter)b.classList.add('sel'); else b.classList.remove('sel');
+  b.onclick=()=>{document.querySelectorAll('#lvl button').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');lvlFilter=b.dataset.l;Stats.setPref(TOOL_KEY,'lvlFilter',lvlFilter);render();};
+});
+// restore rotation-only checkbox
+$('rotOnly').checked=rotOnly;
+$('rotOnly').onchange=e=>{rotOnly=e.target.checked;Stats.setPref(TOOL_KEY,'rotOnly',rotOnly);render();};
+$('clearSession').onclick=()=>{save('techSession',[]);render();};
+
+// mark all done
+$('markAllDone').onclick=()=>{
+  const s=session(); const done=todayDone();
+  let anyNew=false;
+  s.forEach(id=>{if(!done.has(id)){logDrillDone(id);Stats.record(TOOL_KEY,{correct:true,key:id});anyNew=true;}});
+  if(anyNew)Stats.activity(TOOL_KEY);
+  renderSession();
+};
+
+// random drill: pick from rotation if non-empty, else from visible() filtered list
+$('randomDrill').onclick=()=>{
+  const rot=[...rotation()];
+  const pool=(rot.length>0?DRILLS.filter(d=>rot.includes(d.id)):visible());
+  if(!pool.length)return;
+  const d=pool[Math.floor(Math.random()*pool.length)];
+  // ensure the drill is visible in the current filter before scrolling
+  const vis=visible(); const inVis=vis.find(x=>x.id===d.id);
+  if(!inVis){
+    // clear filters so it appears
+    catFilter='all';lvlFilter='all';rotOnly=false;
+    Stats.setPref(TOOL_KEY,'catFilter',catFilter);Stats.setPref(TOOL_KEY,'lvlFilter',lvlFilter);Stats.setPref(TOOL_KEY,'rotOnly',rotOnly);
+    document.querySelectorAll('#lvl button').forEach(b=>{if(b.dataset.l==='all')b.classList.add('sel');else b.classList.remove('sel');});
+    $('rotOnly').checked=false;
+    render();
+  }
+  // find the card by drill name
+  const allCards=[...$('drills').querySelectorAll('.card')];
+  const target=allCards.find(c=>c.querySelector('.nm')&&c.querySelector('.nm').textContent===d.name);
+  if(target){
+    target.scrollIntoView({behavior:'smooth',block:'center'});
+    const body=target.querySelector('.body');
+    if(!body.classList.contains('show')){
+      body.classList.add('show');
+      const exbox=target.querySelector('.ex');
+      if(exbox&&!exbox.dataset.m&&EX[d.id]){exbox.dataset.m='1';mountExample(exbox,EX[d.id]);}
+    }
+  }
+};
+
+render();
+</script>
+</body>
+</html>

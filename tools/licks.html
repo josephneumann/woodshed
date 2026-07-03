@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lick Library · The Woodshed</title>
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="audio.js"></script>
+<script src="stats.js"></script>
+<script src="header.js" defer></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);padding:24px;display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+.wrap{width:100%;max-width:860px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+input[type=search],input[type=text]{background:var(--panel2,#1f242e);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-size:14px;font-family:inherit;width:100%}
+input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.filters input[type=search]{flex:1;min-width:220px}
+.counts{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.chip{font-size:12px;font-weight:600;padding:4px 11px;border-radius:20px;cursor:pointer;border:1px solid var(--line);background:none;color:var(--muted);font-family:inherit;transition:.15s}
+.chip:hover{border-color:var(--accent)}
+.chip.sel{border-color:var(--accent);color:#1a1407;background:var(--accent)}
+
+/* lick cards */
+.lick-list{display:flex;flex-direction:column;gap:14px;margin-top:4px}
+.lick-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;transition:.15s}
+.lick-top{display:flex;align-items:flex-start;gap:12px}
+.lick-body{flex:1;min-width:0}
+.lick-title{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:5px}
+.lick-title h3{margin:0;font-size:1.02rem;font-weight:600;line-height:1.2}
+.tagchips{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 6px}
+.tagchip{font-size:11px;padding:2px 9px;border-radius:12px;border:1px solid var(--line);color:var(--muted)}
+.tagchip.key{border-color:var(--accent);color:var(--accent)}
+.tagchip.ctx{border-color:color-mix(in srgb,var(--accent) 55%,var(--line));color:var(--ink)}
+.lick-meta{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:2px}
+.lick-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.lbtn{padding:7px 12px;font-size:12.5px;border:1px solid var(--line);border-radius:9px;background:var(--panel2,#1f242e);color:var(--ink);cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:.15s}
+.lbtn:hover{border-color:var(--accent)}
+.lbtn.primary{border-color:color-mix(in srgb,var(--accent) 60%,var(--line));color:var(--accent)}
+.lbtn.on{border-color:var(--accent);color:#1a1407;background:var(--accent)}
+.lbtn.danger:hover{border-color:var(--bad,#e0655e);color:var(--bad,#e0655e)}
+.lbtn.small{padding:5px 9px;font-size:12px}
+.roll-strip{display:block;width:100%;height:64px;background:#120f0a;border:1px solid var(--line);border-radius:8px;margin:4px 0 2px}
+
+/* clean-rep pips: one pressed dot per confirmed clean rep (cap 5) — evidence, not a score */
+.reps{display:inline-flex;gap:4px;align-items:center;margin-left:2px;vertical-align:-1px}
+.reps .rep{width:7px;height:7px;border-radius:50%;background:var(--good)}
+@keyframes rep-press{0%{transform:scale(0)}60%{transform:scale(1.35)}100%{transform:scale(1)}}
+.reps .rep.fresh{animation:rep-press .22s ease-out}
+@media(prefers-reduced-motion:reduce){.reps .rep.fresh{animation:none}}
+
+/* drill panel */
+.drill{margin-top:12px;padding:14px;background:var(--panel2,#1f242e);border:1px solid var(--accent);border-radius:10px}
+.drill p{margin:0 0 10px;font-size:13.5px;color:var(--ink)}
+.drill .drill-q{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.drill .drill-hint{font-size:11.5px;color:var(--muted);margin-top:9px;line-height:1.4}
+
+/* edit form */
+.editform{margin-top:12px;padding:14px;background:var(--panel2,#1f242e);border:1px solid var(--line);border-radius:10px}
+.editform .ef-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.editform .ef-full{grid-column:1/-1}
+.editform label{display:block;font-size:11px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+.editform input{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit}
+.editform .ef-actions{display:flex;gap:8px;margin-top:12px}
+@media(max-width:520px){.editform .ef-grid{grid-template-columns:1fr}}
+
+.empty{text-align:center;padding:34px 18px;color:var(--muted);font-size:14px;line-height:1.6}
+.empty a{color:var(--accent);text-decoration:none;font-weight:600}
+.empty a:hover{text-decoration:underline}
+.empty svg{width:40px;height:40px;stroke:var(--muted);stroke-width:1.5;fill:none;opacity:.55;margin-bottom:10px}
+
+.readonly-note{background:color-mix(in srgb,var(--accent) 8%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line));border-radius:10px;padding:11px 14px;font-size:13px;color:var(--muted);margin-bottom:16px}
+.readonly-note code{background:var(--panel2,#1f242e);padding:1px 5px;border-radius:4px}
+
+/* save status bar */
+.save-bar{position:fixed;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 16px;background:color-mix(in srgb,var(--panel) 95%,transparent);backdrop-filter:blur(6px);border-top:1px solid var(--line);font-size:13px;color:var(--muted);transform:translateY(100%);transition:transform .2s ease;z-index:60}
+.save-bar.show{transform:translateY(0)}
+.save-bar .save-ok{color:var(--good,#5ec07a)}
+.save-bar .save-err{color:var(--bad,#e0655e)}
+
+svg.li{display:inline-block;width:1em;height:1em;min-width:0;max-width:none;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em;flex:none}
+@media(max-width:480px){body{padding:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead"><img class="masthead-plate" src="../assets/plates/plate-improv.png" alt="">
+    <div class="kicker">The Woodshed · Vocabulary</div>
+    <h1>Lick Library</h1>
+    <p class="sub">Lift a phrase in <b>Transcribe</b>, tag it with a key and context, then drill it — spaced repetition re-tests each lick across sleep until it's vocabulary.</p>
+  </div>
+  <hr class="fretline">
+
+  <div id="readonlyNote" class="readonly-note" style="display:none">
+    <svg class="li" viewBox="0 0 24 24" aria-hidden="true" style="width:1em;height:1em;stroke-width:2;opacity:1;margin:0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+    API not available — serving read-only. Run <code>npm run dev</code> locally to enable saving.
+  </div>
+
+  <div class="panel">
+    <div class="filters">
+      <input type="search" id="search" placeholder="Search name, key, context, tags…">
+      <span class="counts" id="counts"></span>
+    </div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="lick-list" id="list"></div>
+  <div class="empty" id="empty" style="display:none"></div>
+</div>
+
+<div class="save-bar" id="saveBar" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+// ---- state ----
+let data = { version: 1, updated: '', licks: [] };
+let apiAvailable = false;
+let saveTimer = null;
+let query = '';
+let ctxFilter = 'all';
+let slowMode = false;                 // 0.75x playback toggle (global)
+
+if (typeof Stats !== 'undefined') Stats.activity('licks');   // boot activity
+
+// ---- API ----
+async function loadFromApi() {
+  try {
+    const r = await fetch('/api/licks');
+    if (!r.ok) throw new Error(r.status);
+    data = await r.json();
+    if (!data || typeof data !== 'object') data = { version: 1, licks: [] };
+    if (!Array.isArray(data.licks)) data.licks = [];
+    apiAvailable = true;
+  } catch (e) {
+    apiAvailable = false;
+    $('readonlyNote').style.display = 'block';
+  }
+  render();
+}
+function scheduleSave() {
+  if (!apiAvailable) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(doSave, 800);
+}
+function showSave(cls, msg) {
+  const bar = $('saveBar');
+  bar.innerHTML = `<span class="${cls}">${msg}</span>`;
+  bar.classList.add('show');
+  setTimeout(() => bar.classList.remove('show'), 2600);
+}
+async function doSave() {
+  if (!apiAvailable) return;
+  try {
+    const r = await fetch('/api/licks', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    showSave('save-ok', '✓ Saved');
+  } catch (e) {
+    showSave('save-err', '✗ Save failed — ' + (e && e.message ? e.message : 'network error'));
+  }
+}
+
+// ---- filtering ----
+function contexts() {
+  const set = new Set();
+  data.licks.forEach(l => { const c = (l.context || '').trim(); if (c) set.add(c); });
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
+function matches(l) {
+  if (ctxFilter !== 'all' && (l.context || '').trim() !== ctxFilter) return false;
+  if (!query) return true;
+  const hay = [l.name, l.key, l.context, (l.tags || []).join(' '), l.source].join(' ').toLowerCase();
+  return hay.includes(query);
+}
+
+// ---- piano-roll fingerprint (inline SVG; steel notes, amber accents) ----
+function rollSvg(notes) {
+  const W = 640, H = 64, PAD = 3;
+  if (!notes || !notes.length) return `<svg class="roll-strip" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"></svg>`;
+  const midis = notes.map(n => n.midi);
+  let lo = Math.min(...midis), hi = Math.max(...midis);
+  if (hi - lo < 4) { lo -= 2; hi += 2; }                 // give a flat line some vertical air
+  const span = Math.max(1, hi - lo);
+  const maxT = Math.max(...notes.map(n => n.start + n.dur), 0.001);
+  const amax = notes.reduce((m, n) => Math.max(m, n.midi), -Infinity);   // top pitch = melodic accent
+  const x = t => PAD + (t / maxT) * (W - 2 * PAD);
+  const y = m => PAD + (1 - (m - lo) / span) * (H - 2 * PAD);
+  let s = `<svg class="roll-strip" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${notes.length} notes">`;
+  // faint octave gridlines
+  for (let m = Math.ceil(lo / 12) * 12; m <= hi; m += 12) {
+    s += `<line x1="0" y1="${y(m).toFixed(1)}" x2="${W}" y2="${y(m).toFixed(1)}" stroke="rgba(255,255,255,.06)" stroke-width="1"/>`;
+  }
+  const bh = Math.max(3, (H - 2 * PAD) / span - 1);
+  notes.forEach(n => {
+    const bx = x(n.start), bw = Math.max(3, x(n.start + n.dur) - bx);
+    const accent = n.midi === amax;
+    const fill = accent ? '#e0b15e' /* amber accent */ : '#8a94a3' /* steel */;
+    s += `<rect x="${bx.toFixed(1)}" y="${(y(n.midi) - bh / 2).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="1.5" fill="${fill}"/>`;
+  });
+  return s + `</svg>`;
+}
+
+// ---- playback (audio.js tone()) ----
+// Schedule a lick's notes through tone() at original timing. slow=0.75x stretches the clock.
+let playTimers = [];
+let playingId = null;
+function stopLick() {
+  playTimers.forEach(t => clearTimeout(t));
+  playTimers = [];
+  try { if (typeof stopTones === 'function') stopTones(); } catch (e) {}
+  const prev = playingId; playingId = null;
+  if (prev) { const b = document.querySelector(`[data-play="${prev}"]`); if (b) setPlayLabel(b, false); }
+}
+function setPlayLabel(btn, playing) {
+  btn.classList.toggle('on', playing);
+  btn.innerHTML = playing
+    ? '<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg> Stop'
+    : '<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg> Play';
+}
+function playLick(lick, btn, onDone) {
+  stopLick();
+  const rate = slowMode ? 0.75 : 1;                       // 0.75x = notes land later, ring longer
+  const notes = lick.notes || [];
+  if (!notes.length) return;
+  playingId = lick.id;
+  if (btn) setPlayLabel(btn, true);
+  let endBy = 0;
+  notes.forEach(n => {
+    const at = (n.start / rate) * 1000;
+    const dur = Math.max(0.12, (n.dur || 0.25) / rate);
+    endBy = Math.max(endBy, at + dur * 1000);
+    playTimers.push(setTimeout(() => {
+      try { tone(n.midi, 0, dur, 0.32); } catch (e) {}
+    }, at));
+  });
+  // reset button + fire onDone once the phrase finishes
+  playTimers.push(setTimeout(() => {
+    if (playingId === lick.id) { playingId = null; if (btn) setPlayLabel(btn, false); }
+    if (typeof onDone === 'function') onDone();
+  }, endBy + 120));
+}
+
+// ---- spaced-repetition drill (Stats.review contract) ----
+// Play the lick, then self-grade "could you play it back cleanly?". Yes/No →
+// Stats.record('licks',{correct,key:lick.id}); on Yes also Stats.review.add so it
+// lands on Tomorrow's bench (never same-day complete — consolidation happens across sleep).
+function openDrill(lick, card) {
+  card.querySelectorAll('.drill,.editform').forEach(el => el.remove());
+  const host = document.createElement('div');
+  host.className = 'drill';
+  host.innerHTML = `
+    <p>Playing the lick… listen, then play it back on the guitar.</p>
+    <div class="drill-q">
+      <span style="font-size:13.5px;color:var(--ink)">Could you play it back cleanly?</span>
+      <button class="lbtn on drill-yes">Yes</button>
+      <button class="lbtn danger drill-no">No</button>
+      <button class="lbtn small drill-replay" title="Play it again"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg> Replay</button>
+      <button class="lbtn small drill-close">Close</button>
+    </div>
+    <div class="drill-hint">A “Yes” schedules a re-test on tomorrow's bench — accuracy consolidates across sleep, so the confirmation is never same-day.</div>`;
+  card.appendChild(host);
+  playLick(lick, null);
+  host.querySelector('.drill-replay').onclick = () => playLick(lick, null);
+  host.querySelector('.drill-close').onclick = () => { stopLick(); host.remove(); };
+  const grade = (correct) => {
+    stopLick();
+    if (typeof Stats !== 'undefined') {
+      Stats.record('licks', { correct, key: lick.id });
+      if (correct && Stats.review && typeof Stats.review.add === 'function') {
+        Stats.review.add('licks', lick.id, { note: lick.name });
+      }
+    }
+    if (correct) {
+      // press a fresh pip into this card's meta line — evidence of a clean rep
+      const meta = card.querySelector('.lick-meta');
+      if (meta) {
+        const reps = cleanReps(lick.id);
+        const old = meta.querySelector('.reps');
+        if (old) {
+          // swap the existing pip strip in place (keeps its ' · ' separator)
+          old.outerHTML = repsHtml(reps, true);
+        } else if (reps) {
+          meta.insertAdjacentHTML('beforeend', ' · ' + repsHtml(reps, true));
+        }
+      }
+    }
+    host.innerHTML = correct
+      ? `<p style="margin:0;color:var(--good,#5ec07a)">✓ Logged — it's on tomorrow's bench for a re-test.</p>`
+      : `<p style="margin:0;color:var(--muted)">Logged. Loop it slow a few times, then try again another day.</p>`;
+    setTimeout(() => host.remove(), 2600);
+  };
+  host.querySelector('.drill-yes').onclick = () => grade(true);
+  host.querySelector('.drill-no').onclick = () => grade(false);
+}
+
+// ---- edit / delete ----
+function openEdit(lick, card) {
+  card.querySelectorAll('.drill,.editform').forEach(el => el.remove());
+  const host = document.createElement('div');
+  host.className = 'editform';
+  host.innerHTML = `
+    <div class="ef-grid">
+      <div class="ef-full"><label>Name</label><input type="text" data-ef="name" value="${esc(lick.name)}"></div>
+      <div><label>Key</label><input type="text" data-ef="key" value="${esc(lick.key || '')}"></div>
+      <div><label>Context</label><input type="text" data-ef="context" value="${esc(lick.context || '')}"></div>
+      <div class="ef-full"><label>Tags (comma-separated)</label><input type="text" data-ef="tags" value="${esc((lick.tags || []).join(', '))}"></div>
+    </div>
+    <div class="ef-actions">
+      <button class="lbtn primary ef-save">Save</button>
+      <button class="lbtn ef-cancel">Cancel</button>
+    </div>`;
+  card.appendChild(host);
+  host.querySelector('[data-ef="name"]').focus();
+  host.querySelector('.ef-cancel').onclick = () => host.remove();
+  host.querySelector('.ef-save').onclick = () => {
+    const name = host.querySelector('[data-ef="name"]').value.trim();
+    if (!name) { host.querySelector('[data-ef="name"]').focus(); return; }
+    lick.name = name;
+    lick.key = host.querySelector('[data-ef="key"]').value.trim();
+    lick.context = host.querySelector('[data-ef="context"]').value.trim();
+    lick.tags = host.querySelector('[data-ef="tags"]').value.split(',').map(t => t.trim()).filter(Boolean);
+    render();
+    scheduleSave();
+  };
+}
+function deleteLick(lick) {
+  if (!confirm('Delete “' + lick.name + '” from the Lick Library?')) return;
+  data.licks = data.licks.filter(l => l.id !== lick.id);
+  render();
+  scheduleSave();
+}
+
+// ---- render ----
+function fmtDur(s) { s = Math.round((s || 0) * 10) / 10; return s + 's'; }
+function keyName(m) { return NAMES[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1); }
+
+const REP_CAP = 5;
+// clean reps for a lick = correct drill grades recorded under its id (Stats.byKey('licks'))
+function cleanReps(lickId) {
+  if (typeof Stats === 'undefined') return 0;
+  try { const k = Stats.byKey('licks', 365)[lickId]; return k ? (k.c || 0) : 0; }
+  catch (e) { return 0; }
+}
+function repsHtml(count, freshFlag) {
+  const n = Math.min(REP_CAP, count || 0);
+  if (!n) return '';
+  let dots = '';
+  for (let i = 0; i < n; i++) dots += `<span class="rep${freshFlag && i === n - 1 ? ' fresh' : ''}"></span>`;
+  const extra = count > REP_CAP ? ' title="' + count + ' clean reps"' : '';
+  return `<span class="reps" aria-label="${count} clean rep${count === 1 ? '' : 's'}"${extra}>${dots}</span>`;
+}
+
+function renderChips() {
+  const wrap = $('chips'); wrap.innerHTML = '';
+  const opts = [['all', 'All']].concat(contexts().map(c => [c, c]));
+  if (opts.length <= 1) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'flex';
+  opts.forEach(([v, label]) => {
+    const c = document.createElement('button');
+    c.className = 'chip' + (ctxFilter === v ? ' sel' : '');
+    c.textContent = label;
+    c.onclick = () => { ctxFilter = v; render(); };
+    wrap.appendChild(c);
+  });
+}
+
+function render() {
+  stopLick();
+  renderChips();
+  const list = $('list'), empty = $('empty');
+  const shown = data.licks.filter(matches);
+
+  if (!data.licks.length) {
+    list.innerHTML = ''; list.style.display = 'none';
+    empty.style.display = 'block';
+    empty.innerHTML = `
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      <div>No licks yet. Lift a phrase in <a href="transcribe.html">Transcribe</a> and hit <b>Save as lick</b> —<br>it'll show up here to tag and drill.</div>`;
+    $('counts').textContent = '';
+    return;
+  }
+  empty.style.display = 'none';
+  list.style.display = 'flex';
+  $('counts').textContent = shown.length === data.licks.length
+    ? data.licks.length + ' lick' + (data.licks.length === 1 ? '' : 's')
+    : shown.length + ' of ' + data.licks.length;
+
+  if (!shown.length) {
+    list.innerHTML = '<div class="empty" style="display:block">No licks match. Adjust the search or filter.</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  shown.forEach(lick => {
+    const card = document.createElement('div');
+    card.className = 'lick-card';
+    card.dataset.id = lick.id;
+    const notes = lick.notes || [];
+    const range = notes.length
+      ? keyName(Math.min(...notes.map(n => n.midi))) + '–' + keyName(Math.max(...notes.map(n => n.midi)))
+      : '';
+    const chips = [];
+    if (lick.key) chips.push(`<span class="tagchip key">${esc(lick.key)}</span>`);
+    if (lick.context) chips.push(`<span class="tagchip ctx">${esc(lick.context)}</span>`);
+    const tagChips = (lick.tags || []).map(t => `<span class="tagchip">${esc(t)}</span>`).join('');
+    card.innerHTML = `
+      <div class="lick-top">
+        <div class="lick-body">
+          <div class="lick-title"><h3>${esc(lick.name)}</h3></div>
+          <div class="tagchips">${chips.join('')}${tagChips}</div>
+          ${rollSvg(notes)}
+          <div class="lick-meta">${notes.length} note${notes.length === 1 ? '' : 's'} · ${fmtDur(lick.durationSec)}${range ? ' · ' + range : ''}${lick.bpmGuess ? ' · ~' + lick.bpmGuess + ' BPM' : ''} · added ${esc(lick.added || '')}${lick.source ? ' · ' + esc(lick.source) : ''}${(() => { const r = cleanReps(lick.id); return r ? ' · ' + repsHtml(r) : ''; })()}</div>
+          <div class="lick-actions">
+            <button class="lbtn primary" data-act="play" data-play="${esc(lick.id)}"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg> Play</button>
+            <button class="lbtn" data-act="drill" title="Play it, then self-grade — spaced repetition re-tests it across sleep"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v4"/><path d="m16.24 7.76 2.83-2.83"/><path d="M18 12h4"/><path d="m16.24 16.24 2.83 2.83"/><path d="M12 18v4"/><path d="m4.93 19.07 2.83-2.83"/><path d="M2 12h4"/><path d="m4.93 4.93 2.83 2.83"/></svg> Drill</button>
+            <button class="lbtn" data-act="edit"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg> Edit</button>
+            <button class="lbtn danger" data-act="delete"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> Delete</button>
+          </div>
+        </div>
+      </div>`;
+    list.appendChild(card);
+
+    card.querySelector('[data-act="play"]').onclick = (e) => {
+      const btn = e.currentTarget;
+      if (playingId === lick.id) { stopLick(); return; }
+      playLick(lick, btn);
+    };
+    card.querySelector('[data-act="drill"]').onclick = () => openDrill(lick, card.querySelector('.lick-body'));
+    card.querySelector('[data-act="edit"]').onclick = () => openEdit(lick, card.querySelector('.lick-body'));
+    card.querySelector('[data-act="delete"]').onclick = () => deleteLick(lick);
+  });
+}
+
+// ---- controls ----
+$('search').addEventListener('input', () => { query = $('search').value.trim().toLowerCase(); render(); });
+
+// speed toggle — injected into the filters row so it's always visible
+(function addSpeedToggle() {
+  const btn = document.createElement('button');
+  btn.className = 'chip';
+  btn.id = 'speedToggle';
+  btn.textContent = '0.75× slow';
+  btn.title = 'Play licks at three-quarter speed';
+  btn.style.marginLeft = 'auto';
+  btn.onclick = () => { slowMode = !slowMode; btn.classList.toggle('sel', slowMode); if (typeof Stats !== 'undefined') Stats.setPref('licks', 'slow', slowMode); };
+  slowMode = typeof Stats !== 'undefined' && Stats.getPref('licks', 'slow', false);
+  btn.classList.toggle('sel', slowMode);
+  document.querySelector('.filters').appendChild(btn);
+})();
+
+// stop any scheduled playback if the page is hidden or torn down mid-lick
+window.addEventListener('pagehide', stopLick);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') stopLick(); });
+
+// ---- boot ----
+loadFromApi();
+</script>
+</body>
+</html>

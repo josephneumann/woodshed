@@ -1,0 +1,163 @@
+THE WOODSHED — ASSET GENERATION PROMPTS (Nano Banana / Gemini image)
+=====================================================================
+
+HOW TO USE
+1. Do everything in ONE session so the style stays locked.
+2. Generate prompt 01 (the master plate) first. Regenerate until the paper,
+   ink and line weight feel right. Everything else copies it.
+3. For every later prompt, ATTACH the master plate image as a reference and
+   keep the "same style" opening line.
+4. Aspect: 4:3 for plates, 1:1 for stamps, 16:5 for the hero (or widest offered).
+   Highest resolution available. Save as PNG (JPG fine for the hero).
+5. Save each file with the EXACT filename given, into the folder given.
+   I'll wire them into the app from those paths.
+
+If the model adds text or extra colors, reply: "remove all text and lettering;
+monochrome sepia ink only, except one amber-brass accent."
+
+NEGATIVE / AVOID (append or paste if the model supports it)
+photograph, photorealistic, 3D render, gradients, glow, neon, cartoon, anime,
+flat vector, thick uniform outlines, text, letters, numbers, watermark,
+signature, frame border, busy background
+
+---------------------------------------------------------------------
+01 — MASTER PLATE (calibration)            save: assets/plates/plate-time.png
+---------------------------------------------------------------------
+Antique patent-drawing style technical illustration of an exploded mechanical
+metronome — pyramid case opened, pendulum arm, sliding tempo weight and
+escapement gears separated vertically with thin leader lines. Fine
+single-weight sepia-black ink linework on warm aged cream paper, 19th-century
+scientific engraving aesthetic, orthographic elevation view, sparse
+cross-hatch and stipple shading, thin dimension lines with small arrowheads,
+generous empty margins, one small detail accented in warm amber-brass ink,
+precise, calm, minimal. No text, no letters, no numbers, no watermark.
+
+---------------------------------------------------------------------
+02 — EAR PLATE                              save: assets/plates/plate-ear.png
+---------------------------------------------------------------------
+Using the attached image as the exact style reference — same aged cream paper,
+same sepia ink, same fine line weight: antique patent-drawing style technical
+illustration of a human ear in profile beside an upright tuning fork, with
+three engraved concentric sound-wave arcs traveling between them, sparse
+stipple shading, one wave arc accented in warm amber-brass ink, generous
+margins. No text, no letters, no numbers, no watermark.
+
+---------------------------------------------------------------------
+03 — FRETBOARD PLATE                   save: assets/plates/plate-fretboard.png
+---------------------------------------------------------------------
+Same style, same paper, same line weight as the attached reference: antique
+patent-drawing technical illustration of a guitar neck in front elevation —
+headstock, nut, first seven frets with side dot markers, strings as fine
+parallel lines — plus one thin dimension line with arrowheads spanning the
+nut width, its measure line accented in warm amber-brass ink. Generous
+margins. No text, no letters, no numbers, no watermark.
+
+---------------------------------------------------------------------
+04 — TECHNIQUE PLATE                   save: assets/plates/plate-technique.png
+---------------------------------------------------------------------
+Same style, same paper, same line weight as the attached reference: antique
+anatomical engraving of a human left hand in playing position over a guitar
+fretboard, tendons and finger joints rendered in the style of a Victorian
+anatomy plate, fingers curled onto the strings, sparse cross-hatch shading,
+one tendon line accented in warm amber-brass ink. Generous margins. No text,
+no letters, no numbers, no watermark.
+
+---------------------------------------------------------------------
+05 — IMPROVISATION PLATE                  save: assets/plates/plate-improv.png
+---------------------------------------------------------------------
+Same style, same paper, same line weight as the attached reference: antique
+patent-drawing study of an archtop guitar f-hole and body curve, close-up,
+with a dotted curving path (like a plotted trajectory) arcing across the
+strings, the dotted path accented in warm amber-brass ink, sparse stipple
+shading. Generous margins. No text, no letters, no numbers, no watermark.
+
+---------------------------------------------------------------------
+06 — REFERENCE PLATE                   save: assets/plates/plate-reference.png
+---------------------------------------------------------------------
+Same style, same paper, same line weight as the attached reference: antique
+patent-drawing illustration of luthier bench tools laid in a neat row —
+caliper, fret file, string winder, small brass rule — each drawn in
+orthographic top view with thin leader lines, the caliper jaws accented in
+warm amber-brass ink. Generous margins. No text, no letters, no numbers,
+no watermark.
+
+---------------------------------------------------------------------
+07 — PROGRESS PLATE                     save: assets/plates/plate-progress.png
+---------------------------------------------------------------------
+Same style, same paper, same line weight as the attached reference: antique
+patent-drawing study of an acoustic guitar soundhole rosette — concentric
+ornamental rings drawn precisely, with one ring segment magnified in a
+detail circle connected by a thin leader line, the magnified segment
+accented in warm amber-brass ink. Generous margins. No text, no letters,
+no numbers, no watermark.
+
+---------------------------------------------------------------------
+08 — HERO PLATE (light-mode hero, wide)      save: assets/hero-plate.jpg
+---------------------------------------------------------------------
+Same style, same paper, same line weight as the attached reference: ultra-wide
+antique patent-drawing engraving of a luthier workshop bench seen straight-on —
+a guitar body mid-construction at the right two-thirds, clamps, calipers and a
+small metronome arranged along the bench, tools hung on the wall behind, the
+left third of the sheet left as calm empty cream paper (space for a headline),
+one clamp accented in warm amber-brass ink. 16:5 ultra-wide sheet. No text,
+no letters, no numbers, no watermark.
+
+---------------------------------------------------------------------
+09 — MASTER STAMP (calibration)           save: assets/stamps/stamp-shed.png
+---------------------------------------------------------------------
+Hand-carved linocut stamp print: circular badge composition of a small wooden
+shed with a single window glowing, framed by two thin carved concentric rings.
+Single burnt-sienna ink on cream paper, bold carved linework with visible
+hand-cut texture, slightly imperfect edges like a rubber stamp impression,
+folk workshop aesthetic, centered, generous margin. No text, no letters,
+no numbers.
+
+---------------------------------------------------------------------
+10 — FLAME STAMP (streaks)               save: assets/stamps/stamp-flame.png
+---------------------------------------------------------------------
+Same carved style, same ink, same ring border as the attached stamp reference:
+hand-carved linocut circular badge of a single candle flame, bold simple
+carved shapes, slightly imperfect stamp edges. No text, no letters, no numbers.
+
+---------------------------------------------------------------------
+11 — STRING STAMP (mastery)             save: assets/stamps/stamp-string.png
+---------------------------------------------------------------------
+Same carved style, same ink, same ring border as the attached stamp reference:
+hand-carved linocut circular badge of a coiled guitar string with its ball end
+visible, bold carved linework, slightly imperfect stamp edges. No text,
+no letters, no numbers.
+
+---------------------------------------------------------------------
+12 — METRONOME STAMP (tempo records)  save: assets/stamps/stamp-metronome.png
+---------------------------------------------------------------------
+Same carved style, same ink, same ring border as the attached stamp reference:
+hand-carved linocut circular badge of a pyramid metronome silhouette with
+pendulum swung to one side, bold carved shapes, slightly imperfect stamp
+edges. No text, no letters, no numbers.
+
+---------------------------------------------------------------------
+13 — PICKS STAMP (sessions)              save: assets/stamps/stamp-picks.png
+---------------------------------------------------------------------
+Same carved style, same ink, same ring border as the attached stamp reference:
+hand-carved linocut circular badge of two crossed guitar picks, bold carved
+shapes, slightly imperfect stamp edges. No text, no letters, no numbers.
+
+---------------------------------------------------------------------
+14 — LAUREL STAMP (milestones)          save: assets/stamps/stamp-laurel.png
+---------------------------------------------------------------------
+Same carved style, same ink, same ring border as the attached stamp reference:
+hand-carved linocut circular badge of a laurel wreath whose two branches are
+curved guitar strings with small ball-ends as the leaves' tips, bold carved
+linework, slightly imperfect stamp edges. No text, no letters, no numbers.
+
+---------------------------------------------------------------------
+OPTIONAL — DARK VARIANTS (only if you want full-bleed art on espresso pages)
+---------------------------------------------------------------------
+Re-run any plate prompt, replacing the paper sentence with:
+"...fine single-weight ivory and brass ink linework on very dark
+espresso-brown paper, blueprint-plate aesthetic..."
+Save alongside the original with a -dark suffix, e.g. plate-time-dark.png.
+
+WHEN DONE
+Drop everything into the folders above and tell me — I'll wire the plates
+into the tool mastheads/empty states and the stamps into the ceremony layer.

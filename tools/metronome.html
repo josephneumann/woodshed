@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="stats.js"></script>
+<script src="header.js" defer></script>
+<title>Metronome · The Woodshed</title>
+<style>
+  :root{--accent2:#7e95b3}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);
+    -webkit-font-smoothing:antialiased;padding:24px;display:flex;justify-content:center}
+  .wrap{width:100%;max-width:560px}
+  a.back{color:var(--muted);text-decoration:none;font-size:14px}
+  a.back:hover{color:var(--ink)}
+  /* masthead overrides: theme.css sets 1.9rem; keep that */
+  .masthead{margin-bottom:0}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:16px}
+  .bpm{display:flex;align-items:center;justify-content:center;gap:18px}
+  .bpm-val{font-size:72px;font-weight:700;line-height:1.1;min-width:170px;text-align:center}
+  .bpm-val small{font-family:var(--font-ui);font-size:18px;color:var(--muted);font-weight:500}
+  .round{width:54px;height:54px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);
+    color:var(--ink);font-size:26px;cursor:pointer;transition:.15s}
+  .round:hover{border-color:var(--accent);color:var(--accent)}
+  input[type=range]{width:100%;accent-color:var(--accent);margin-top:14px}
+  .beats{display:flex;gap:8px;justify-content:center;margin:18px 0 4px;flex-wrap:wrap}
+  .dot{width:30px;height:30px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);transition:.06s}
+  .dot.on{background:var(--accent2);box-shadow:0 0 14px var(--accent2)}
+  .dot.accent.on{background:var(--accent);box-shadow:0 0 16px var(--accent)}
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:10px}
+  .row label{font-size:13px;color:var(--muted)}
+  select,button.ctrl{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;
+    padding:8px 12px;font-size:14px;cursor:pointer}
+  button.ctrl:hover{border-color:var(--accent)}
+  .start{width:100%;padding:16px;font-size:18px;font-weight:600;border:none;border-radius:10px;cursor:pointer;
+    background:var(--accent);color:#1a1407;margin-top:6px}
+  .start.running{background:var(--bad);color:#fff}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{background:var(--panel2);color:var(--muted);border:none;padding:8px 12px;cursor:pointer;font-size:13px}
+  .seg button.sel{background:var(--panel);color:var(--ink);font-weight:600;border:1px solid var(--line);box-shadow:0 1px 2px hsl(26 30% 8%/.12)}
+  h2{font-size:14px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:0 0 12px}
+  .gate{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .gate .big{font-size:34px;font-weight:700}
+  .pips{display:flex;gap:6px}
+  .pip{width:16px;height:16px;border-radius:50%;border:1px solid var(--line);background:var(--panel2)}
+  .pip.filled{background:var(--good);border-color:var(--good)}
+  .hint{font-size:13px;color:var(--muted);line-height:1.5;margin-top:10px}
+  .num{width:56px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px;text-align:center}
+  .subrow{display:flex;gap:6px;justify-content:center;margin:10px 0 2px}
+  .subcell{min-width:30px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:var(--panel2);border:1px solid var(--line);font-size:12px;color:var(--muted);transition:.05s}
+  .subcell.on{background:var(--accent2);color:#06140b;box-shadow:0 0 10px var(--accent2)}
+  .subcell[data-i="0"].on{background:var(--accent);box-shadow:0 0 12px var(--accent)}
+  .meter{position:relative;height:34px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;margin:12px 0 6px;overflow:hidden}
+  .meter .center{position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--good);opacity:.7}
+  .meter .needle{position:absolute;top:3px;bottom:3px;width:4px;border-radius:2px;background:var(--accent);left:50%;transform:translateX(-50%);transition:left .08s}
+  .meter .lbl{position:absolute;top:8px;font-size:10.5px;color:var(--muted)}
+  .timestats{display:flex;gap:24px;flex-wrap:wrap;align-items:baseline}
+  .timestats .big2{font-size:26px;font-weight:700}
+  .ramp-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:10px}
+  .ramp-row label{font-size:13px;color:var(--muted)}
+  .session-timer{font-size:13px;color:var(--muted);text-align:center;margin-top:6px;min-height:18px}
+  svg.li{display:inline-block;width:1em;height:1em;min-width:0;max-width:none;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em;flex:none}
+  /* beat-dot flash pulse */
+  .dot.flash{transform:scale(1.25);box-shadow:0 0 14px hsl(var(--brand)/.55);transition:transform .18s ease-out,box-shadow .18s ease-out}
+  .dot.accent.flash{transform:scale(1.35);box-shadow:0 0 20px hsl(var(--brand)/.7)}
+  .dot{transition:transform .18s ease-out,box-shadow .18s ease-out,background .06s,border-color .06s}
+  /* pip pop */
+  @keyframes pip-pop{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+  .pip.popping{animation:pip-pop .2s ease-out}
+  /* BPM bump flash */
+  @keyframes bpm-bump{0%{color:hsl(var(--brand))}100%{color:inherit}}
+  .bpm-val.bumped{animation:bpm-bump .4s ease-out}
+  /* Confirmation banner */
+  .confirm-banner{background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .confirm-banner.confirmed{border-color:hsl(var(--brand)/.7);background:hsl(var(--brand)/.08)}
+  .confirm-banner .cb-text{flex:1;font-size:14px;line-height:1.4;color:var(--ink)}
+  .confirm-banner .cb-label{font-size:12px;text-transform:uppercase;letter-spacing:.5px;
+    color:var(--muted);margin-bottom:2px}
+  .confirm-banner button{background:var(--panel);border:1px solid var(--line);border-radius:7px;
+    padding:7px 13px;font-size:13px;cursor:pointer;color:var(--ink);white-space:nowrap}
+  .confirm-banner button:hover{border-color:var(--accent)}
+  .confirm-banner .cb-skip{font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;
+    text-underline-offset:2px;white-space:nowrap}
+  .confirm-banner .cb-skip:hover{color:var(--ink)}
+  @keyframes banner-confirmed{0%{opacity:0;transform:scaleY(.92)}100%{opacity:1;transform:scaleY(1)}}
+  .confirm-banner.confirmed{animation:banner-confirmed .25s ease-out}
+  /* ---- groove report ---- */
+  .groove-toggle{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+  .glisten{padding:10px 16px;font-size:14px;font-weight:600;border:1px solid var(--line);border-radius:9px;
+    cursor:pointer;background:var(--panel2);color:var(--ink)}
+  .glisten.on{background:var(--accent);border-color:var(--accent);color:#1a1407}
+  .gcal{padding:10px 14px;font-size:13px;border:1px solid var(--line);border-radius:9px;cursor:pointer;background:var(--panel2);color:var(--ink)}
+  .gcal:hover{border-color:var(--accent)}
+  .glat{font-size:12px;color:var(--muted)}
+  .gstatus{font-size:13px;color:var(--muted);min-height:18px;margin:6px 0}
+  .gstatus.err{color:var(--bad)}
+  .gstrip{display:flex;gap:3px;flex-wrap:wrap;align-items:flex-end;min-height:36px;margin:10px 0 4px}
+  .gbar{width:8px;border-radius:2px;background:var(--muted);opacity:.85}
+  .gbar.early{background:var(--accent2)}      /* steel #7e95b3 */
+  .gbar.late{background:#9c4a3c}              /* oxblood-ish */
+  .gbar.tight{background:var(--good)}
+  .gsummary{display:flex;gap:24px;flex-wrap:wrap;align-items:baseline;margin-top:6px}
+  .gsummary .g-big{font-size:24px;font-weight:700;font-variant-numeric:lining-nums}
+  .gsummary .g-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .gbeats{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .gbeat{min-width:64px;text-align:center;padding:8px 6px;border-radius:8px;background:var(--panel2);border:1px solid var(--line)}
+  .gbeat .gb-n{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .gbeat .gb-v{font-size:16px;font-weight:700;font-variant-numeric:lining-nums;margin-top:2px}
+  .gbeat.rush .gb-v{color:var(--accent2)}
+  .gbeat.drag .gb-v{color:#9c4a3c}
+  .gbeat.tight .gb-v{color:var(--good)}
+  /* "in the pocket" — a quiet green wash sweeps the tight-hits strip once when a run lands sd<=25ms over 16+ hits */
+  .gpocket{color:var(--good);font-weight:600}
+  @keyframes pocket-sweep{0%{background-position:-140% 0}100%{background-position:240% 0}}
+  .gstrip.pocket{background:linear-gradient(100deg,transparent 30%,color-mix(in srgb,var(--good) 30%,transparent) 50%,transparent 70%);background-size:60% 100%;background-repeat:no-repeat;border-radius:6px;animation:pocket-sweep 1.1s ease-out 1}
+  @media(prefers-reduced-motion:reduce){.gstrip.pocket{animation:none;background:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead"><img class="masthead-plate" src="../assets/plates/plate-time.png" alt="">
+    <div class="kicker">The Woodshed · Time</div>
+    <h1>Metronome</h1>
+    <p class="sub">Accuracy before speed — subdivisions, accent placement, and an accuracy-gate stepper.</p>
+  </div>
+  <hr class="fretline">
+
+  <div class="panel">
+    <div class="bpm">
+      <button class="round" id="dec">–</button>
+      <div class="bpm-val display-num"><span id="bpmDisp">80</span><small> BPM</small></div>
+      <button class="round" id="inc">+</button>
+    </div>
+    <input type="range" id="slider" min="40" max="240" value="80">
+    <div class="beats" id="beats"></div>
+    <div class="subrow" id="subrow"></div>
+    <div class="row">
+      <label>Beats/bar</label>
+      <select id="meterSel">
+        <option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option>
+      </select>
+      <label>Subdivision</label>
+      <select id="subdivSel">
+        <option value="1">Quarter</option>
+        <option value="2">8th notes</option>
+        <option value="3">Triplets</option>
+        <option value="4">16th notes</option>
+      </select>
+      <button class="ctrl" id="tap">Tap tempo</button>
+    </div>
+    <div class="row">
+      <label>Accent</label>
+      <div class="seg" id="accentMode">
+        <button data-m="1" class="sel">Beat 1</button>
+        <button data-m="24">2 &amp; 4</button>
+        <button data-m="0">Off</button>
+      </div>
+    </div>
+    <!-- Ramp mode -->
+    <div class="ramp-row">
+      <label style="display:inline-flex;gap:6px;align-items:center;cursor:pointer">
+        <input type="checkbox" id="rampOn"> Ramp
+      </label>
+      <label>+<input class="num" id="rampN" type="number" value="2" min="1" max="10" style="width:48px"> BPM every</label>
+      <label><input class="num" id="rampM" type="number" value="4" min="2" max="16" style="width:48px"> bars</label>
+    </div>
+    <div class="session-timer tab-num" id="sessionTimer"></div>
+    <button class="start" id="startBtn">Start</button>
+  </div>
+
+  <div id="confirmBannerArea"></div>
+
+  <div class="panel">
+    <h2>Accuracy gate</h2>
+    <div class="gate">
+      <div>
+        <div class="big display-num"><span id="clean">0</span><span style="color:var(--muted)">/<span id="need">5</span></span></div>
+        <div class="pips" id="pips"></div>
+      </div>
+      <div style="flex:1;min-width:180px">
+        <div class="row" style="margin-top:0">
+          <label>Clean reps needed</label><input class="num" id="needIn" type="number" value="5" min="1" max="20">
+          <label>BPM step</label><input class="num" id="stepIn" type="number" value="4" min="1" max="20">
+        </div>
+        <div class="row">
+          <button class="ctrl" id="cleanRep"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Clean rep</button>
+          <button class="ctrl" id="sloppy"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Sloppy (reset)</button>
+        </div>
+      </div>
+    </div>
+    <div class="hint">
+      Drill the hardest 2–4 beats. Log a clean, <em>relaxed</em> rep with ✓. Hit the target and the metronome
+      bumps up by your step automatically. <strong>One sloppy rep resets the count</strong>. No exceptions.
+      That gate is where speed actually comes from.
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Time check: are you rushing or dragging?</h2>
+    <label class="cb" style="display:inline-flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)"><input type="checkbox" id="timeCheck"> Enable tap feedback (then press <b style="color:var(--ink)">Space</b> on each beat)</label>
+    <div class="meter" id="timeMeter">
+      <div class="center"></div>
+      <div class="needle" id="needle"></div>
+      <span class="lbl" style="left:8px">&#8249;&#8249; rushing (early)</span>
+      <span class="lbl" style="right:8px">dragging (late) &#8250;&#8250;</span>
+    </div>
+    <div class="timestats">
+      <div><div class="big2 tab-num" id="lastOff">—</div><div style="font-size:11px;color:var(--muted)">last tap</div></div>
+      <div><div class="big2 tab-num" id="verdict" style="font-size:16px">tap to begin</div><div style="font-size:11px;color:var(--muted)">rolling verdict</div></div>
+      <button class="ctrl" id="resetTaps" style="margin-left:auto">Reset</button>
+    </div>
+    <div class="hint">Weak time is invisible to the person who has it. This makes it visible. Start the metronome, enable tap feedback, and tap <b>Space</b> right on each click. Green = within 15 ms. If your average drifts negative you're <em>rushing</em>. Positive means <em>dragging</em>. (Tap timing is approximate, good for trends but not lab precision.)</div>
+  </div>
+
+  <div class="panel">
+    <h2>Groove report: does your <em>playing</em> land on the click?</h2>
+    <div class="groove-toggle">
+      <button class="glisten" id="grooveToggle"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg> Listen to my playing</button>
+      <button class="gcal" id="grooveCalibrate">Calibrate latency</button>
+      <span class="glat" id="grooveLat"></span>
+      <button class="ctrl" id="grooveReset" style="margin-left:auto">Reset</button>
+    </div>
+    <div class="gstatus" id="grooveStatus">Start the metronome, then turn on listening and play along — each note you play is timed against the nearest click.</div>
+    <div class="gstrip" id="grooveStrip"></div>
+    <div class="gsummary">
+      <div><div class="g-big tab-num" id="grooveMean">—</div><div class="g-lbl">mean offset</div></div>
+      <div><div class="g-big tab-num" id="grooveSd">—</div><div class="g-lbl">spread (± sd)</div></div>
+      <div><div class="g-big tab-num" id="grooveCount">0</div><div class="g-lbl">hits</div></div>
+    </div>
+    <div class="gbeats" id="grooveBeats"></div>
+    <div class="hint">Turn on listening while the metronome runs and play along (single notes or muted chops read cleanest). Each attack is timed against the nearest click: <b style="color:var(--accent2)">steel = early (rushing)</b>, <b style="color:#9c4a3c">oxblood = late (dragging)</b>, <b style="color:var(--good)">green = tight (±25 ms)</b>. The per-beat row shows <em>which beat</em> you rush or drag. Mic and speaker latency shifts everything — hit <b>Calibrate latency</b> once (play a muted chop on each of 8 clicks) to zero it out.</div>
+  </div>
+</div>
+<!-- ============ PURE groove analysis (mirror of scratch groove-analysis.js) ============ -->
+<script>
+window.GrooveAnalysis=(function(root){
+  'use strict';
+  // detectOnsets(frames,opts) — frames:[{t,rms}] time-ordered (t in seconds).
+  // Flags onsets on fast energy rises (rms > k*recentAvg, rising) with an 80ms
+  // refractory. Returns onset times. See groove-analysis.js for the full contract.
+  function detectOnsets(frames,opts){
+    opts=opts||{};
+    var k=opts.k==null?2.2:opts.k;
+    var refractory=opts.refractoryMs==null?80:opts.refractoryMs;
+    var avgWindow=opts.avgWindowMs==null?120:opts.avgWindowMs;
+    var floor=opts.floor==null?0.006:opts.floor;
+    if(!frames||frames.length<2)return[];
+    var onsets=[],lastOnsetT=-Infinity,winStart=0;
+    for(var i=1;i<frames.length;i++){
+      var f=frames[i],prev=frames[i-1];
+      while(winStart<i&&(f.t-frames[winStart].t)*1000>avgWindow)winStart++;
+      var sum=0,n=0;
+      for(var j=winStart;j<i;j++){sum+=frames[j].rms;n++;}
+      var recentAvg=n>0?sum/n:0;
+      var rising=f.rms>prev.rms;
+      var loudEnough=f.rms>=floor;
+      var beatsThreshold=f.rms>k*Math.max(recentAvg,floor*0.5);
+      if(loudEnough&&rising&&beatsThreshold){
+        if((f.t-lastOnsetT)*1000>=refractory){ onsets.push(f.t); lastOnsetT=f.t; }
+      }
+    }
+    return onsets;
+  }
+  // mapOnsetsToClicks(onsetTimes,clickTimes,opts) — nearest-click signed offset (ms;
+  // negative=early). Applies latencyMs (subtracted); drops onsets >maxDistMs away.
+  function mapOnsetsToClicks(onsetTimes,clickTimes,opts){
+    opts=opts||{};
+    var latencyMs=opts.latencyMs||0;
+    var maxDistMs=opts.maxDistMs==null?250:opts.maxDistMs;
+    if(!onsetTimes||!clickTimes||!clickTimes.length)return[];
+    var out=[];
+    for(var i=0;i<onsetTimes.length;i++){
+      var ot=onsetTimes[i],bestIdx=0,bestDist=Infinity;
+      for(var c=0;c<clickTimes.length;c++){var d=Math.abs(ot-clickTimes[c]);if(d<bestDist){bestDist=d;bestIdx=c;}}
+      var offsetMs=(ot-clickTimes[bestIdx])*1000-latencyMs;
+      if(Math.abs(ot-clickTimes[bestIdx])*1000>maxDistMs)continue;
+      out.push({t:ot,clickTime:clickTimes[bestIdx],beatIndex:bestIdx,offsetMs:offsetMs});
+    }
+    return out;
+  }
+  function mean(a){if(!a.length)return 0;var s=0;for(var i=0;i<a.length;i++)s+=a[i];return s/a.length;}
+  function stddev(a){if(a.length<2)return 0;var m=mean(a),s=0;for(var i=0;i<a.length;i++)s+=(a[i]-m)*(a[i]-m);return Math.sqrt(s/a.length);}
+  // aggregateGroove(hits,opts) — {count,meanMs,sdMs,tight,early,late,perBeat:[{beat,count,meanMs}]}
+  function aggregateGroove(hits,opts){
+    opts=opts||{};
+    var beatsPerBar=opts.beatsPerBar||4;
+    var tightMs=opts.tightMs==null?25:opts.tightMs;
+    var offs=[],tight=0,early=0,late=0,buckets=[];
+    for(var b=0;b<beatsPerBar;b++)buckets.push([]);
+    for(var i=0;i<(hits?hits.length:0);i++){
+      var o=hits[i].offsetMs; offs.push(o);
+      if(Math.abs(o)<=tightMs)tight++; else if(o<0)early++; else late++;
+      var pos=((hits[i].beatIndex%beatsPerBar)+beatsPerBar)%beatsPerBar;
+      buckets[pos].push(o);
+    }
+    var perBeat=[];
+    for(var p=0;p<beatsPerBar;p++)perBeat.push({beat:p,count:buckets[p].length,meanMs:buckets[p].length?mean(buckets[p]):null});
+    return{count:offs.length,meanMs:offs.length?mean(offs):0,sdMs:offs.length?stddev(offs):0,tight:tight,early:early,late:late,perBeat:perBeat};
+  }
+  return{detectOnsets:detectOnsets,mapOnsetsToClicks:mapOnsetsToClicks,aggregateGroove:aggregateGroove,mean:mean,stddev:stddev};
+})(window);
+</script>
+
+<script>
+// ---- helpers ----
+const $ = id => document.getElementById(id);
+const TOOL = 'metronome';
+
+// ---- state ----
+let bpm = Stats.getPref(TOOL,'bpm',80);
+let meterVal = Stats.getPref(TOOL,'meter',4);
+let subdivVal = Stats.getPref(TOOL,'subdiv',1);
+let accentMode = Stats.getPref(TOOL,'accent',1);
+let running = false;
+
+// ---- confirmation state ----
+let confirmItem = null;     // the Stats.review item currently being confirmed (or null)
+let confirmSloppyCount = 0; // sloppy resets accumulated during a confirmation attempt
+let audioCtx = null;
+let nextTime = 0;
+let beatIdx = 0;
+let beatTimes = [];
+let tapOffsets = [];
+let timeCheck = false;
+const LOOK = 0.15;
+
+// ---- groove-report state (mic onset timing vs the click) ----
+const GA = window.GrooveAnalysis;
+let grooveOn = false;            // "Listen to my playing" toggle
+let grooveStream = null;        // MediaStream
+let grooveSource = null;        // MediaStreamAudioSourceNode on audioCtx
+let grooveAnalyser = null;      // AnalyserNode on audioCtx
+let grooveBuf = null;           // Float32Array time-domain scratch
+let grooveRAF = null;
+let grooveFrames = [];          // rolling {t,rms} frames for onset detection (last ~350ms)
+let grooveClicks = [];          // {t, beat} of scheduled clicks while listening (beat = position in bar)
+let grooveHits = [];            // last hits [{offsetMs, beatIndex(bar position)}] — capped at 32
+let grooveLastOnsetT = -Infinity; // dedupe onsets already emitted
+let grooveRunOnsets = 0;        // total onsets this listening run (for the >=8 stop gate)
+let grooveLatencyMs = Stats.getPref(TOOL,'micLatencyMs',0);
+let calibrating = false;        // latency-calibration capture in progress
+let calibClicks = [];           // click times during calibration
+let calibOnsetT = -Infinity;
+let calibHits = [];             // raw onset->click offsets (ms) during calibration
+
+// ramp
+let rampOn = Stats.getPref(TOOL,'rampOn',false);
+let rampN = Stats.getPref(TOOL,'rampN',2);
+let rampM = Stats.getPref(TOOL,'rampM',4);
+let rampBarCount = 0; // bars elapsed since last ramp bump (counts full bars)
+let barsInBar = 0;   // beats counted in current bar toward ramp
+
+// session timer
+let sessionStart = 0;
+let timerRAF = null;
+let activityInterval = null; // keeps Stats minutes fresh during long runs
+
+// beat-flash queue: {beat, subIdx, time}
+let flashQueue = [];
+let rafHandle = null;
+
+// web worker
+let tickWorker = null;
+
+// ---- restore UI from prefs ----
+function restorePrefs(){
+  setBpm(bpm, false);
+  // meter select
+  Array.from($('meterSel').options).forEach(o=>{ if(+o.value===meterVal) o.selected=true; });
+  // subdiv select
+  Array.from($('subdivSel').options).forEach(o=>{ if(+o.value===subdivVal) o.selected=true; });
+  // accent mode
+  document.querySelectorAll('#accentMode button').forEach(b=>{
+    b.classList.toggle('sel', +b.dataset.m===accentMode);
+  });
+  // gate
+  $('needIn').value = Stats.getPref(TOOL,'gateNeed',5);
+  $('stepIn').value = Stats.getPref(TOOL,'gateStep',4);
+  // ramp
+  $('rampOn').checked = rampOn;
+  $('rampN').value = rampN;
+  $('rampM').value = rampM;
+}
+
+// ---- BPM ----
+function setBpm(v, persist){
+  bpm = Math.max(40, Math.min(240, v));
+  $('bpmDisp').textContent = bpm;
+  $('slider').value = bpm;
+  if(persist !== false) Stats.setPref(TOOL,'bpm',bpm);
+}
+
+// ---- beats/bar dots ----
+function isAccent(i){
+  if(accentMode===1) return i===0;
+  if(accentMode===24) return i===1 || i===3;
+  return false;
+}
+function buildBeats(){
+  const b=$('beats'); b.innerHTML='';
+  for(let i=0;i<meterVal;i++){
+    const d=document.createElement('div');
+    d.className='dot'+(isAccent(i)?' accent':'');
+    b.appendChild(d);
+  }
+}
+const SUBLABELS={1:['♩'],2:['♩','&'],3:['♩','tri','plet'],4:['♩','e','&','a']};
+function buildSub(){
+  const r=$('subrow'); if(!r)return; r.innerHTML='';
+  (SUBLABELS[subdivVal]||['♩']).forEach((lab,i)=>{
+    const c=document.createElement('div'); c.className='subcell'; c.dataset.i=i; c.textContent=lab; r.appendChild(c);
+  });
+}
+
+// ---- click synthesis (uses its own AudioContext for scheduling precision) ----
+function click(time, accent, sub){
+  let freq = sub ? 660 : (accent ? 1500 : 1000);
+  const vol = sub ? 0.25 : (accent ? 0.9 : 0.55);
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.frequency.value = freq;
+  g.gain.setValueAtTime(0, time);
+  g.gain.linearRampToValueAtTime(vol, time+0.001);
+  g.gain.exponentialRampToValueAtTime(0.0001, time+0.05);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(time); o.stop(time+0.06);
+}
+
+// ---- scheduler ----
+function schedule(){
+  if(!running) return;
+  const spb = 60/bpm;
+  while(nextTime < audioCtx.currentTime + LOOK){
+    const accent = isAccent(beatIdx);
+    click(nextTime, accent, false);
+    // push to flash queue
+    flashQueue.push({beat: beatIdx, subIdx: 0, time: nextTime});
+    // subdivisions
+    for(let s=1;s<subdivVal;s++){
+      const st = nextTime + spb*(s/subdivVal);
+      click(st, false, true);
+      flashQueue.push({beat: beatIdx, subIdx: s, time: st});
+    }
+    beatTimes.push(nextTime);
+    if(beatTimes.length>32) beatTimes.shift();
+    // groove-report: remember quarter-note click times + bar position while listening/calibrating
+    if(grooveOn||calibrating){
+      grooveClicks.push({t: nextTime, beat: beatIdx});
+      if(grooveClicks.length>64) grooveClicks.shift();
+      if(calibrating){ calibClicks.push(nextTime); if(calibClicks.length>16) calibClicks.shift(); }
+    }
+    // ramp: count bars
+    if(rampOn){
+      barsInBar++;
+      if(barsInBar >= meterVal){
+        barsInBar = 0;
+        rampBarCount++;
+        if(rampBarCount >= rampM){
+          rampBarCount = 0;
+          setBpm(bpm + rampN);
+        }
+      }
+    }
+    beatIdx = (beatIdx+1) % meterVal;
+    nextTime += spb;
+  }
+}
+
+// ---- rAF loop for visual sync ----
+function rafLoop(){
+  if(!running){ rafHandle=null; return; }
+  if(audioCtx){
+    const now = audioCtx.currentTime;
+    // process all pending flashes whose time has passed
+    while(flashQueue.length && flashQueue[0].time <= now){
+      const ev = flashQueue.shift();
+      flashBeat(ev.beat);
+      flashSubCell(ev.subIdx);
+    }
+  }
+  rafHandle = requestAnimationFrame(rafLoop);
+}
+function flashBeat(i){
+  const dots = document.querySelectorAll('.dot');
+  dots.forEach(d=>{ d.classList.remove('on'); d.classList.remove('flash'); });
+  if(dots[i]){
+    dots[i].classList.add('on');
+    // force reflow so re-adding flash re-triggers the transition
+    void dots[i].offsetWidth;
+    dots[i].classList.add('flash');
+    // remove flash class after transition so next beat re-triggers cleanly
+    setTimeout(()=>dots[i].classList.remove('flash'), 200);
+  }
+}
+function flashSubCell(s){
+  const cells = document.querySelectorAll('.subcell');
+  cells.forEach(c=>c.classList.remove('on'));
+  const c = document.querySelector('.subcell[data-i="'+s+'"]');
+  if(c) c.classList.add('on');
+}
+
+// ---- session timer ----
+function updateTimer(){
+  if(!running){ return; }
+  const elapsed = Math.floor((Date.now()-sessionStart)/1000);
+  const mm = String(Math.floor(elapsed/60)).padStart(2,'0');
+  const ss = String(elapsed%60).padStart(2,'0');
+  $('sessionTimer').textContent = mm+':'+ss;
+  timerRAF = requestAnimationFrame(updateTimer);
+}
+
+// ---- web worker ----
+function startWorker(){
+  if(tickWorker) return;
+  const blob = new Blob(['setInterval(function(){postMessage(0);},25);'], {type:'application/javascript'});
+  tickWorker = new Worker(URL.createObjectURL(blob));
+  tickWorker.onmessage = function(){ schedule(); };
+}
+function stopWorker(){
+  if(tickWorker){ tickWorker.terminate(); tickWorker=null; }
+}
+
+// ---- start / stop ----
+function start(){
+  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  audioCtx.resume();
+  running = true;
+  beatIdx = 0;
+  nextTime = audioCtx.currentTime + 0.06;
+  barsInBar = 0;
+  rampBarCount = 0;
+  flashQueue = [];
+  sessionStart = Date.now();
+  $('startBtn').textContent = 'Stop';
+  $('startBtn').classList.add('running');
+  Stats.activity(TOOL);
+  if(activityInterval) clearInterval(activityInterval);
+  activityInterval = setInterval(()=>Stats.activity(TOOL), 60000);
+  startWorker();
+  rafHandle = requestAnimationFrame(rafLoop);
+  timerRAF = requestAnimationFrame(updateTimer);
+}
+function stop(){
+  running = false;
+  stopWorker();
+  if(activityInterval){ clearInterval(activityInterval); activityInterval=null; }
+  Stats.activity(TOOL);
+  if(rafHandle){ cancelAnimationFrame(rafHandle); rafHandle=null; }
+  if(timerRAF){ cancelAnimationFrame(timerRAF); timerRAF=null; }
+  beatTimes = [];
+  flashQueue = [];
+  $('startBtn').textContent = 'Start';
+  $('startBtn').classList.remove('running');
+  $('sessionTimer').textContent = '';
+  document.querySelectorAll('.dot').forEach(d=>d.classList.remove('on'));
+  document.querySelectorAll('.subcell').forEach(d=>d.classList.remove('on'));
+  // groove: finalize + record the run when the metronome stops; keep the report on screen
+  if(calibrating) finishCalibration(true);
+  if(grooveOn) grooveStopListening(true);
+}
+
+// ---- time-check tap ----
+function tapBeat(){
+  if(!running||!beatTimes.length){ $('verdict').textContent='start the metronome first, then tap along'; $('verdict').style.color='var(--accent)'; return; }
+  const now = audioCtx.currentTime; let nearest = beatTimes[0], best = 1e9;
+  beatTimes.forEach(bt=>{ const d=Math.abs(now-bt); if(d<best){ best=d; nearest=bt; }});
+  const spb = 60/bpm;
+  if(best > spb*0.55){ $('lastOff').textContent='missed'; $('lastOff').style.color='var(--bad)'; return; }
+  const off = (now-nearest)*1000;
+  tapOffsets.push(off); if(tapOffsets.length>12) tapOffsets.shift();
+  updateTimeUI(off);
+}
+function updateTimeUI(off){
+  const pos = Math.max(0,Math.min(100,50+off/120*100));
+  $('needle').style.left = pos+'%';
+  $('lastOff').textContent = (off>0?'+':'')+Math.round(off)+' ms';
+  $('lastOff').style.color = Math.abs(off)<15?'var(--good)':Math.abs(off)<35?'var(--accent)':'var(--bad)';
+  const avg = tapOffsets.reduce((a,b)=>a+b,0)/tapOffsets.length;
+  const verdict = avg<-12?'rushing':avg>12?'dragging':'in the pocket';
+  $('verdict').textContent = verdict+' · avg '+(avg>0?'+':'')+Math.round(avg)+' ms ('+tapOffsets.length+' taps)';
+  $('verdict').style.color = Math.abs(avg)<12?'var(--good)':'var(--accent)';
+}
+
+// ---- accuracy gate ----
+let clean = 0;
+function gateNeed(){ return +$('needIn').value; }
+function renderPips(newlyFilled){
+  const p=$('pips'); p.innerHTML=''; $('need').textContent=gateNeed();
+  for(let i=0;i<gateNeed();i++){
+    const d=document.createElement('div');
+    d.className='pip'+(i<clean?' filled':'');
+    // pop the pip that just filled
+    if(i===clean-1 && newlyFilled){
+      d.classList.add('popping');
+      d.addEventListener('animationend',()=>d.classList.remove('popping'),{once:true});
+    }
+    p.appendChild(d);
+  }
+  $('clean').textContent=clean;
+}
+function flashGate(c){ const el=$('clean'); el.style.color=c; setTimeout(()=>el.style.color='',300); }
+
+$('cleanRep').onclick=()=>{
+  clean++;
+  const bumped = clean>=gateNeed();
+  if(bumped){
+    const achievedBpm = bpm;
+    // Check confirmation mode BEFORE bumping BPM
+    if(confirmItem && parseBpmFromKey(confirmItem.key) === achievedBpm){
+      // This pass completes the confirmation — onConfirmPass logs Stats.tempo with label:'confirmed'
+      clean = 0;
+      flashGate('var(--good)');
+      onConfirmPass(confirmItem);
+    } else {
+      const step = +$('stepIn').value;
+      setBpm(bpm + step);
+      clean = 0;
+      flashGate('var(--good)');
+      // flash BPM display in brand color
+      const disp=$('bpmDisp').parentElement;
+      disp.classList.remove('bumped');
+      void disp.offsetWidth;
+      disp.classList.add('bumped');
+      disp.addEventListener('animationend',()=>disp.classList.remove('bumped'),{once:true});
+      Stats.tempo(TOOL, {bpm: achievedBpm, label:'accuracy gate'});
+      // Enqueue a confirmation for tomorrow
+      Stats.review.add(TOOL, 'tempo:'+achievedBpm, {note:'confirm clean reps at '+achievedBpm+' BPM'});
+    }
+  }
+  renderPips(!bumped);
+};
+$('sloppy').onclick=()=>{
+  clean=0;
+  renderPips(false);
+  flashGate('var(--bad)');
+  if(confirmItem) onConfirmSloppy(confirmItem);
+};
+$('needIn').onchange=()=>{
+  clean = Math.min(clean, gateNeed());
+  renderPips();
+  Stats.setPref(TOOL,'gateNeed',+$('needIn').value);
+};
+$('stepIn').onchange=()=>{ Stats.setPref(TOOL,'gateStep',+$('stepIn').value); };
+
+// ---- controls ----
+$('startBtn').onclick=()=>running?stop():start();
+$('inc').onclick=()=>setBpm(bpm+1);
+$('dec').onclick=()=>setBpm(bpm-1);
+$('slider').oninput=e=>setBpm(+e.target.value);
+$('meterSel').onchange=e=>{
+  meterVal=+e.target.value;
+  Stats.setPref(TOOL,'meter',meterVal);
+  buildBeats();
+};
+$('subdivSel').onchange=e=>{
+  subdivVal=+e.target.value;
+  Stats.setPref(TOOL,'subdiv',subdivVal);
+  buildSub();
+};
+$('timeCheck').onchange=e=>{ timeCheck=e.target.checked; };
+$('resetTaps').onclick=()=>{
+  tapOffsets=[];
+  $('lastOff').textContent='—'; $('lastOff').style.color='';
+  $('verdict').textContent='tap to begin'; $('verdict').style.color='';
+  $('needle').style.left='50%';
+};
+
+document.querySelectorAll('#accentMode button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#accentMode button').forEach(x=>x.classList.remove('sel'));
+  b.classList.add('sel');
+  accentMode=+b.dataset.m;
+  Stats.setPref(TOOL,'accent',accentMode);
+  buildBeats();
+});
+
+// ramp controls
+$('rampOn').onchange=e=>{
+  rampOn=e.target.checked;
+  Stats.setPref(TOOL,'rampOn',rampOn);
+};
+$('rampN').onchange=e=>{
+  rampN=Math.max(1,Math.min(10,+e.target.value));
+  $('rampN').value=rampN;
+  Stats.setPref(TOOL,'rampN',rampN);
+};
+$('rampM').onchange=e=>{
+  rampM=Math.max(2,Math.min(16,+e.target.value));
+  $('rampM').value=rampM;
+  Stats.setPref(TOOL,'rampM',rampM);
+};
+
+// tap tempo
+let tapTimes=[];
+$('tap').onclick=()=>{
+  const now=performance.now();
+  tapTimes=tapTimes.filter(t=>now-t<2500); tapTimes.push(now);
+  if(tapTimes.length>=2){
+    let sum=0; for(let i=1;i<tapTimes.length;i++) sum+=tapTimes[i]-tapTimes[i-1];
+    setBpm(Math.round(60000/(sum/(tapTimes.length-1))));
+  }
+};
+
+// keyboard
+document.addEventListener('keydown',e=>{
+  // Esc cancels an in-progress calibration or listening run without stopping the metronome — leaves a consistent state.
+  if(e.code==='Escape'){
+    if(calibrating){ finishCalibration(false); return; }
+    if(grooveOn){ grooveStopListening(false); return; }
+    return;
+  }
+  if(e.target instanceof Element && e.target.closest('input,select,textarea,button')) return; // don't hijack typing in controls
+  if(e.code==='Space'){ e.preventDefault(); if(timeCheck&&running){tapBeat();} else {running?stop():start();} }
+  else if(e.code==='ArrowUp'){ e.preventDefault(); setBpm(bpm+1); }
+  else if(e.code==='ArrowDown'){ e.preventDefault(); setBpm(bpm-1); }
+});
+
+// ---- confirmation banner ----
+function parseBpmFromKey(key){
+  // key format: 'tempo:120'
+  const m = key.match(/^tempo:(\d+)$/);
+  return m ? +m[1] : null;
+}
+
+function renderConfirmBanner(){
+  const area = $('confirmBannerArea');
+  area.innerHTML = '';
+  const due = Stats.review.due().filter(it => it.tool === TOOL);
+  if(!due.length) return;
+  // Show one banner per due item (oldest first); normally just one
+  due.forEach(function(item){
+    const targetBpm = parseBpmFromKey(item.key);
+    if(!targetBpm) return;
+
+    const banner = document.createElement('div');
+    banner.className = 'confirm-banner';
+    banner.dataset.key = item.key;
+
+    const text = document.createElement('div');
+    text.className = 'cb-text';
+    const label = document.createElement('div');
+    label.className = 'cb-label';
+    label.textContent = 'Confirm yesterday';
+    const msg = document.createElement('div');
+    msg.textContent = item.note || ('Clean reps at ' + targetBpm + ' BPM');
+    text.appendChild(label);
+    text.appendChild(msg);
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = 'Set and confirm';
+    confirmBtn.onclick = function(){
+      // Load target BPM into the metronome and start confirmation mode
+      setBpm(targetBpm, true);
+      confirmItem = item;
+      confirmSloppyCount = 0;
+      // Reset gate to default (5 clean reps) so user has a clear target
+      $('needIn').value = Stats.getPref(TOOL,'gateNeed',5);
+      clean = 0;
+      renderPips(false);
+      // Update banner to show active confirmation state
+      banner.querySelector('.cb-text div:last-child').textContent =
+        'Get ' + gateNeed() + ' clean reps at ' + targetBpm + ' BPM to confirm';
+      confirmBtn.disabled = true;
+      confirmBtn.style.opacity = '0.45';
+      skipLink.style.display = '';
+    };
+
+    const skipLink = document.createElement('span');
+    skipLink.className = 'cb-skip';
+    skipLink.textContent = 'Try again tomorrow';
+    skipLink.style.display = 'none';
+    skipLink.onclick = function(){
+      Stats.review.complete(TOOL, item.key, false);
+      confirmItem = null;
+      confirmSloppyCount = 0;
+      banner.remove();
+    };
+
+    banner.appendChild(text);
+    banner.appendChild(confirmBtn);
+    banner.appendChild(skipLink);
+    area.appendChild(banner);
+  });
+}
+
+function onConfirmPass(item){
+  const targetBpm = parseBpmFromKey(item.key);
+  Stats.review.complete(TOOL, item.key, true);
+  Stats.tempo(TOOL, {bpm: targetBpm, label: 'confirmed'});
+  confirmItem = null;
+  confirmSloppyCount = 0;
+  // Flash the banner as confirmed then remove it
+  const banner = $('confirmBannerArea').querySelector('[data-key="'+item.key+'"]');
+  if(banner){
+    banner.classList.add('confirmed');
+    banner.querySelector('.cb-text div:last-child').textContent =
+      'Confirmed at ' + targetBpm + ' BPM — logged.';
+    // Remove all buttons
+    Array.from(banner.querySelectorAll('button,span.cb-skip')).forEach(function(el){ el.remove(); });
+    setTimeout(function(){ banner.remove(); }, 1800);
+  }
+}
+
+function onConfirmSloppy(item){
+  confirmSloppyCount++;
+  if(confirmSloppyCount >= 3){
+    // Offer try again tomorrow
+    const banner = $('confirmBannerArea').querySelector('[data-key="'+item.key+'"]');
+    if(banner){
+      const skipLink = banner.querySelector('.cb-skip');
+      if(skipLink) skipLink.style.display = '';
+      const msg = banner.querySelector('.cb-text div:last-child');
+      if(msg) msg.textContent = 'Not sticking yet — try again tomorrow?';
+    }
+  }
+}
+
+// ======== GROOVE REPORT: mic onset timing vs the click ========
+// The mic runs on the metronome's OWN audioCtx, so onset times and click times
+// share audioCtx.currentTime — no cross-clock translation needed.
+
+function grooveShowLatency(){
+  $('grooveLat').textContent = grooveLatencyMs
+    ? 'latency correction: '+(grooveLatencyMs>0?'+':'')+Math.round(grooveLatencyMs)+' ms'
+    : 'latency correction: none set';
+}
+
+// Open the mic on audioCtx and start the rAF sampling loop. Requires a running ctx.
+function grooveOpenMic(onReady){
+  (window.WoodshedMic&&WoodshedMic.getStream?WoodshedMic.getStream():navigator.mediaDevices.getUserMedia({
+    audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false }, video:false
+  })).then(function(stream){
+    grooveStream = stream;
+    grooveSource = audioCtx.createMediaStreamSource(stream);
+    grooveAnalyser = audioCtx.createAnalyser();
+    grooveAnalyser.fftSize = 1024; // ~short window; sampled every rAF (~16ms)
+    grooveSource.connect(grooveAnalyser);
+    grooveBuf = new Float32Array(grooveAnalyser.fftSize);
+    grooveRAF = requestAnimationFrame(grooveLoop);
+    if(onReady) onReady();
+  }).catch(function(err){ grooveMicFailed(); });
+}
+function grooveCloseMic(){
+  if(grooveRAF){ cancelAnimationFrame(grooveRAF); grooveRAF=null; }
+  if(grooveSource){ try{ grooveSource.disconnect(); }catch(e){} grooveSource=null; }
+  if(grooveStream){ grooveStream.getTracks().forEach(function(t){ t.stop(); }); grooveStream=null; }
+  grooveAnalyser=null; grooveBuf=null; grooveFrames=[];
+}
+function grooveMicFailed(){
+  grooveCloseMic();
+  grooveOn=false; calibrating=false;
+  $('grooveToggle').classList.remove('on');
+  $('grooveStatus').textContent='Mic blocked — allow microphone access, then try again. (The metronome and time-check still work without it.)';
+  $('grooveStatus').className='gstatus err';
+}
+
+// rAF sampling: compute one RMS frame per animation frame, detect onsets, map + render.
+function grooveLoop(){
+  if(!grooveAnalyser){ grooveRAF=null; return; }
+  grooveRAF = requestAnimationFrame(grooveLoop);
+  grooveAnalyser.getFloatTimeDomainData(grooveBuf);
+  var sq=0; for(var i=0;i<grooveBuf.length;i++){ sq+=grooveBuf[i]*grooveBuf[i]; }
+  var rms=Math.sqrt(sq/grooveBuf.length);
+  var now=audioCtx.currentTime;
+  grooveFrames.push({t:now, rms:rms});
+  // keep enough history to cover refractory + trailing average window (~350ms)
+  while(grooveFrames.length && now-grooveFrames[0].t>0.35) grooveFrames.shift();
+  // run the PURE detector on the rolling buffer; take only onsets we haven't emitted yet
+  var onsets=GA.detectOnsets(grooveFrames,{});
+  for(var o=0;o<onsets.length;o++){
+    var ot=onsets[o];
+    if(calibrating){
+      if(ot>calibOnsetT+0.001){ calibOnsetT=ot; onCalibOnset(ot); }
+    }else if(grooveOn){
+      if(ot>grooveLastOnsetT+0.001){ grooveLastOnsetT=ot; onGrooveOnset(ot); }
+    }
+  }
+}
+
+// A new played onset while listening: map to nearest click, fold into the report.
+function onGrooveOnset(ot){
+  var clickTimes=grooveClicks.map(function(c){ return c.t; });
+  var mapped=GA.mapOnsetsToClicks([ot], clickTimes, {latencyMs:grooveLatencyMs, maxDistMs:250});
+  if(!mapped.length) return; // stray noise far from any click
+  var h=mapped[0];
+  var barPos=grooveClicks[h.beatIndex] ? grooveClicks[h.beatIndex].beat : 0;
+  grooveHits.push({offsetMs:h.offsetMs, beatIndex:barPos});
+  if(grooveHits.length>32) grooveHits.shift();
+  grooveRunOnsets++;
+  renderGroove();
+}
+
+function renderGroove(){
+  var agg=GA.aggregateGroove(grooveHits,{beatsPerBar:meterVal, tightMs:25});
+  // rolling strip of the last 32 hits (older -> newer)
+  var strip=$('grooveStrip'); strip.innerHTML='';
+  grooveHits.forEach(function(h){
+    var d=document.createElement('div'); d.className='gbar';
+    var a=Math.abs(h.offsetMs);
+    d.classList.add(a<=25?'tight':(h.offsetMs<0?'early':'late'));
+    var height=Math.max(6, Math.min(36, 6+a/3)); // taller = further off
+    d.style.height=height+'px';
+    d.title=(h.offsetMs>0?'+':'')+Math.round(h.offsetMs)+' ms';
+    strip.appendChild(d);
+  });
+  if(!grooveHits.length){
+    $('grooveMean').textContent='—'; $('grooveSd').textContent='—'; $('grooveCount').textContent='0';
+    $('grooveBeats').innerHTML=''; return;
+  }
+  var mm=Math.round(agg.meanMs);
+  $('grooveMean').textContent=(mm>0?'+':'')+mm+' ms';
+  $('grooveMean').style.color=Math.abs(mm)<=15?'var(--good)':(mm<0?'var(--accent2)':'#9c4a3c');
+  $('grooveSd').textContent='±'+Math.round(agg.sdMs)+' ms';
+  $('grooveCount').textContent=agg.count;
+  // narrate the headline
+  var verb=Math.abs(mm)<=15?'locked in':(mm<0?'rushing by '+Math.abs(mm)+' ms':'dragging by '+mm+' ms');
+  $('grooveStatus').textContent="You're "+verb+" · spread ±"+Math.round(agg.sdMs)+" ms across "+agg.count+" hits.";
+  $('grooveStatus').className='gstatus';
+  // per-beat aggregates
+  var gb=$('grooveBeats'); gb.innerHTML='';
+  agg.perBeat.forEach(function(b){
+    var cell=document.createElement('div'); cell.className='gbeat';
+    var v=b.meanMs; var vTxt='—';
+    if(v!=null){ var r=Math.round(v); vTxt=(r>0?'+':'')+r; cell.classList.add(Math.abs(r)<=15?'tight':(r<0?'rush':'drag')); }
+    cell.innerHTML='<div class="gb-n">beat '+(b.beat+1)+'</div><div class="gb-v">'+vTxt+(v!=null?' ms':'')+'</div>';
+    gb.appendChild(cell);
+  });
+}
+
+// One soft green sweep across the tight-hits strip (reduced-motion falls back to no-op via CSS).
+function pocketSweep(){
+  var strip=$('grooveStrip'); if(!strip) return;
+  strip.classList.remove('pocket'); void strip.offsetWidth; strip.classList.add('pocket');
+  strip.addEventListener('animationend',function(){ strip.classList.remove('pocket'); },{once:true});
+}
+
+// Toggle listening on/off. Requires the metronome to be running (shared ctx).
+function grooveStartListening(){
+  if(!running || !audioCtx){
+    $('grooveStatus').textContent='Start the metronome first, then turn on listening.';
+    $('grooveStatus').className='gstatus';
+    $('grooveToggle').classList.remove('on');
+    return;
+  }
+  grooveOn=true; calibrating=false;
+  grooveHits=[]; grooveClicks=[]; grooveFrames=[]; grooveLastOnsetT=-Infinity; grooveRunOnsets=0;
+  $('grooveToggle').classList.add('on');
+  $('grooveStatus').textContent='Listening — play along with the click.';
+  $('grooveStatus').className='gstatus';
+  audioCtx.resume();
+  grooveOpenMic();
+}
+// Stop listening; record a summary if this run had enough onsets. Keep report visible.
+function grooveStopListening(fromMetronomeStop){
+  var onsets=grooveRunOnsets;
+  var agg=GA.aggregateGroove(grooveHits,{beatsPerBar:meterVal, tightMs:25});
+  grooveOn=false;
+  grooveCloseMic();
+  $('grooveToggle').classList.remove('on');
+  // record once per listening run (only if >=8 onsets), per spec
+  if(onsets>=8){
+    Stats.record(TOOL, {correct: agg.sdMs<=35, key:'groove'});
+  }
+  // delight: a genuinely locked run (sd<=25ms over 16+ hits) earns a quiet nod + one green sweep
+  var pocket = agg.count>=16 && agg.sdMs<=25;
+  if(!fromMetronomeStop){
+    $('grooveStatus').textContent = onsets>=8
+      ? (pocket ? 'In the pocket. Logged this run.' : 'Stopped listening — logged this run.')
+      : 'Stopped listening.'+(onsets? ' (Only '+onsets+' hits — need 8 to log a run.)' : '');
+    $('grooveStatus').className = pocket ? 'gstatus gpocket' : 'gstatus';
+  } else if(pocket){
+    $('grooveStatus').textContent='In the pocket.';
+    $('grooveStatus').className='gstatus gpocket';
+  }
+  if(pocket) pocketSweep();
+  grooveRunOnsets=0;
+}
+
+// ---- latency calibration: play 8 clicks, user chops on each, median offset = latency ----
+function grooveStartCalibration(){
+  if(!running || !audioCtx){
+    $('grooveStatus').textContent='Start the metronome first, then calibrate.';
+    $('grooveStatus').className='gstatus';
+    return;
+  }
+  // pause normal listening during calibration
+  if(grooveOn){ grooveOn=false; $('grooveToggle').classList.remove('on'); }
+  calibrating=true; calibClicks=[]; calibHits=[]; calibOnsetT=-Infinity;
+  audioCtx.resume();
+  $('grooveStatus').textContent='Calibrating — play a short muted chop exactly on each click (8 clicks)…';
+  $('grooveStatus').className='gstatus';
+  var opened=function(){
+    // stop after ~8 clicks worth of time have elapsed with a safety cap
+    var spb=60/bpm; var dur=(spb*10+1.0)*1000; // 8 clicks + lead-in/out
+    setTimeout(function(){ if(calibrating) finishCalibration(false); }, dur);
+  };
+  if(grooveAnalyser){ opened(); } else { grooveOpenMic(opened); }
+}
+function onCalibOnset(ot){
+  var mapped=GA.mapOnsetsToClicks([ot], calibClicks, {latencyMs:0, maxDistMs:250});
+  if(mapped.length) calibHits.push(mapped[0].offsetMs);
+  $('grooveStatus').textContent='Calibrating — captured '+calibHits.length+' of ~8…';
+}
+function finishCalibration(fromMetronomeStop){
+  calibrating=false;
+  if(!grooveOn) grooveCloseMic();
+  if(calibHits.length>=3){
+    var sorted=calibHits.slice().sort(function(a,b){return a-b;});
+    var mid=sorted.length>>1;
+    var med=sorted.length%2?sorted[mid]:(sorted[mid-1]+sorted[mid])/2;
+    grooveLatencyMs=Math.round(med);
+    Stats.setPref(TOOL,'micLatencyMs',grooveLatencyMs);
+    grooveShowLatency();
+    if(!fromMetronomeStop){
+      $('grooveStatus').textContent='Calibrated from '+calibHits.length+' chops — latency correction set to '+(grooveLatencyMs>0?'+':'')+grooveLatencyMs+' ms.';
+      $('grooveStatus').className='gstatus';
+    }
+  }else if(!fromMetronomeStop){
+    $('grooveStatus').textContent='Calibration needs a few clean chops on the click — try again.';
+    $('grooveStatus').className='gstatus err';
+  }
+  calibClicks=[]; calibHits=[];
+}
+
+// ---- groove controls ----
+$('grooveToggle').onclick=()=>{ grooveOn ? grooveStopListening(false) : grooveStartListening(); };
+$('grooveCalibrate').onclick=grooveStartCalibration;
+$('grooveReset').onclick=()=>{
+  grooveHits=[]; grooveRunOnsets=0; grooveLastOnsetT=-Infinity;
+  renderGroove();
+  $('grooveStatus').textContent = grooveOn ? 'Listening — play along with the click.' : 'Report reset.';
+  $('grooveStatus').className='gstatus';
+};
+
+// ---- audio lifecycle ----
+// Silence the scheduler AND release the mic when the tab is hidden or the page unloads.
+// stop() already tears down the worker, rAF loops, groove mic and any calibration; call
+// it when running, and independently close the mic if a capture is somehow live at rest.
+function haltAudio(){
+  if(running){ stop(); }
+  else { if(calibrating) finishCalibration(false); if(grooveOn) grooveStopListening(false); grooveCloseMic(); }
+}
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) haltAudio(); });
+window.addEventListener('pagehide',haltAudio);
+
+// ---- init ----
+restorePrefs();
+buildBeats();
+buildSub();
+renderPips();
+renderConfirmBanner();
+grooveShowLatency();
+
+// surface the site-wide mic-input picker in the header (mic.js loads async via header.js)
+(function sp(){ if(window.WoodshedMic)WoodshedMic.showPicker(); else setTimeout(sp,150); })();
+</script>
+</body>
+</html>

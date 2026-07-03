@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session · The Woodshed</title>
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="stats.js"></script>
+<script src="header.js" defer></script>
+<script src="coach.js" defer data-coach></script>
+<style>
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);display:flex;flex-direction:column;padding:14px 20px 16px}
+.wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;width:100%;max-width:1360px;margin:0 auto}
+/* compact masthead — this page is a workspace, not a brochure */
+.sess-mast{display:flex;align-items:baseline;gap:14px;margin:2px 0 10px;flex-wrap:wrap}
+.sess-mast h1{font-size:1.35rem;font-weight:580;margin:0}
+.sess-mast .kicker{font-size:.66rem;font-weight:650;letter-spacing:.14em;text-transform:uppercase;color:hsl(var(--brand-strong));margin:0}
+.sess-mast .sub{color:var(--muted);font-size:.8rem;margin:0}
+/* layout toolbar — split / plan-only, and float the chat out */
+.sess-tools{margin-left:auto;display:flex;gap:6px;align-self:center}
+.sess-tools button{font-size:.72rem;padding:5px 11px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--muted);cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:.15s}
+.sess-tools button:hover{border-color:hsl(var(--brand)/.6);color:var(--ink)}
+.sess-tools button.on{border-color:hsl(var(--brand));color:hsl(var(--brand-strong));background:hsl(var(--brand)/.08)}
+.sess-tools svg{width:13px;height:13px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+/* the two benches: plan checklist | drag handle | the Instructor.
+   --plan-w is the plan's share, dragged via the divider and persisted. */
+.benches{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(300px,var(--plan-w,45%)) 10px minmax(320px,1fr);gap:0 4px}
+/* plan-only: the plan claims the whole width, chat hidden (or floated out) */
+.benches.plan-full{grid-template-columns:1fr}
+.benches.plan-full #coachFullPage,.benches.plan-full .split-bar{display:none}
+/* the divider: a quiet rail that firms up on hover/drag, with a grip dimple */
+.split-bar{cursor:col-resize;border-radius:5px;position:relative;align-self:stretch;touch-action:none}
+.split-bar::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:2px;margin-left:-1px;border-radius:2px;background:var(--line);transition:background .15s,width .15s,margin-left .15s}
+.split-bar::after{content:"";position:absolute;top:50%;left:50%;width:4px;height:34px;margin:-17px 0 0 -2px;border-radius:3px;background:hsl(var(--muted-foreground)/.5);transition:background .15s}
+.split-bar:hover::before,.split-bar.dragging::before{background:hsl(var(--brand)/.55);width:3px;margin-left:-1.5px}
+.split-bar:hover::after,.split-bar.dragging::after{background:hsl(var(--brand))}
+body.splitting{user-select:none;cursor:col-resize}
+@media(max-width:900px){
+  .benches{grid-template-columns:1fr;grid-template-rows:auto minmax(420px,1fr);gap:14px}
+  .split-bar{display:none}
+  body{padding:12px 12px 12px}
+}
+.plan-pane{min-height:0;overflow-y:auto;background:hsl(var(--card));border:1px solid var(--line);border-radius:14px;padding:18px 18px 14px;box-shadow:var(--shadow-sm)}
+#coachFullPage{min-height:0;display:flex;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel);box-shadow:var(--shadow-sm)}
+#coachFullPage .wsc-log{width:100%;padding:18px}
+#coachFullPage .wsc-foot{width:100%;padding:12px 14px}
+
+/* ---- the plan, styled like it matters ---- */
+.plan-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.plan-head .phase{font-family:var(--font-display);font-weight:580;font-size:1.05rem;line-height:1.3}
+.plan-count{font-size:.74rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.plan-target{font-size:.76rem;color:var(--muted);line-height:1.5;margin:6px 0 12px}
+.plan-target b{color:var(--ink);font-weight:600}
+.pbar{height:5px;border-radius:3px;background:hsl(var(--secondary));overflow:hidden;margin-bottom:14px;position:relative}
+.pbar>div{height:100%;width:0;border-radius:3px;background:linear-gradient(90deg,hsl(38 70% 45%),hsl(var(--brand)));transition:width .35s ease}
+/* all steps done: the bar glows warm for one pass — evidence the block is closed, not confetti */
+.pbar.full>div{background:linear-gradient(90deg,hsl(var(--brand)),hsl(var(--brand-strong)),hsl(var(--brand)))}
+.pbar.full::after{content:"";position:absolute;inset:0;border-radius:3px;background:linear-gradient(90deg,transparent,hsl(46 96% 82%/.85),transparent);transform:translateX(-100%);animation:pbarShimmer 1.1s ease-out 1;pointer-events:none}
+@keyframes pbarShimmer{to{transform:translateX(100%)}}
+/* the phase gains a quiet closing mark once everything is checked */
+.phase .done-mark{font-family:var(--font-ui);font-style:italic;font-size:.72rem;font-weight:500;color:hsl(var(--brand-strong));margin-left:9px;letter-spacing:.01em}
+.step{display:flex;gap:12px;padding:13px 4px;border-top:1px solid var(--line)}
+.step:first-of-type{border-top:none}
+.step .tick{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid hsl(var(--border));background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:transparent;transition:.18s;margin-top:1px;padding:0}
+.step .tick svg{width:14px;height:14px;stroke:currentColor;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.step .tick:hover{border-color:hsl(var(--brand)/.7)}
+.step.done .tick{background:hsl(var(--brand));border-color:hsl(var(--brand));color:#1a1407}
+/* checking a step off: the tick springs in once (reduced-motion falls back to no motion) */
+.step .tick.just{animation:tickPop .34s cubic-bezier(.34,1.56,.64,1) 1}
+@keyframes tickPop{0%{transform:scale(.6)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+.step.done .s-name{color:var(--muted);text-decoration:line-through;text-decoration-color:hsl(var(--brand)/.55);text-decoration-thickness:1.5px}
+.step .s-main{flex:1;min-width:0}
+.s-name{font-weight:600;font-size:.9rem;line-height:1.35}
+.s-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px;font-size:.7rem;color:var(--muted)}
+.s-dom{font-size:.6rem;font-weight:700;letter-spacing:.08em;padding:1px 7px;border-radius:12px;border:1px solid hsl(var(--brand)/.4);color:hsl(var(--brand-strong))}
+.s-how{font-size:.76rem;color:var(--muted);line-height:1.55;margin-top:6px}
+.s-success{font-size:.72rem;color:var(--muted);margin-top:5px;padding-left:10px;border-left:2px solid hsl(var(--brand)/.4);line-height:1.5}
+.s-success b{color:hsl(var(--brand-strong));font-weight:650}
+.s-open{flex:none;align-self:flex-start;font-size:.72rem;padding:5px 11px;border-radius:8px;border:1px solid var(--line);color:var(--muted);text-decoration:none;white-space:nowrap;transition:.15s}
+.s-open:hover{border-color:hsl(var(--brand)/.6);color:var(--ink)}
+.plan-foot{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pf-btn{font-size:.76rem;padding:6px 13px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--ink);cursor:pointer;font-family:inherit;transition:.15s}
+.pf-btn:hover{border-color:hsl(var(--brand)/.6)}
+.pf-note{font-size:.72rem;color:var(--muted)}
+.logged-line{font-size:.78rem;color:var(--good)}
+.plan-empty{color:var(--muted);font-size:.85rem;line-height:1.6;padding:8px 0}
+/* --- the week layer: today grounded against the week --- */
+.week-block{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.wk-head{font-size:.64rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.wk-strip{display:flex;gap:5px;margin-bottom:12px}
+.wk-day{flex:1;text-align:center;border:1px solid var(--line);border-radius:8px;padding:6px 2px;font-size:.66rem;color:var(--muted);background:none;font-family:inherit;cursor:pointer;transition:border-color .12s,background .12s}
+.wk-day:hover{border-color:hsl(var(--brand)/.45)}
+.wk-day .dn{font-weight:650;letter-spacing:.04em}
+.wk-day .dd{font-size:.78rem;margin-top:1px;font-variant-numeric:tabular-nums}
+.wk-day.on{border-color:hsl(var(--brand)/.55);color:hsl(var(--brand-strong));background:hsl(var(--brand)/.07)}
+.wk-day.now{outline:1.5px solid hsl(var(--brand)/.6);outline-offset:1px}
+.wk-day.sel{background:hsl(var(--brand)/.16);border-color:hsl(var(--brand))}
+/* the day panel: what actually happened that day, session by session */
+.day-panel{margin:0 0 12px}
+.dp-head{font-size:.68rem;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:2px 0 8px}
+.dp-empty{font-size:.76rem;color:var(--muted);padding:2px 0 4px}
+.sess-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:hsl(var(--card))}
+.sess-card.derived{border-style:dashed;opacity:.85}
+.sc-head{display:flex;align-items:baseline;gap:10px;font-size:.78rem;flex-wrap:wrap}
+.sc-head b{font-variant-numeric:tabular-nums}
+.sc-head span{color:var(--muted);font-size:.72rem}
+.sc-src{border:1px solid var(--line);border-radius:9px;padding:0 7px;font-size:.6rem!important;letter-spacing:.06em;text-transform:uppercase}
+.sc-grade{color:hsl(var(--brand-strong))!important;font-weight:650}
+.sc-steps{list-style:none;margin:7px 0 0;padding:0;font-size:.74rem;line-height:1.7}
+.sc-steps .ok{color:var(--ink)}
+.sc-steps .no{color:var(--muted);text-decoration:line-through;text-decoration-color:hsl(var(--muted-foreground)/.4)}
+.sc-steps i{color:var(--muted);font-style:normal;font-size:.66rem}
+.sc-chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.sc-chip{font-size:.64rem;border:1px solid hsl(var(--brand)/.4);color:hsl(var(--brand-strong));border-radius:9px;padding:1px 8px;font-variant-numeric:tabular-nums}
+.sc-note{margin-top:7px;font-size:.74rem;color:var(--muted);border-left:2px solid hsl(var(--brand)/.45);padding-left:8px}
+.sc-debrief,.sc-claim{margin-top:8px;font-size:.7rem;border:1px solid var(--line);background:none;color:hsl(var(--brand-strong));border-radius:7px;padding:3px 10px;cursor:pointer;font-family:inherit;transition:.15s}
+.sc-debrief:hover,.sc-claim:hover{border-color:hsl(var(--brand))}
+/* live-session pulse at the top of the plan pane */
+.live-head{font-size:.72rem;color:hsl(var(--brand-strong));font-weight:600;margin-bottom:8px}
+.live-head::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:hsl(var(--brand));margin-right:7px;animation:livePulse 1.6s ease-in-out infinite;vertical-align:1px}
+@keyframes livePulse{0%,100%{opacity:1}50%{opacity:.35}}
+.wk-sessions button.s-row{display:flex;justify-content:space-between;gap:8px;width:100%;background:none;border:0;padding:1px 0;font:inherit;color:inherit;cursor:pointer;font-size:.72rem}
+.wk-sessions button.s-row:hover span{color:hsl(var(--brand-strong))}
+.wk-focus{font-size:.78rem;color:var(--muted);line-height:1.6;margin-bottom:10px}
+.wk-focus b{color:var(--ink)}
+.wk-focus a{color:hsl(var(--brand-strong));text-decoration:none}
+.wk-focus a:hover{text-decoration:underline}
+.wk-sessions{font-size:.72rem;color:var(--muted);line-height:1.7}
+.wk-sessions .s-row{display:flex;justify-content:space-between;gap:8px}
+.wk-sessions .s-row b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+/* when a guided session is live, plan rows are clickable to jump the strip */
+.plan-pane.session-live .step{cursor:pointer;border-radius:10px;margin:0 -6px;padding-left:10px;padding-right:10px;transition:background .12s ease}
+.plan-pane.session-live .step:hover{background:hsl(var(--brand)/.05)}
+.step.now-playing{background:hsl(var(--brand)/.06);border-radius:10px;margin:0 -8px;padding-left:12px;padding-right:12px}
+.step .now-tag{font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:hsl(var(--brand-foreground));background:hsl(var(--brand));border-radius:10px;padding:1px 7px;margin-left:8px;vertical-align:2px}
+svg.li{display:inline-block;width:1em;height:1em;min-width:0;max-width:none;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em;flex:none}
+.site-header{flex:none;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="sess-mast">
+    <p class="kicker">The Woodshed · Session</p>
+    <h1>Today at the bench</h1>
+    <p class="sub">The plan on the left, the Instructor on the right — check things off as you go.</p>
+    <div class="sess-tools">
+      <button id="layoutSplit" class="on" title="Plan and Instructor side by side"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></svg>Split</button>
+      <button id="layoutPlan" title="Plan takes the full width"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Plan only</button>
+      <button id="layoutFloat" title="Pop the Instructor into a floating window on top"><svg viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Float chat</button>
+    </div>
+  </div>
+  <div class="benches">
+    <aside class="plan-pane" aria-label="Today's plan and this week">
+      <div id="liveHead" class="live-head" hidden></div>
+      <div id="plan"><div class="plan-empty">Loading the plan…</div></div>
+      <div class="week-block" id="weekBlock" hidden>
+        <div class="wk-head">This week</div>
+        <div class="wk-strip" id="wkStrip"></div>
+        <div class="day-panel" id="dayPanel"></div>
+        <div class="wk-focus" id="wkFocus"></div>
+        <div class="wk-sessions" id="wkSessions"></div>
+      </div>
+    </aside>
+    <div class="split-bar" id="splitBar" role="separator" aria-orientation="vertical" aria-label="Resize panels — drag; double-click to reset" title="Drag to resize · double-click resets"></div>
+    <div id="coachFullPage"></div>
+  </div>
+</div>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const todayISO=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());};
+const TICK='<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>';
+
+// Same storage contract as the hub: check-offs keyed plan-<date>-<id> (reset daily),
+// logged sessions in 'guitar-sessions' — the two pages always agree.
+const SESS_KEY='guitar-sessions';
+const loadSessions=()=>{try{return JSON.parse(localStorage.getItem(SESS_KEY)||'[]');}catch(e){return[];}};
+const saveSessions=a=>localStorage.setItem(SESS_KEY,JSON.stringify(a));
+
+let plan=null;
+function key(id){return 'plan-'+todayISO()+'-'+id;}
+function isDone(id){return localStorage.getItem(key(id))==='1';}
+
+function render(justId){
+  const host=$('plan');
+  if(!plan||!plan.items||!plan.items.length){
+    host.innerHTML='<div class="plan-empty">No active plan. Ask the Instructor to write one — it lands here and on the home page.</div>';
+    return;
+  }
+  const doneCount=plan.items.filter(it=>isDone(it.id)).length;
+  const allDone=doneCount===plan.items.length;
+  const today=todayISO();
+  const logged=loadSessions().find(s=>s.date===today);
+  host.innerHTML=
+    '<div class="plan-head"><div class="phase">'+esc(plan.phase||'Today')+
+      (allDone?'<span class="done-mark">day done.</span>':'')+'</div>'+
+    '<span class="plan-count">'+doneCount+'/'+plan.items.length+' · ~'+(plan.totalMinutes||'')+' min</span></div>'+
+    (plan.target?'<div class="plan-target"><b>Block target:</b> '+esc(plan.target)+'</div>':'')+
+    '<div class="pbar'+(allDone?' full':'')+'"><div style="width:'+(doneCount/plan.items.length*100)+'%"></div></div>'+
+    plan.items.map(it=>
+      '<div class="step'+(isDone(it.id)?' done':'')+'" data-id="'+esc(it.id)+'">'+
+        '<button class="tick" role="checkbox" aria-checked="'+(isDone(it.id)?'true':'false')+'" aria-label="'+esc(it.name)+'">'+TICK+'</button>'+
+        '<div class="s-main">'+
+          '<div class="s-name">'+esc(it.name)+'</div>'+
+          '<div class="s-meta">'+(it.domain?'<span class="s-dom">'+esc(it.domain)+'</span>':'')+(it.minutes?'<span>~'+it.minutes+' min</span>':'')+'</div>'+
+          (it.how?'<div class="s-how">'+esc(it.how)+'</div>':'')+
+          (it.success?'<div class="s-success"><b>Done when:</b> '+esc(it.success)+'</div>':'')+
+        '</div>'+
+        (it.tool?'<a class="s-open" href="'+esc(it.tool)+'">Open tool</a>':'')+
+      '</div>').join('')+
+    '<div class="plan-foot" id="planFoot">'+
+      (logged
+        ?'<span class="logged-line">✓ Session logged today — '+logged.done+'/'+logged.total+'</span>'+
+         '<button class="pf-btn" id="debriefBtn">Debrief with the Instructor</button>'
+        :'<button class="pf-btn" id="logBtn">Log today\'s session ('+doneCount+'/'+plan.items.length+')</button>'+
+         '<button class="pf-btn" id="startGuidedBtn">Start a guided session</button>')+
+    '</div>';
+  host.querySelectorAll('.tick').forEach(b=>b.addEventListener('click',e=>{
+    e.stopPropagation();
+    const id=b.closest('.step').dataset.id;
+    const turningOn=!isDone(id);
+    localStorage.setItem(key(id),turningOn?'1':'0');
+    if(typeof Stats!=='undefined'&&Stats.flush)Stats.flush();
+    render(turningOn?id:null);
+  }));
+  // click a plan row → jump the guided strip to that step (back or forth); the tool
+  // preview bar follows. Only when a session is running; the tick + Open-tool links opt out.
+  host.querySelectorAll('.step').forEach(el=>{
+    el.addEventListener('click',e=>{
+      if(e.target.closest('.tick,.s-open'))return;
+      if(!(window.WoodshedCoach&&WoodshedCoach.sessionRunning&&WoodshedCoach.sessionRunning()))return;
+      const it=plan.items.find(x=>x.id===el.dataset.id);
+      if(it&&it.tool&&WoodshedCoach.gotoStepByTool)WoodshedCoach.gotoStepByTool(it.tool);
+    });
+  });
+  reflectSessionMode();
+  const sg=$('startGuidedBtn');
+  if(sg)sg.addEventListener('click',startGuidedNow);
+  // spring the just-checked tick in once, then run any now-playing decoration
+  if(justId){
+    const t=host.querySelector('.step[data-id="'+(window.CSS&&CSS.escape?CSS.escape(justId):justId)+'"] .tick');
+    if(t){t.classList.add('just');t.addEventListener('animationend',()=>t.classList.remove('just'),{once:true});}
+  }
+  markNowPlaying();
+  const lg=$('logBtn');
+  if(lg)lg.addEventListener('click',()=>{
+    const doneItems=plan.items.filter(it=>isDone(it.id));
+    const ids=doneItems.map(it=>it.id);
+    const mins=doneItems.reduce((s,it)=>s+(+it.minutes||0),0);
+    const arr=loadSessions().filter(s=>s.date!==today);
+    arr.push({date:today,planDate:plan.date,phase:plan.phase,done:ids.length,total:plan.items.length,minutes:mins,items:ids,note:''});
+    saveSessions(arr);
+    // files-as-truth: the same log lands as a session record (upsert by id — re-logging amends)
+    const rec={id:'s-'+today.replace(/-/g,'')+'-log',date:today,minutes:Math.max(1,Math.min(600,mins||1)),
+      source:'logged',phase:String(plan.phase||'').slice(0,200),
+      steps:plan.items.slice(0,20).map(it=>({tool:String(it.tool||'chat').slice(0,60),title:String(it.name).slice(0,160),minutes:Math.min(120,+it.minutes||0),completed:isDone(it.id),planItemId:String(it.id).slice(0,60)})),
+      toolStats:{}};
+    fetch('/api/sessions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(rec)})
+      .then(r=>{if(r.ok)refreshSessions();}).catch(()=>{});
+    render();
+  });
+  const db=$('debriefBtn');
+  if(db)db.addEventListener('click',()=>{
+    const s=loadSessions().find(x=>x.date===today);if(!s)return;
+    const lines=plan.items.map(it=>(s.items.includes(it.id)?'✓ ':'✗ ')+it.name).join('\n');
+    if(window.WoodshedCoach&&WoodshedCoach.open)WoodshedCoach.open({
+      prefill:'Debrief today\'s session and log it:\n'+lines+'\n('+s.done+'/'+s.total+', ~'+s.minutes+' min)'
+    });
+  });
+}
+
+// --- the week layer: session RECORDS are the memory (student/sessions.json) ---
+function isoOf(d){const p2=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());}
+let sessRecords=[];           // from /api/sessions
+let selectedDay=todayISO();   // which day the panel shows
+// ?day=YYYY-MM-DD (dashboard's "Open in session view") preselects that day
+{ const qd=new URLSearchParams(location.search).get('day');
+  if(qd&&/^\d{4}-\d{2}-\d{2}$/.test(qd))selectedDay=qd; }
+const fmtTime=ts=>{const d=new Date(ts);let h=d.getHours();const m=String(d.getMinutes()).padStart(2,'0'),am=h<12?'am':'pm';h=h%12||12;return h+':'+m+am;};
+function fetchSessions(){
+  return fetch('/api/sessions').then(r=>r.ok?r.json():Promise.reject())
+    .then(d=>{sessRecords=Array.isArray(d.sessions)?d.sessions:[];})
+    .catch(()=>{sessRecords=[];});
+}
+// one-time import of the old browser-local log into files-as-truth
+function migrateLegacy(){
+  let done=false; try{done=localStorage.getItem('sessMigrated')==='1';}catch(e){}
+  if(done)return Promise.resolve();
+  const mark=()=>{try{localStorage.setItem('sessMigrated','1');}catch(e){}};
+  const legacy=loadSessions().filter(s=>/^\d{4}-\d{2}-\d{2}$/.test(s.date||''));
+  if(!legacy.length){mark();return Promise.resolve();}
+  const recs=legacy.map(s=>({
+    id:'s-'+s.date.replace(/-/g,'')+'-lgcy', date:s.date,
+    minutes:Math.max(1,Math.min(600,Math.round(+s.minutes||1))), source:'logged',
+    phase:String(s.phase||'').slice(0,200),
+    steps:(s.items||[]).slice(0,20).map(id=>({tool:'chat',title:String(id).slice(0,160),minutes:0,completed:true})),
+    toolStats:{}, note:String(s.note||'').slice(0,500)
+  }));
+  return fetch('/api/sessions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessions:recs})})
+    .then(r=>{if(r.ok)mark();}).catch(()=>{});
+}
+// cluster a stats day into "sittings": per-tool [firstTs,lastTs] intervals merged
+// when the gap is under 45 min — how un-shepherded practice becomes visible
+function deriveClusters(dayData){
+  const iv=[];
+  for(const k in dayData){const r=dayData[k];if(r&&r.firstTs&&r.lastTs)iv.push({s:r.firstTs,e:Math.max(r.lastTs,r.firstTs+60000),t:k});}
+  iv.sort((a,b)=>a.s-b.s);
+  const out=[];
+  for(const x of iv){
+    const last=out[out.length-1];
+    if(last&&x.s-last.end<=45*60000){last.end=Math.max(last.end,x.e);if(!last.tools.includes(x.t))last.tools.push(x.t);}
+    else out.push({start:x.s,end:x.e,tools:[x.t]});
+  }
+  // day-aggregate stats only keep first/last per tool, so one tool touched morning
+  // AND evening yields a day-wide interval — cap the estimate so a claim stays honest
+  out.forEach(c=>c.minutes=Math.max(1,Math.min(240,Math.round((c.end-c.start)/60000))));
+  return out.filter(c=>c.minutes>=3);
+}
+function sessCard(s){
+  const steps=s.steps||[], done=steps.filter(x=>x.completed).length;
+  const chips=Object.entries(s.toolStats||{}).map(([k,v])=>{
+    let t=k;
+    if(v.correct!=null&&v.count!=null)t+=' '+v.correct+'/'+v.count;
+    else if(v.events!=null)t+=' · '+v.events;
+    return '<span class="sc-chip">'+esc(t)+'</span>';
+  }).join('');
+  return '<div class="sess-card'+(s.source==='derived'?' derived':'')+'">'+
+    '<div class="sc-head">'+(s.startedAt?'<b>'+fmtTime(s.startedAt)+'</b>':'')+
+      '<span>'+(s.minutes||0)+' min</span>'+
+      (steps.length?'<span>'+done+'/'+steps.length+' steps</span>':'')+
+      '<span class="sc-src">'+esc(s.source||'')+'</span>'+
+      (s.grade?'<span class="sc-grade">'+esc(s.grade)+'</span>':'')+'</div>'+
+    (steps.length?'<ul class="sc-steps">'+steps.map(x=>'<li class="'+(x.completed?'ok':'no')+'">'+(x.completed?'✓':'✗')+' '+esc(x.title)+(x.minutes?' <i>~'+x.minutes+'m</i>':'')+'</li>').join('')+'</ul>':'')+
+    (chips?'<div class="sc-chips">'+chips+'</div>':'')+
+    (s.note?'<div class="sc-note">'+esc(s.note)+'</div>':'')+
+    (s.coachSessionId?'<button class="sc-debrief" data-cs="'+esc(s.coachSessionId)+'">Open the debrief &rarr;</button>':'')+
+  '</div>';
+}
+function renderDayPanel(statDays){
+  const host=$('dayPanel'); if(!host)return;
+  const day=selectedDay;
+  const recs=sessRecords.filter(s=>s.date===day).sort((a,b)=>(a.startedAt||0)-(b.startedAt||0));
+  // stats sittings this day that no record covers → claimable "unlogged practice"
+  const clusters=deriveClusters(statDays[day]||{})
+    .filter(c=>!recs.some(r=>r.startedAt&&r.endedAt&&c.start<r.endedAt&&c.end>r.startedAt));
+  let html='<div class="dp-head">'+esc(day)+(day===todayISO()?' · today':'')+'</div>';
+  if(!recs.length&&!clusters.length)html+='<div class="dp-empty">Nothing recorded this day.</div>';
+  html+=recs.map(sessCard).join('');
+  html+=clusters.map((c,i)=>'<div class="sess-card derived"><div class="sc-head"><b>'+fmtTime(c.start)+'</b><span>~'+c.minutes+' min</span><span class="sc-src">unlogged</span></div>'+
+    '<div class="sc-chips">'+c.tools.map(t=>'<span class="sc-chip">'+esc(t)+'</span>').join('')+'</div>'+
+    '<button class="sc-claim" data-i="'+i+'">Claim as a session</button></div>').join('');
+  host.innerHTML=html;
+  host.querySelectorAll('.sc-debrief').forEach(b=>b.addEventListener('click',()=>{
+    if(!(window.WoodshedCoach&&WoodshedCoach.openSession))return;
+    document.querySelector('.benches').classList.remove('plan-full');   // the debrief needs the chat pane
+    WoodshedCoach.openSession(b.dataset.cs);
+  }));
+  host.querySelectorAll('.sc-claim').forEach(b=>b.addEventListener('click',()=>{
+    const c=clusters[+b.dataset.i]; if(!c)return;
+    const d=new Date(c.start),p2=n=>String(n).padStart(2,'0');
+    const rec={id:'s-'+day.replace(/-/g,'')+'-c'+p2(d.getHours())+p2(d.getMinutes()),date:day,
+      startedAt:c.start,endedAt:c.end,minutes:c.minutes,source:'derived',phase:'',
+      steps:c.tools.slice(0,20).map(t=>({tool:t+'.html',title:t,minutes:0,completed:true})),toolStats:{}};
+    fetch('/api/sessions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(rec)})
+      .then(r=>{if(r.ok)refreshSessions();});
+  }));
+}
+function refreshSessions(){fetchSessions().then(renderWeek);}
+document.addEventListener('wsc:sessionrecorded',refreshSessions);
+function renderWeek(){
+  const wb=$('weekBlock'); wb.hidden=false;
+  // day strip: a day counts if a session record exists OR the stats layer saw practice
+  let activeDays=new Set(sessRecords.map(s=>s.date));
+  loadSessions().forEach(s=>activeDays.add(s.date));
+  let statDays={};
+  try{ Stats.recentDays(7).forEach(({date,data})=>{ statDays[date]=data; if(Object.keys(data).length)activeDays.add(date); }); }catch(e){}
+  const wk=new Date(); wk.setDate(wk.getDate()-wk.getDay()); wk.setHours(0,0,0,0);
+  const labels=['S','M','T','W','T','F','S'], today=todayISO();
+  let strip='';
+  for(let i=0;i<7;i++){ const d=new Date(wk); d.setDate(wk.getDate()+i); const iso=isoOf(d);
+    strip+='<button type="button" class="wk-day'+(activeDays.has(iso)?' on':'')+(iso===today?' now':'')+(iso===selectedDay?' sel':'')+'" data-date="'+iso+'" aria-label="'+iso+(activeDays.has(iso)?' — has practice':'')+'"><div class="dn">'+labels[i]+'</div><div class="dd">'+d.getDate()+'</div></button>'; }
+  $('wkStrip').innerHTML=strip;
+  $('wkStrip').querySelectorAll('.wk-day').forEach(b=>b.addEventListener('click',()=>{selectedDay=b.dataset.date;renderWeek();}));
+  renderDayPanel(statDays);
+  // recent sessions (records first; click one → jump its day open)
+  const recent=[...sessRecords].sort((a,b)=>(b.startedAt||0)-(a.startedAt||0)).slice(0,8);
+  $('wkSessions').innerHTML=recent.length
+    ? recent.map(s=>'<button type="button" class="s-row" data-date="'+esc(s.date)+'"><span>'+esc(s.date)+(s.grade?' · '+esc(s.grade):'')+'</span><b>'+(s.minutes||0)+' min'+((s.steps||[]).length?' · '+s.steps.filter(x=>x.completed).length+'/'+s.steps.length:'')+'</b></button>').join('')
+    : '<span>No sessions recorded yet.</span>';
+  $('wkSessions').querySelectorAll('.s-row').forEach(b=>b.addEventListener('click',()=>{
+    selectedDay=b.dataset.date;renderWeek();
+    $('dayPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }));
+  // the briefing's focus line + prescriptions (tool links normalized to this dir)
+  fetch('../student/briefing.md').then(r=>r.ok?r.text():Promise.reject()).then(md=>{
+    const NL=String.fromCharCode(10);
+    const focusRx=new RegExp("##\\s*This week's focus\\s*"+NL+"+([\\s\\S]*?)("+NL+"##|$)","i");
+    const focus=(md.match(focusRx)||[])[1];
+    const rx=new RegExp("\\[([^\\]]+)\\]\\((?:tools/)?([a-z0-9-]+\\.html)\\)","g");
+    const links=[]; let m2; while((m2=rx.exec(md))&&links.length<5)links.push('<a href="'+m2[2]+'">'+esc(m2[1])+'</a>');
+    $('wkFocus').innerHTML=(focus?'<b>Focus:</b> '+esc(focus.trim().split(NL)[0])+' ':'')+(links.length?'<br>Prescribed: '+links.join(' &middot; '):'');
+  }).catch(()=>{ $('wkFocus').innerHTML=''; });
+}
+function sessionLive(){ try{ return !!(window.WoodshedCoach&&WoodshedCoach.sessionRunning&&WoodshedCoach.sessionRunning()); }catch(e){ return false; } }
+// mark the plan step the guided session is currently on (matched by tool page)
+function markNowPlaying(){
+  let st=null; try{ st=JSON.parse(localStorage.getItem('wscPracticeSession')||'null'); }catch(e){}
+  document.querySelectorAll('.step').forEach(el=>{ el.classList.remove('now-playing'); el.querySelector('.now-tag')?.remove(); });
+  if(!st||!st.running||!plan)return;
+  const cur=st.steps&&st.steps[st.cur];
+  if(!cur||!cur.tool)return;
+  const hit=plan.items.findIndex(it=>it.tool===cur.tool);
+  if(hit<0)return;
+  const el=document.querySelectorAll('.step')[hit];
+  if(el){ el.classList.add('now-playing'); el.querySelector('.s-name').insertAdjacentHTML('beforeend','<span class="now-tag">now</span>'); }
+}
+setInterval(markNowPlaying,2000);
+// clickable-rows affordance + hide the "start guided" button while one is live
+// + the live header: elapsed vs planned while the strip runs
+function reflectSessionMode(){
+  const live=sessionLive();
+  const pane=document.querySelector('.plan-pane'); if(pane)pane.classList.toggle('session-live',live);
+  const sg=$('startGuidedBtn'); if(sg)sg.style.display=live?'none':'';
+  const lh=$('liveHead');
+  if(lh){
+    let st=null; try{ st=JSON.parse(localStorage.getItem('wscPracticeSession')||'null'); }catch(e){}
+    if(st&&st.running&&st.startedAt){
+      const pausedNow=st.paused&&st.pausedAt?Date.now()-st.pausedAt:0;
+      const el=Math.max(0,Math.round((Date.now()-st.startedAt-(st.pausedMs||0)-pausedNow)/60000));
+      const planned=(st.steps||[]).reduce((a,s)=>a+(+s.minutes||0),0);
+      lh.hidden=false;
+      lh.textContent=(st.paused?'Paused — ':'Live session — ')+el+' min in of ~'+planned+' planned · step '+((st.cur|0)+1)+'/'+(st.steps||[]).length;
+      lh.style.color=st.paused?'var(--muted)':'';
+    } else lh.hidden=true;
+  }
+}
+setInterval(reflectSessionMode,1500);
+document.addEventListener('wsc:practicestep',markNowPlaying);
+
+// the ignition prompt the coach acts on (the persona recognizes the "Practice with
+// me —" opener as the app's Start button, not something the student typed)
+const IGNITE="Practice with me — reconcile current-plan.json with the briefing if they disagree (update the file), then build today's guided session (~20-25 min) from it, start it with start_practice_session, and coach me through it. The plan checklist is on my screen next to you.";
+const IGNITE_TS='wscIgniteTs';
+function recentlyIgnited(ms){ try{ return (Date.now()-(+localStorage.getItem(IGNITE_TS)||0))<ms; }catch(e){ return false; } }
+function startGuidedNow(){
+  try{ localStorage.setItem(IGNITE_TS,String(Date.now())); }catch(e){}
+  (function fire(n){
+    if(window.WoodshedCoach&&WoodshedCoach.open){ WoodshedCoach.open({autosend:true,prefill:IGNITE}); }
+    else if(n<40) setTimeout(()=>fire(n+1),200);
+  })(0);
+}
+
+fetch('../student/current-plan.json').then(r=>r.ok?r.json():Promise.reject())
+  .then(p=>{plan=p;render();renderWeek();markNowPlaying();})
+  .catch(()=>{$('plan').innerHTML='<div class="plan-empty">Open this page through the local server to see the plan.</div>';});
+// session records: import the old browser-local log once, then load files-as-truth
+migrateLegacy().then(fetchSessions).then(renderWeek);
+
+// ?autostart=1 → the front-door ignition, BUT not if a session is already running
+// (student reopened the page mid-session) or one was ignited in the last few minutes
+// (double navigation / bfcache restore — the coach once got the prompt twice and
+// told the student to refresh the page over it). Manual button clicks always fire.
+if(new URLSearchParams(location.search).get('autostart')==='1'){
+  (function ign(n){
+    if(window.WoodshedCoach&&WoodshedCoach.open){
+      if(!sessionLive()&&!recentlyIgnited(3*60*1000)) startGuidedNow();
+    } else if(n<40){ setTimeout(()=>ign(n+1),200); }
+  })(0);
+  history.replaceState(null,'',location.pathname); // don't re-fire on refresh
+}
+
+// --- layout toolbar: split / plan-only / float the chat ---
+(function layout(){
+  const benches=document.querySelector('.benches');
+  const bSplit=$('layoutSplit'), bPlan=$('layoutPlan'), bFloat=$('layoutFloat');
+  function setMode(m){
+    benches.classList.toggle('plan-full', m==='plan');
+    bSplit.classList.toggle('on', m==='split');
+    bPlan.classList.toggle('on', m==='plan');
+    try{ localStorage.setItem('sessionLayout', m); }catch(e){}
+  }
+  bSplit.addEventListener('click',()=>setMode('split'));
+  bPlan.addEventListener('click',()=>setMode('plan'));
+  bFloat.addEventListener('click',()=>{
+    if(window.WoodshedCoach&&WoodshedCoach.float){ WoodshedCoach.float(); setMode('plan'); }  // chat floats out → plan goes full width
+  });
+  let saved='split'; try{ saved=localStorage.getItem('sessionLayout')||'split'; }catch(e){}
+  setMode(saved==='plan'?'plan':'split');
+
+  // drag the divider to resize the two benches (persisted; double-click resets)
+  const bar=$('splitBar');
+  const SPLIT_KEY='sessionSplitPct';
+  function applySplit(pct){ benches.style.setProperty('--plan-w',pct+'%'); }
+  try{ const p=parseFloat(localStorage.getItem(SPLIT_KEY)); if(p>=25&&p<=70)applySplit(p); }catch(e){}
+  let dragging=false;
+  bar.addEventListener('pointerdown',e=>{
+    dragging=true; bar.classList.add('dragging'); document.body.classList.add('splitting');
+    bar.setPointerCapture(e.pointerId);
+  });
+  bar.addEventListener('pointermove',e=>{
+    if(!dragging)return;
+    const r=benches.getBoundingClientRect();
+    const pct=Math.min(70,Math.max(25,(e.clientX-r.left)/r.width*100));
+    applySplit(pct);
+  });
+  bar.addEventListener('pointerup',e=>{
+    if(!dragging)return;
+    dragging=false; bar.classList.remove('dragging'); document.body.classList.remove('splitting');
+    try{ bar.releasePointerCapture(e.pointerId); }catch(err){}
+    const m=(benches.style.getPropertyValue('--plan-w')||'').match(/([\d.]+)%/);
+    if(m){ try{ localStorage.setItem(SPLIT_KEY,m[1]); }catch(err){} }
+  });
+  bar.addEventListener('dblclick',()=>{ benches.style.removeProperty('--plan-w'); try{ localStorage.removeItem(SPLIT_KEY); }catch(e){} });
+})();
+
+if(typeof Stats!=='undefined'&&Stats.activity)Stats.activity('session');
+</script>
+</body>
+</html>

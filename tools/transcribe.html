@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');}catch(e){}})();</script>
+<script src="header.js" defer></script>
+<script src="stats.js"></script>
+<title>Transcribe · The Woodshed</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);padding:24px;display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+  .wrap{width:100%;max-width:860px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  button{font-family:inherit}
+  .pbtn{padding:12px 18px;font-size:15px;font-weight:600;border:none;border-radius:10px;background:var(--accent);color:#1a1407;cursor:pointer}
+  .rbtn{padding:11px 14px;font-size:13px;border:1px solid var(--line);border-radius:10px;background:var(--panel2,#1f242e);color:var(--ink);cursor:pointer}
+  .rbtn:hover{border-color:var(--accent)}
+  .rbtn.rec{background:var(--bad,#e0655e);border-color:var(--bad,#e0655e);color:#fff}
+  button:disabled{opacity:.5;cursor:default}
+  .status{font-size:13px;color:var(--muted);margin-top:12px;min-height:18px}
+  .bar{height:6px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:8px}
+  .bar>div{height:100%;width:0;background:var(--accent);transition:width .15s}
+  .meter-row{display:flex;align-items:center;gap:10px;margin-top:12px}
+  .meter-label{font-size:12px;color:var(--muted);min-width:60px}
+  .meter{flex:1;height:11px;background:var(--line);border-radius:6px;overflow:hidden}
+  .meter>div{height:100%;width:0;border-radius:6px;background:var(--good,#5ec07a);transition:width .05s linear}
+  .meter-val{min-width:38px;text-align:right;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  #micSelect{flex:1;background:var(--panel2,#1f242e);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;cursor:pointer}
+  canvas{display:block;width:100%;height:220px;background:#120f0a;border:1px solid var(--line);border-radius:10px;margin-top:6px}
+  .present{font-size:13px;margin-top:12px;color:var(--muted)}.present b{color:var(--ink)}
+  .chord-readout{margin-bottom:14px;min-height:30px}
+  .chord-readout .big{font-size:28px;font-weight:700;color:var(--ink)}
+  .chord-readout .alt{color:var(--muted);font-size:14px}
+  .fretwrap{margin-bottom:14px;overflow-x:auto}
+  .fretwrap svg{display:block;width:100%;min-width:520px;max-width:680px}
+  .tabhead{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);margin-bottom:6px}
+  .tab{font-family:'Consolas','Menlo',monospace;font-size:13px;line-height:1.5;background:#120f0a;border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto;white-space:pre;color:#e0b15e;margin:0 0 14px}
+  .tab:empty{display:none}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+  th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+  .adv{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:12px;color:var(--muted)}
+  .adv label{display:flex;flex-direction:column;gap:3px}
+  .adv input{width:130px}
+  .hint{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:10px}
+  code{background:var(--panel2,#1f242e);padding:1px 5px;border-radius:4px}
+  svg.li{display:inline-block;width:1em;height:1em;min-width:0;max-width:none;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em;flex:none}
+  .take-item{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line)}
+  .take-item:last-child{border-bottom:0}
+  .take-when{font-size:13px;color:var(--ink);min-width:150px}
+  .take-when .src{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;display:block;margin-top:2px}
+  .take-stat{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .take-actions{display:flex;gap:7px;margin-left:auto}
+  .take-actions .rbtn{padding:7px 11px;font-size:12px}
+  .take-del{border-color:var(--line)}
+  .take-del:hover{border-color:var(--bad,#e0655e);color:var(--bad,#e0655e)}
+  .takes-empty{font-size:13px;color:var(--muted);padding:6px 4px}
+  /* ---- lick capture ---- */
+  .lickform{margin-top:12px;padding:14px;background:var(--panel2,#1f242e);border:1px solid var(--line);border-radius:10px}
+  .lickform .lf-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .lickform .lf-full{grid-column:1/-1}
+  .lickform label{display:block;font-size:11px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+  .lickform input{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit}
+  .lickform input:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .lickform .lf-actions{display:flex;gap:8px;margin-top:12px;align-items:center}
+  .lickform .lf-hint{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.4}
+  .lickform .lf-msg{font-size:12.5px;margin-left:auto}
+  .lickform .lf-msg.ok{color:var(--good,#5ec07a)}
+  .lickform .lf-msg.err{color:var(--bad,#e0655e)}
+  @media(max-width:520px){.lickform .lf-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead"><img class="masthead-plate" src="../assets/plates/plate-ear.png" alt="">
+    <div class="kicker">The Woodshed · Ear</div>
+    <h1>Transcribe</h1>
+    <p class="sub">Drop in a recording (or play live) and hear it turned into notes — polyphonic, chord-aware, runs on your machine via Basic Pitch.</p>
+  </div>
+  <hr class="fretline">
+
+  <div class="panel">
+    <div class="row">
+      <button class="pbtn" id="rec">● Record</button>
+      <button class="rbtn" id="checkMic" title="Open the mic and watch the level — play to test before recording"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg> Check mic</button>
+      <button class="rbtn" id="file"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg> Upload audio…</button>
+      <input type="file" id="fileInput" accept="audio/*" hidden>
+      <span style="flex:1"></span>
+      <button class="rbtn" id="testTone" title="Synthesize an A4 and transcribe it — proves the engine works">Self-check: A4</button>
+      <button class="rbtn" id="testChord" title="Synthesize a C major chord and transcribe it">Self-check: C major</button>
+    </div>
+    <div class="meter-row"><span class="meter-label">Input</span><select id="micSelect"><option value="">Default microphone</option></select><button class="rbtn" id="refreshDev" title="Re-scan input devices" style="padding:8px 11px">↻</button></div>
+    <div class="meter-row"><span class="meter-label">Mic level</span><div class="meter"><div id="meterFill"></div></div><span class="meter-val" id="meterVal">—</span></div>
+    <div class="adv">
+      <label>Onset sensitivity <input type="range" id="onset" min="0.05" max="0.9" step="0.05" value="0.5"></label>
+      <label>Note threshold <input type="range" id="frame" min="0.05" max="0.9" step="0.05" value="0.3"></label>
+      <label>Min note length (frames) <input type="range" id="minlen" min="3" max="30" step="1" value="11"></label>
+    </div>
+    <div class="status" id="status">Idle. The model (~900&nbsp;KB) loads on first use.</div>
+    <div class="bar"><div id="prog"></div></div>
+  </div>
+
+  <div class="panel">
+    <div class="row" style="margin-bottom:14px">
+      <button class="rbtn" id="play" disabled><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg> Play</button>
+      <button class="rbtn" id="midi" disabled><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> MIDI</button>
+      <button class="rbtn" id="saveAudio" disabled><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> Audio</button>
+
+      <button class="rbtn" id="debrief" disabled title="Open the Instructor drawer with this take's report as context"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg> Ask the Instructor</button>
+      <button class="rbtn" id="saveLick" disabled title="Capture a phrase from this take as a lick you can tag and drill"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Save as lick</button>
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--ink);cursor:pointer"><input type="checkbox" id="loopCheck"> Loop</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink)">Speed <input type="range" id="speedSlider" min="50" max="150" step="5" value="100" style="width:90px"> <span id="speedVal" style="min-width:34px;font-variant-numeric:tabular-nums">100%</span></label>
+      <span class="hint" style="margin:0;flex:1;min-width:240px">Plays your take and lights notes up in time. The fretboard shows a <b>plausible</b> fingering — audio can't reveal which strings you actually used.</span>
+    </div>
+    <div id="lickFormHost"></div>
+    <div class="chord-readout" id="chordReadout"></div>
+    <div class="fretwrap" id="fretWrap"></div>
+    <div class="tabhead" id="tabhead" style="display:none">Tab <button class="rbtn" id="copyTab" style="padding:5px 11px;font-size:12px">Copy</button> <span class="hint" style="margin:0;flex:1;min-width:200px">A plausible fingering — not necessarily the strings/frets you used.</span></div>
+    <pre class="tab" id="tab"></pre>
+    <canvas id="roll" width="1600" height="440"></canvas>
+    <div class="present" id="present"></div>
+    <div id="tableWrap"></div>
+    <div class="hint">Polyphonic: it detects several notes at once, so it works on chords and full recordings, not just single notes. "Live" here means record → Stop → transcribe. Mic recording needs <code>localhost</code> or HTTPS.</div>
+  </div>
+
+  <div class="panel">
+    <div class="row" style="justify-content:space-between;align-items:center;cursor:pointer" id="takesHead">
+      <div style="display:flex;align-items:center;gap:9px">
+        <svg class="li" id="takesChevron" viewBox="0 0 24 24" aria-hidden="true" style="transition:transform .15s"><polyline points="9 18 15 12 9 6"/></svg>
+        <strong style="font-size:14px">My takes</strong>
+        <span class="tab-num" id="takesCount" style="color:var(--muted);font-size:13px">—</span>
+      </div>
+      <span class="hint" style="margin:0">Every transcription is saved on this machine. Reload one to see its notes; debrief it with the Instructor.</span>
+    </div>
+    <div id="takesBody" style="display:none;margin-top:14px">
+      <div id="takesList"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import * as tf from '@tensorflow/tfjs';
+import { BasicPitch, outputToNotesPoly, noteFramesToTime, addPitchBendsToNoteEvents } from '@spotify/basic-pitch';
+import { Chord, Note } from 'tonal';
+import { Midi } from '@tonejs/midi';
+import guitarDb from '@tombatossals/chords-db/lib/guitar.json';
+
+const $ = id => document.getElementById(id);
+
+// SVG icon snippets reused by JS state updates
+const SVG_MIC = '<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>';
+const SVG_PLAY = '<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
+const SVG_STOP = '<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>';
+const SVG_CLIP = '<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>';
+const SVG_CHECK = '<svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+
+const NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const noteName = m => NAMES[((m%12)+12)%12] + (Math.floor(m/12)-1);
+const SR = 22050;
+const OPEN_SEMI = [4,9,2,7,11,4], OPEN_MIDI = [40,45,50,55,59,64], STRN = ['E','A','D','G','B','e'];   // standard tuning, low E … high e
+const MAX_FRET = 15;                                   // playable range: open E (40) … high-e + 15 (79)
+const playable = midi => midi >= OPEN_MIDI[0] && midi <= OPEN_MIDI[5] + MAX_FRET;
+
+// transcription state (drives playback / export / fretboard)
+let lastNotes = null, lastBuffer = null, lastRootPc = 0, rollMeta = null;
+let takeSource = 'file';         // set at each entry point (mic|file|selfcheck) so the archive records how the take was made
+let currentTakeId = null;        // id of the archived take now shown (null = a fresh, unsaved transcription)
+let lastAudioBlob = null, lastAudioName = '';   // the raw recording/file, kept so it can be saved for the student's own archive
+function setAudioBlob(blob, name){ lastAudioBlob = blob || null; lastAudioName = name || ''; const b = $('saveAudio'); if (b) b.disabled = !lastAudioBlob; }
+
+// ---- fingering: DP optimizer over time-events, with idiomatic chord shapes from chords-db ----
+const DB_KEYS = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];   // chords-db key spelling per pitch class
+const TYPE2SUFFIX = { 'major':'major','minor':'minor','dominant seventh':'7','major seventh':'maj7','minor seventh':'m7',
+  'diminished':'dim','diminished seventh':'dim7','augmented':'aug','half-diminished':'m7b5','minor seventh flat five':'m7b5',
+  'major sixth':'6','sixth':'6','minor sixth':'m6','dominant ninth':'9','major ninth':'maj9','minor ninth':'m9',
+  'suspended fourth':'sus4','suspended second':'sus2','added ninth':'add9','augmented seventh':'aug7' };
+const EVT_GAP = 0.14;   // notes starting within this many seconds = one strum/event
+
+function toEvents(notes){
+  // group by onset proximity: a strum = one event; arpeggios & melody stay as separate events (fingered via chord context)
+  const ns = [...notes].sort((a,b)=>a.startTimeSeconds-b.startTimeSeconds);
+  const raw = []; let cur = null;
+  for (const n of ns){ if (!cur || n.startTimeSeconds - cur.t0 > EVT_GAP){ cur = { t0:n.startTimeSeconds, notes:[] }; raw.push(cur); } cur.notes.push(n); }
+  // merge consecutive same/subset-chord events (a held chord re-detected as it rings)
+  const pcset = e => new Set(e.notes.map(n => ((n.pitchMidi%12)+12)%12));
+  const subset = (a,b) => { for (const x of a) if (!b.has(x)) return false; return true; };
+  const out = [];
+  for (const e of raw){
+    const last = out[out.length-1];
+    if (last){ const A = pcset(last), B = pcset(e); if (A.size && B.size && (subset(A,B) || subset(B,A))){ last.notes.push(...e.notes); continue; } }
+    out.push(e);
+  }
+  out.forEach(e => e.t = Math.min(...e.notes.map(n => n.startTimeSeconds)));
+  return out;
+}
+const meanFret = cand => { const ff = cand.map(c=>c.f).filter(f=>f>0); return ff.length ? ff.reduce((a,b)=>a+b,0)/ff.length : 0; };
+const spanOf   = cand => { const ff = cand.map(c=>c.f).filter(f=>f>0); return ff.length ? Math.max(...ff)-Math.min(...ff) : 0; };
+
+// real chords-db voicings (as string→{s,f,pc} lists) for a chord spelled by these note names
+function chordVoicings(noteNames){
+  const names = [...new Set(noteNames)]; if (names.length < 2) return [];
+  const det = Chord.detect(names); if (!det.length) return [];
+  const ch = Chord.get(det[0]); if (!ch.tonic) return [];
+  const entries = guitarDb.chords[DB_KEYS[Note.chroma(ch.tonic)]]; if (!entries) return [];
+  const trySuf = [...new Set([TYPE2SUFFIX[ch.type], ...(ch.aliases||[])].filter(Boolean))];
+  let entry = null; for (const suf of trySuf){ entry = entries.find(e=>e.suffix===suf); if (entry) break; }
+  if (!entry) return [];
+  return entry.positions.slice(0,4).map(pos => {
+    const strings = [];
+    pos.frets.forEach((v,i) => { if (v === -1) return; const f = v === 0 ? 0 : v + pos.baseFret - 1; strings.push({ s:i, f, pc:(OPEN_SEMI[i]+f)%12 }); });
+    return strings;
+  });
+}
+// place an event's notes onto a voicing's strings — match EXACT pitch first (so octaves are right), then fall back to pitch class
+function placeOn(eventNotes, strings){
+  const used = new Set(), placement = [];
+  for (const n of eventNotes){
+    const midi = n.pitchMidi, pc = ((midi%12)+12)%12;
+    let hit = strings.find(d => OPEN_MIDI[d.s]+d.f === midi && !used.has(d.s))
+           || strings.find(d => OPEN_MIDI[d.s]+d.f === midi)
+           || strings.find(d => d.pc === pc && !used.has(d.s))
+           || strings.find(d => d.pc === pc);
+    if (!hit || hit.f > MAX_FRET) return null;
+    used.add(hit.s); placement.push({ note:n, s:hit.s, f:hit.f });
+  }
+  placement.db = true; return placement;
+}
+// algorithmic placements: put each note on a distinct string, compact frets (also covers single notes)
+function algCandidates(eventNotes){
+  const perNote = [...eventNotes].sort((a,b)=>a.pitchMidi-b.pitchMidi).map(n => { const ps=[]; for (let s=0;s<6;s++){ const f=n.pitchMidi-OPEN_MIDI[s]; if (f>=0 && f<=MAX_FRET) ps.push({s,f}); } return { n, ps }; });
+  const sols = [], LIMIT = 6, used = new Set();
+  (function bt(idx, acc){
+    if (sols.length >= LIMIT) return;
+    if (idx === perNote.length){ if (acc.length) sols.push(acc.slice()); return; }
+    for (const p of perNote[idx].ps){ if (used.has(p.s)) continue; used.add(p.s); acc.push({ note:perNote[idx].n, s:p.s, f:p.f }); bt(idx+1, acc); acc.pop(); used.delete(p.s); }
+  })(0, []);
+  sols.sort((a,b)=> spanOf(a)-spanOf(b));
+  return sols.slice(0,5);
+}
+function eventCandidates(event, allNotes){
+  // harmonic context: notes sounding within ~1s of this event — lets an arpeggiated chord finger as the chord shape
+  const W = 1.0, T = event.t;
+  const ctx = allNotes.filter(n => n.startTimeSeconds < T + W && (n.startTimeSeconds + n.durationSeconds) > T - W);
+  const names = [...ctx].sort((a,b)=>a.pitchMidi-b.pitchMidi).map(n => NAMES[((n.pitchMidi%12)+12)%12]);
+  const cands = [];
+  for (const strings of chordVoicings(names)){ const p = placeOn(event.notes, strings); if (p) cands.push(p); }
+  const all = [...cands, ...algCandidates(event.notes)];
+  if (all.length) return all;
+  // last resort: place each note at its lowest valid position, dropping any that don't fit on the neck (never invent absurd frets)
+  const fb = event.notes.map(n => { for (let s=0;s<6;s++){ const f=n.pitchMidi-OPEN_MIDI[s]; if (f>=0 && f<=MAX_FRET) return { note:n, s, f }; } return null; }).filter(Boolean);
+  return fb.length ? [fb] : [];
+}
+// choose one fingering per event minimizing fret span, hand movement, high frets — preferring real chord shapes (Viterbi DP)
+function assignPositions(notes){
+  notes.forEach(n => { n.pos = null; n.event = -1; });
+  const usable = notes.filter(n => playable(n.pitchMidi));   // never finger notes off the neck
+  const evs = toEvents(usable); if (!evs.length) return;
+  evs.forEach((e,ei) => e.notes.forEach(n => n.event = ei));
+  const cands = evs.map(e => eventCandidates(e, usable));
+  const emit = cand => 1.0*spanOf(cand) + 0.6*meanFret(cand) - 0.8*cand.filter(c=>c.f===0).length - (cand.db ? 4 : 0);
+  const trans = (a,b) => 0.7*Math.abs(meanFret(b) - meanFret(a));
+  const dp = cands.map(cs => cs.map(()=>Infinity)), back = cands.map(cs => cs.map(()=>-1));
+  cands[0].forEach((c,k)=> dp[0][k] = emit(c));
+  for (let i=1;i<evs.length;i++) for (let k=0;k<cands[i].length;k++){
+    const ek = emit(cands[i][k]); let bj = 0, bc = Infinity;
+    for (let j=0;j<cands[i-1].length;j++){ const c = dp[i-1][j] + ek + trans(cands[i-1][j], cands[i][k]); if (c < bc){ bc = c; bj = j; } }
+    dp[i][k] = bc; back[i][k] = bj;
+  }
+  let last = evs.length-1, k = 0; for (let t=1;t<dp[last].length;t++) if (dp[last][t] < dp[last][k]) k = t;
+  for (let i=last;i>=0;i--){ cands[i][k].forEach(({note,s,f}) => note.pos = {s,f}); k = back[i][k]; }
+}
+// classic ASCII tab — one column per event (same events the fingering used), high e on top
+function generateTab(notes){
+  const placed = notes.filter(n => n.pos && n.event >= 0);
+  if (!placed.length) return '';
+  const byEvent = new Map();
+  placed.forEach(n => { if (!byEvent.has(n.event)) byEvent.set(n.event, []); byEvent.get(n.event).push(n); });
+  const cols = [...byEvent.keys()].sort((a,b)=>a-b).map(k => byEvent.get(k));
+  const cells = [[],[],[],[],[],[]];
+  for (const col of cols){ const w = Math.max(1, ...col.map(n=>String(n.pos.f).length));
+    for (let s=0;s<6;s++){ const hit = col.find(n=>n.pos.s===s); cells[s].push(hit ? String(hit.pos.f).padStart(w,'-') : '-'.repeat(w)); } }
+  const SN = ['E','A','D','G','B','e'], body = cells.map(row => row.join('--'));
+  return [5,4,3,2,1,0].map(s => `${SN[s]}|--${body[s]}--|`).join('\n');
+}
+function floatToBuffer(float, sr){ const b = audioCtx().createBuffer(1, float.length, sr); b.copyToChannel(float, 0); return b; }
+
+// the neck showing one plausible position per played note (root highlighted); `active` = Set of note indices currently sounding
+function fretboardSVG(notes, rootPc, active){
+  const MAXF = MAX_FRET, NUT = 40, FW = 46, SG = 22, TOP = 16, W = NUT + FW*MAXF + 10, H = TOP + SG*5 + 30;
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  s += `<rect x="${NUT}" y="${TOP-6}" width="${FW*MAXF}" height="${SG*5+12}" fill="#241a10" rx="4"/>`;
+  [3,5,7,9,12].forEach(f => s += `<circle cx="${NUT+FW*(f-0.5)}" cy="${TOP+SG*2.5}" r="3.5" fill="#3c3020"/>`);
+  for (let f=0; f<=MAXF; f++){ const x = NUT+FW*f;
+    s += `<line x1="${x}" y1="${TOP-6}" x2="${x}" y2="${TOP+SG*5+6}" stroke="${f===0?'#cfd3da':'#5a5043'}" stroke-width="${f===0?4:1.5}"/>`;
+    if (f>0) s += `<text x="${x-FW/2}" y="${TOP+SG*5+22}" fill="#6b7280" font-size="10" text-anchor="middle">${f}</text>`; }
+  for (let st=0; st<6; st++){ const y = TOP+SG*(5-st);
+    s += `<line x1="${NUT}" y1="${y}" x2="${NUT+FW*MAXF}" y2="${y}" stroke="#9aa0aa" stroke-width="${(0.6+st*0.25).toFixed(2)}"/>`;
+    s += `<text x="${NUT-26}" y="${y+4}" fill="#6b7280" font-size="10" text-anchor="middle">${STRN[st]}</text>`; }
+  // collapse to unique cells; a cell is active if any note placed there is currently sounding
+  const cells = new Map();
+  (notes||[]).forEach((n,i) => { if (!n.pos) return; const key = n.pos.s+','+n.pos.f, pc = ((n.pitchMidi%12)+12)%12, act = !!(active && active.has(i));
+    const cur = cells.get(key); if (cur) cur.active = cur.active || act; else cells.set(key, { s:n.pos.s, f:n.pos.f, pc, active:act }); });
+  for (const c of cells.values()){
+    const x = c.f===0 ? NUT-15 : NUT+FW*(c.f-0.5), y = TOP+SG*(5-c.s), isRoot = c.pc===rootPc, r = c.active?11:9;
+    s += `<circle cx="${x}" cy="${y}" r="${r}" fill="${isRoot?'var(--accent)':'#caa15a'}" stroke="${c.active?'#fff':'#0f1115'}" stroke-width="${c.active?2.5:1.5}"/>`;
+    s += `<text x="${x}" y="${y+3.3}" fill="#1a1407" font-size="9" font-weight="700" text-anchor="middle">${NAMES[c.pc]}</text>`;
+  }
+  return s + `</svg>`;
+}
+function drawFret(active){ $('fretWrap').innerHTML = fretboardSVG(lastNotes, lastRootPc, active); }
+
+const status = t => { $('status').innerHTML = t; };
+const progress = p => { $('prog').style.width = Math.round(p*100)+'%'; };
+
+// ---- take archive (IndexedDB) : every successful transcription is stored on this machine ----
+// v1 stores only the notes summary + report + metadata, NOT the audio blob (size). Notes are the
+// compact plain shape {midi,start,dur,amp}; render maps them back to Basic Pitch's field names.
+const TAKES_DB = 'woodshedTakes', TAKES_STORE = 'takes';
+function takesDB(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(TAKES_DB, 1);
+    req.onupgradeneeded = () => { const db = req.result; if (!db.objectStoreNames.contains(TAKES_STORE)) db.createObjectStore(TAKES_STORE, { keyPath:'id', autoIncrement:true }); };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+function tx(mode){ return takesDB().then(db => db.transaction(TAKES_STORE, mode).objectStore(TAKES_STORE)); }
+// map Basic Pitch note events → the compact archive shape (and back on reload)
+const packNotes = notes => (notes||[]).map(n => ({ midi:n.pitchMidi, start:+(n.startTimeSeconds||0), dur:+(n.durationSeconds||0), amp:+(n.amplitude||0) }));
+const unpackNotes = rows => (rows||[]).map(r => ({ pitchMidi:r.midi, startTimeSeconds:r.start, durationSeconds:r.dur, amplitude:r.amp }));
+async function saveTake(take){
+  try{
+    const store = await tx('readwrite');
+    return await new Promise((resolve, reject) => { const req = store.add(take); req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error); });
+  }catch(e){ console.warn('take not archived:', e); return null; }
+}
+async function listTakes(){
+  try{
+    const store = await tx('readonly');
+    return await new Promise((resolve, reject) => { const req = store.getAll(); req.onsuccess = () => resolve((req.result||[]).sort((a,b)=>b.id-a.id)); req.onerror = () => reject(req.error); });
+  }catch(e){ return []; }
+}
+async function getTake(id){
+  try{
+    const store = await tx('readonly');
+    return await new Promise((resolve, reject) => { const req = store.get(id); req.onsuccess = () => resolve(req.result||null); req.onerror = () => reject(req.error); });
+  }catch(e){ return null; }
+}
+async function deleteTake(id){
+  try{
+    const store = await tx('readwrite');
+    return await new Promise((resolve, reject) => { const req = store.delete(id); req.onsuccess = () => resolve(); req.onerror = () => reject(req.error); });
+  }catch(e){}
+}
+// rough tempo estimate from onset IOIs (same basis as the report's median-IOI number), or null
+function tempoEstimate(notes){
+  const evs = toEvents((notes||[]).filter(n => playable(n.pitchMidi)));
+  const onsets = evs.map(e => e.t);
+  const iois = onsets.slice(1).map((t,i) => t - onsets[i]);
+  if (iois.length < 2) return null;
+  const sorted = [...iois].sort((a,b)=>a-b), med = sorted[Math.floor(sorted.length/2)];
+  return med ? Math.round(60/med) : null;
+}
+// persist the just-transcribed take, then refresh the panel. Fresh takes only (not reloads).
+async function archiveTake(notes){
+  const dur = lastBuffer ? lastBuffer.duration : (notes.length ? Math.max(...notes.map(n=>n.startTimeSeconds+n.durationSeconds)) : 0);
+  const take = {
+    ts: Date.now(),
+    source: takeSource,
+    durationSec: +dur.toFixed(2),
+    noteCount: notes.length,
+    report: buildReport(),
+    notes: packNotes(notes),
+    meta: { tempoEstimate: tempoEstimate(notes) }
+  };
+  const id = await saveTake(take);
+  currentTakeId = id;
+  refreshTakes();
+}
+
+// ---- model (lazy) ----
+let bp = null;
+async function ensureModel(){
+  if (bp) return bp;
+  status('Loading TensorFlow.js + model…');
+  await tf.ready();
+  try{
+    const modelUrl = new URL('/basic-pitch-model/model.json', location.origin).href;
+    bp = new BasicPitch(modelUrl);
+    await bp.model;             // resolve the GraphModel
+  }catch(err){ bp = null; throw new Error('model failed to load — it must be served at /basic-pitch-model/model.json (launch via the dev server, not file://). '+err.message); }
+  status('Model ready · backend: <b>'+tf.getBackend()+'</b>');
+  return bp;
+}
+
+// ---- audio helpers ----
+let actx = null;
+const audioCtx = () => { if (!actx) actx = new (window.AudioContext||window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); return actx; };
+
+async function resampleTo22050(audioBuffer){
+  const len = Math.max(1, Math.ceil(audioBuffer.duration*SR));
+  const off = new OfflineAudioContext(1, len, SR);
+  const src = off.createBufferSource(); src.buffer = audioBuffer; src.connect(off.destination); src.start();
+  const r = await off.startRendering();
+  return r.getChannelData(0);
+}
+async function decode(arrayBuffer){ return audioCtx().decodeAudioData(arrayBuffer); }
+
+// synthesize a mono 22050 buffer of one or more MIDI pitches (for the self-checks)
+function synth(midis, secs){
+  const n = Math.floor(SR*secs), out = new Float32Array(n);
+  for (const m of midis){
+    const f = 440*Math.pow(2,(m-69)/12);
+    for (let i=0;i<n;i++){ const t=i/SR; const env = Math.min(1,t*20)*Math.min(1,(secs-t)*4); out[i] += (0.4/midis.length)*Math.sin(2*Math.PI*f*t)*env; }
+  }
+  return out;
+}
+
+// ---- transcription ----
+let busy = false;
+async function transcribe(float32){
+  if (busy) return; busy = true;
+  try{
+    const model = await ensureModel();
+    status('Analyzing… (first run is slower)'); progress(0);
+    // evaluateModel calls back once PER BATCH — accumulate, don't overwrite, or only the last chunk survives (notes land at t=0)
+    const F=[], O=[], C=[];
+    await model.evaluateModel(float32, (frames,onsets,contours)=>{ for (const r of frames) F.push(r); for (const r of onsets) O.push(r); for (const r of contours) C.push(r); }, p=>progress(p));
+    let notes = outputToNotesPoly(F, O, +$('onset').value, +$('frame').value, +$('minlen').value);
+    notes = addPitchBendsToNoteEvents(C, notes);
+    const timed = noteFramesToTime(notes).filter(n => playable(n.pitchMidi)).sort((a,b)=>a.startTimeSeconds-b.startTimeSeconds);   // drop out-of-range mis-detections (harmonics)
+    render(timed);
+    status(`Done — <b>${timed.length}</b> notes · backend: <b>${tf.getBackend()}</b>`);
+    progress(1);
+    if (typeof Stats !== 'undefined') Stats.activity('transcribe');
+    if (timed.length) archiveTake(timed);
+    return timed;
+  }catch(e){ status('<span style="color:var(--bad)">Error: '+e.message+'</span>'); console.error(e); }
+  finally{ busy = false; }
+}
+// keep the source audio around so Play can re-play it; then transcribe the 22050 mono version
+const MAX_CLIP_SECONDS = 120;   // Basic Pitch runs on the main thread; a long clip freezes the page
+async function runOnBuffer(buffer){
+  lastBuffer = buffer;
+  if (buffer.duration > MAX_CLIP_SECONDS){ status('<span style="color:var(--bad)">That clip is '+Math.round(buffer.duration)+'s — transcription runs on the main thread and would freeze the page. Please use a clip under '+MAX_CLIP_SECONDS+'s.</span>'); return; }
+  await transcribe(await resampleTo22050(buffer));
+}
+function runOnFloat(float){ lastBuffer = floatToBuffer(float, SR); transcribe(float); }
+
+// ---- rendering ----
+function render(notes){
+  stopPlayback();
+  lastNotes = notes;
+  const pcs = [...new Set(notes.map(n=>((n.pitchMidi%12)+12)%12))].sort((a,b)=>a-b);
+  if (!notes.length){
+    $('chordReadout').innerHTML = ''; $('fretWrap').innerHTML = ''; $('tableWrap').innerHTML = '';
+    $('tab').textContent = ''; $('tabhead').style.display = 'none';
+    $('present').textContent = 'No notes detected — try lowering the thresholds, or a longer / cleaner recording.';
+    rollMeta = null; $('roll').getContext('2d').clearRect(0,0,$('roll').width,$('roll').height);
+    $('play').disabled = true; $('midi').disabled = true; $('debrief').disabled = true;
+    if ($('saveLick')) $('saveLick').disabled = true;
+    if ($('lickFormHost')) $('lickFormHost').innerHTML = '';
+    return;
+  }
+  $('debrief').disabled = false;
+  if ($('saveLick')){ $('saveLick').disabled = false; }
+  if ($('lickFormHost')) $('lickFormHost').innerHTML = '';   // a fresh render invalidates any open capture form
+  assignPositions(notes);
+  // ---- chord identification (Tonal) ----
+  const ordered = [], seen = new Set();
+  [...notes].sort((a,b)=>a.pitchMidi-b.pitchMidi).forEach(n => { const nm = NAMES[((n.pitchMidi%12)+12)%12]; if (!seen.has(nm)){ seen.add(nm); ordered.push(nm); } });
+  const cands = Chord.detect(ordered);
+  lastRootPc = pcs[0];
+  if (cands.length){
+    const c = Chord.get(cands[0]);
+    if (c.tonic){ const ch = Note.chroma(c.tonic); if (ch != null) lastRootPc = ch; }
+    const alts = cands.slice(1,3).map(x => Chord.get(x).symbol || x).filter(Boolean);
+    $('chordReadout').innerHTML = `<span class="big">${c.name || cands[0]}</span> &nbsp; <span class="alt">${(c.notes||[]).join(' · ')}${alts.length ? ' &nbsp;·&nbsp; or ' + alts.join(', ') : ''}</span>`;
+  } else {
+    $('chordReadout').innerHTML = `<span class="big">${pcs.map(p=>NAMES[p]).join(' ')}</span> &nbsp; <span class="alt">no clear chord match</span>`;
+  }
+  $('present').innerHTML = 'Notes present: ' + pcs.map(p=>`<b>${NAMES[p]}</b>`).join(' ');
+  const noteEnd = Math.max(...notes.map(n=>n.startTimeSeconds+n.durationSeconds), 0);
+  const maxT = Math.max(lastBuffer ? lastBuffer.duration : 0, noteEnd, 1);   // span the WHOLE recording, not just the notes
+  const midis = notes.map(n=>n.pitchMidi);
+  const loM = Math.min(...midis)-2, hiM = Math.max(...midis)+2;
+  rollMeta = { loM, hiM, maxT, span: Math.max(1, hiM-loM) };
+  drawFret(null); drawRoll(null, null);
+  const tab = generateTab(notes); $('tab').textContent = tab; $('tabhead').style.display = tab ? 'flex' : 'none';
+  // table (first 40)
+  const rows = notes.slice(0,40).map(n=>`<tr><td class="tab-num">${noteName(n.pitchMidi)}</td><td class="tab-num">${n.startTimeSeconds.toFixed(2)}s</td><td class="tab-num">${n.durationSeconds.toFixed(2)}s</td><td class="tab-num">${Math.round(n.amplitude*100)}%</td></tr>`).join('');
+  $('tableWrap').innerHTML = `<table><thead><tr><th>Note</th><th>Start</th><th>Length</th><th>Confidence</th></tr></thead><tbody>${rows}</tbody></table>` + (notes.length>40?`<div class="hint">…and ${notes.length-40} more.</div>`:'');
+  $('play').disabled = false; $('midi').disabled = false;
+}
+function drawRoll(playheadT, active){
+  const cv = $('roll'), ctx = cv.getContext('2d'); ctx.clearRect(0,0,cv.width,cv.height);
+  if (!lastNotes || !lastNotes.length || !rollMeta) return;
+  const { loM, hiM, maxT, span } = rollMeta;
+  const x = t => 40 + (t/maxT)*(cv.width-50);
+  const y = m => 10 + (1-(m-loM)/span)*(cv.height-20);
+  ctx.fillStyle = '#6b7280'; ctx.font = '11px system-ui';
+  for (let m=Math.ceil(loM/12)*12; m<=hiM; m+=12){ ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.beginPath(); ctx.moveTo(40,y(m)); ctx.lineTo(cv.width,y(m)); ctx.stroke(); ctx.fillText(noteName(m), 4, y(m)+4); }
+  // vertical time markers so the full duration is legible
+  const stepT = maxT > 24 ? 5 : maxT > 10 ? 2 : 1;
+  for (let ts=0; ts<=maxT+0.001; ts+=stepT){ const xx = x(ts); ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.beginPath(); ctx.moveTo(xx,4); ctx.lineTo(xx,cv.height-16); ctx.stroke(); ctx.fillText(ts+'s', xx+2, cv.height-4); }
+  lastNotes.forEach((n,i) => { const h = Math.max(4,(cv.height-20)/span-2), act = !!(active && active.has(i));
+    ctx.fillStyle = act ? '#ffffff' : `hsl(38,70%,${35+Math.min(40,n.amplitude*60)}%)`;
+    ctx.fillRect(x(n.startTimeSeconds), y(n.pitchMidi)-h/2, Math.max(3, x(n.startTimeSeconds+n.durationSeconds)-x(n.startTimeSeconds)), h); });
+  if (playheadT != null){ ctx.strokeStyle = '#f59f0a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x(playheadT),4); ctx.lineTo(x(playheadT),cv.height-4); ctx.stroke(); }
+}
+
+// ---- playback speed + loop helpers ----
+const getRate = () => (+($('speedSlider')?.value||100)) / 100;
+const getLoop = () => !!($('loopCheck')?.checked);
+// update speed display
+function initPlaybackControls(){
+  const sl = $('speedSlider'), sv = $('speedVal');
+  if (!sl || !sv) return;
+  sl.value = String(Stats && typeof Stats.getPref==='function' ? Stats.getPref('transcribe','speed',100) : 100);
+  sv.textContent = sl.value + '%';
+  sl.addEventListener('input', () => {
+    sv.textContent = sl.value + '%';
+    if (typeof Stats !== 'undefined') Stats.setPref('transcribe','speed',+sl.value);
+    // if already playing, update the source's playbackRate live
+    if (playSrc) { try { playSrc.playbackRate.value = getRate(); } catch(e){} }
+  });
+  const lc = $('loopCheck');
+  if (lc){
+    lc.checked = !!(typeof Stats !== 'undefined' && Stats.getPref('transcribe','loop',false));
+    lc.addEventListener('change', () => {
+      if (typeof Stats !== 'undefined') Stats.setPref('transcribe','loop', lc.checked);
+    });
+  }
+}
+
+// ---- playback + synced animation ----
+let playSrc = null, playRAF = null, playStart = 0, playLooping = false;
+function stopPlayback(){
+  playLooping = false;
+  if (playSrc){ try{ playSrc.onended = null; playSrc.stop(); }catch(e){} playSrc = null; }
+  if (playRAF){ cancelAnimationFrame(playRAF); playRAF = null; }
+  if ($('play')) $('play').innerHTML = SVG_PLAY + ' Play';
+  if (lastNotes && lastNotes.length && rollMeta){ drawRoll(null, null); drawFret(null); }
+}
+async function startPlayback(){
+  if (!lastBuffer || !lastNotes || !lastNotes.length) return;
+  const a = audioCtx(); await a.resume();
+  playLooping = getLoop();
+  playSrc = a.createBufferSource();
+  playSrc.buffer = lastBuffer;
+  playSrc.playbackRate.value = getRate();
+  playSrc.connect(a.destination);
+  playStart = a.currentTime + 0.06;
+  playSrc.start(playStart);
+  const rawDur = lastBuffer.duration;
+  // Incremental position tracking: accumulate audio position each tick using the
+  // *current* slider rate, so mid-play speed changes keep the animation in sync.
+  let lastWall = playStart, audioPos = 0;
+  const scheduleEnded = () => {
+    if (!playSrc) return;
+    if (playLooping){
+      // stop old source, start fresh
+      try{ playSrc.onended = null; playSrc.stop(); }catch(e){}
+      const newSrc = a.createBufferSource();
+      newSrc.buffer = lastBuffer;
+      newSrc.playbackRate.value = getRate();
+      newSrc.connect(a.destination);
+      playStart = a.currentTime + 0.02;
+      newSrc.start(playStart);
+      playSrc = newSrc;
+      playSrc.onended = scheduleEnded;
+      // reset the animation clock so it re-syncs with the restarted audio
+      lastWall = playStart; audioPos = 0;
+    } else {
+      stopPlayback();
+    }
+  };
+  playSrc.onended = scheduleEnded;
+  $('play').innerHTML = SVG_STOP + ' Stop';
+  const tick = () => {
+    if (!playSrc){ stopPlayback(); return; }
+    // advance audio position by the wall-clock delta scaled by the live rate
+    const nowWall = Math.max(a.currentTime, playStart);
+    audioPos += (nowWall - lastWall) * getRate();
+    lastWall = nowWall;
+    if (!playLooping && audioPos > rawDur + 0.15){ stopPlayback(); return; }
+    const loopedT = audioPos % rawDur;
+    const active = new Set();
+    lastNotes.forEach((n,i) => { if (loopedT >= n.startTimeSeconds && loopedT < n.startTimeSeconds + n.durationSeconds) active.add(i); });
+    drawRoll(Math.max(0, loopedT), active); drawFret(active);
+    playRAF = requestAnimationFrame(tick);
+  };
+  tick();
+}
+function downloadMidi(){
+  if (!lastNotes || !lastNotes.length) return;
+  const midi = new Midi(); const track = midi.addTrack();
+  lastNotes.filter(n => (n.amplitude || 0) >= 0.02).forEach(n => track.addNote({ midi: n.pitchMidi, time: n.startTimeSeconds, duration: Math.max(0.05, n.durationSeconds), velocity: Math.min(1, Math.max(0.05, n.amplitude || 0.7)) }));
+  const blob = new Blob([midi.toArray()], { type: 'audio/midi' });
+  const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'transcription.mid'; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+$('play').onclick = () => playSrc ? stopPlayback() : startPlayback();
+initPlaybackControls();
+$('midi').onclick = downloadMidi;
+$('copyTab').onclick = () => { const t = $('tab').textContent; if (t && navigator.clipboard) navigator.clipboard.writeText(t).then(() => { $('copyTab').textContent = 'Copied'; setTimeout(() => $('copyTab').textContent = 'Copy', 1200); }); };
+
+// ---- save the raw take for the student's own archive (the Instructor can't hear audio, but the student can A/B themselves) ----
+function saveAudio(){
+  if (!lastAudioBlob) return;
+  const d = new Date(), p2 = n => String(n).padStart(2,'0');
+  const ext = (lastAudioName.match(/\.(\w+)$/)||[])[1] || ((lastAudioBlob.type||'').includes('ogg')?'ogg':(lastAudioBlob.type||'').includes('wav')?'wav':'webm');
+  const name = `take-${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}_${p2(d.getHours())}${p2(d.getMinutes())}.${ext}`;
+  const url = URL.createObjectURL(lastAudioBlob); const a = document.createElement('a'); a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+$('saveAudio').onclick = saveAudio;
+
+// ---- diagnostic report for the Instructor: turns the take into text I can actually read (pitches + timing) ----
+function buildReport(){
+  if (!lastNotes || !lastNotes.length) return '';
+  const dur = lastBuffer ? lastBuffer.duration : 0;
+  const pcs = [...new Set(lastNotes.map(n=>((n.pitchMidi%12)+12)%12))].sort((a,b)=>a-b).map(p=>NAMES[p]);
+  const chord = ($('chordReadout').textContent||'').replace(/\s+/g,' ').trim();
+  const tab = $('tab').textContent || '(none)';
+  const evs = toEvents(lastNotes.filter(n=>playable(n.pitchMidi)));
+  const onsets = evs.map(e=>+e.t.toFixed(3));
+  const iois = onsets.slice(1).map((t,i)=>+(t-onsets[i]).toFixed(3));
+  let timing = '(too few onsets to assess)';
+  if (iois.length >= 2){
+    const sorted = [...iois].sort((a,b)=>a-b), med = sorted[Math.floor(sorted.length/2)];
+    const mean = iois.reduce((a,b)=>a+b,0)/iois.length;
+    const sd = Math.sqrt(iois.reduce((a,b)=>a+(b-mean)*(b-mean),0)/iois.length);
+    const cv = mean ? sd/mean : 0, bpm = med ? Math.round(60/med) : 0;
+    timing = `IOIs (s): ${iois.join(', ')}\n  median ${med.toFixed(3)}s → ~${bpm} BPM if each onset is one beat (rough) · steadiness CV ${cv.toFixed(2)} (lower = tighter)`;
+  }
+  const list = lastNotes.slice().sort((a,b)=>a.startTimeSeconds-b.startTimeSeconds).slice(0,80)
+    .map(n=>`${noteName(n.pitchMidi).padEnd(4)} @ ${n.startTimeSeconds.toFixed(2)}s  len ${n.durationSeconds.toFixed(2)}s  conf ${Math.round((n.amplitude||0)*100)}%`).join('\n');
+  return [
+    `TRANSCRIBE REPORT — machine-detected (Basic Pitch). Pitches & timing are estimated; fingering/tab is a plausible guess, not what was actually fretted.`,
+    `Duration ${dur.toFixed(1)}s · ${lastNotes.length} notes · ${evs.length} onset events`,
+    `Detected chord/notes: ${chord || pcs.join(' ')}`,
+    `Pitch classes present: ${pcs.join(' ')}`,
+    ``, `TAB (plausible fingering):`, tab,
+    ``, `ONSET TIMES (s): ${onsets.join(', ')}`, `TIMING: ${timing}`,
+    ``, `NOTES${lastNotes.length>80?' (first 80)':''}:`, list
+  ].join('\n');
+}
+
+
+// ---- debrief: hand the take's report to the coach drawer (coach.js listens for coach:open) ----
+// Client contract: set window.__coachTake, then dispatch coach:open with detail.take — the drawer
+// folds the take object into the coach context payload's `take` field.
+// We attach BOTH the human report (text) AND structured note data so the Instructor can
+// genuinely analyse note choices/timing/range: context.take = {source, durationSec, bpmGuess?,
+// notes:[{t, midi, name, durSec}] (first 400), noteCount, report}.
+// Structured notes come from `notes`, which is either the live `lastNotes`
+// (Basic Pitch shape {pitchMidi,startTimeSeconds,durationSeconds}) or a stored take's packed
+// `notes` (shape {midi,start,dur}) — normalise both here.
+function packTakeData(source, durationSec, bpmGuess, notes){
+  const rows = (notes || []).map(n => {
+    const midi = (n.pitchMidi != null) ? n.pitchMidi : n.midi;
+    const start = (n.startTimeSeconds != null) ? n.startTimeSeconds : (n.start || 0);
+    const dur = (n.durationSeconds != null) ? n.durationSeconds : (n.dur || 0);
+    return { t: +(+start).toFixed(2), midi, name: noteName(midi), durSec: +(+dur).toFixed(2) };
+  }).sort((a, b) => a.t - b.t);
+  const data = { noteCount: rows.length, notes: rows.slice(0, 400) };
+  if (source) data.source = source;
+  if (durationSec != null) data.durationSec = +(+durationSec).toFixed(2);
+  if (bpmGuess != null) data.bpmGuess = bpmGuess;   // omit entirely when unknown
+  return data;
+}
+function debrief(take){
+  // take (from the stored-takes list) or live page state (lastNotes + lastBuffer)
+  const report = take ? take.report : buildReport();
+  if (!report) return;
+  const ts = take ? take.ts : Date.now();
+  const rawNotes = take ? take.notes : lastNotes;
+  const source = take ? take.source : takeSource;
+  const durationSec = take ? take.durationSec : (lastBuffer ? lastBuffer.duration : undefined);
+  const bpmGuess = take ? (take.meta && take.meta.tempoEstimate) : tempoEstimate(lastNotes || []);
+  const data = packTakeData(source, durationSec, bpmGuess, rawNotes || []);
+  const detail = Object.assign({ report: report, ts: ts }, data);
+  window.__coachTake = detail;
+  document.dispatchEvent(new CustomEvent('coach:open', { detail: { take: detail } }));
+}
+$('debrief').onclick = () => debrief();
+
+// ==================== SAVE AS LICK ====================
+// Capture a phrase from a transcription (or a stored take) as a Lick: slice the
+// notes to a time range, re-zero to start at 0, tag it, and POST-merge into
+// /api/licks (GET current doc → append → PUT). Notes normalised to {midi,start,dur}.
+
+const todayStr = () => { const d = new Date(), p = n => String(n).padStart(2,'0');
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()); };
+
+// PURE: normalise arbitrary note rows (Basic Pitch shape OR packed shape) to
+// {midi,start,dur}, keep notes whose start falls in [t0,t1], and re-zero times so
+// the earliest kept note starts at 0. Durations are preserved unchanged.
+// Returns { notes:[{midi,start,dur}], durationSec }.
+function sliceLickNotes(rawNotes, t0, t1) {
+  const rows = (rawNotes || []).map(n => ({
+    midi: (n.pitchMidi != null) ? n.pitchMidi : n.midi,
+    start: +(((n.startTimeSeconds != null) ? n.startTimeSeconds : (n.start || 0)) || 0),
+    dur: +(((n.durationSeconds != null) ? n.durationSeconds : (n.dur || 0)) || 0),
+  })).filter(n => n.midi != null);
+  const a = Math.min(t0, t1), b = Math.max(t0, t1);
+  const kept = rows.filter(n => n.start >= a - 1e-9 && n.start <= b + 1e-9)
+    .sort((x, y) => x.start - y.start);
+  if (!kept.length) return { notes: [], durationSec: 0 };
+  const zero = kept[0].start;
+  const out = kept.map(n => ({ midi: n.midi, start: +(n.start - zero).toFixed(4), dur: +n.dur.toFixed(4) }));
+  const durationSec = +Math.max(...out.map(n => n.start + n.dur)).toFixed(3);
+  return { notes: out, durationSec };
+}
+
+// GET current doc, append the new lick, PUT it back. Graceful when the API is absent.
+async function saveLickToApi(lick) {
+  let doc;
+  try {
+    const r = await fetch('/api/licks');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    doc = await r.json();
+  } catch (e) {
+    return { ok: false, absent: true, error: (e && e.message) || 'network error' };
+  }
+  if (!doc || typeof doc !== 'object') doc = { version: 1, licks: [] };
+  if (!Array.isArray(doc.licks)) doc.licks = [];
+  doc.licks.push(lick);
+  try {
+    const r = await fetch('/api/licks', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(doc),
+    });
+    if (!r.ok) { let j = {}; try { j = await r.json(); } catch (e) {} throw new Error(j.error || ('HTTP ' + r.status)); }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: (e && e.message) || 'network error' };
+  }
+}
+
+// Build a compact inline capture form into `host`. `ctx` carries the take being
+// captured: { notes (raw), fullDur, source, bpmGuess }. `onClose()` clears the host.
+function renderLickForm(host, ctx) {
+  const fullDur = +(ctx.fullDur || 0).toFixed(2);
+  const uid = () => Math.random().toString(36).slice(2, 10);
+  host.innerHTML = `
+    <div class="lickform">
+      <div class="lf-grid">
+        <div class="lf-full"><label>Name <span style="color:var(--bad)">*</span></label><input type="text" data-lf="name" placeholder="e.g. Bluesy A minor pull-off" autocomplete="off"></div>
+        <div><label>Key</label><input type="text" data-lf="key" placeholder="A minor"></div>
+        <div><label>Context</label><input type="text" data-lf="context" placeholder="over ii-V / blues turnaround"></div>
+        <div><label>Tags (comma-separated)</label><input type="text" data-lf="tags" placeholder="bend, chromatic"></div>
+        <div><label>Clip range (s)</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="number" data-lf="start" min="0" step="0.05" value="0" style="flex:1" title="Start of the phrase (seconds)">
+            <span style="color:var(--muted)">–</span>
+            <input type="number" data-lf="end" min="0" step="0.05" value="${fullDur}" style="flex:1" title="End of the phrase (seconds)">
+          </div>
+        </div>
+      </div>
+      <div class="lf-actions">
+        <button class="rbtn lf-save">Save lick</button>
+        <button class="rbtn lf-cancel">Cancel</button>
+        <span class="lf-msg" data-lf="msg"></span>
+      </div>
+      <div class="lf-hint">Defaults to the whole take (${fullDur}s). Narrow the range to clip just the phrase — only notes starting inside the range are kept, re-zeroed to start at 0.</div>
+    </div>`;
+  const q = sel => host.querySelector(sel);
+  const msg = q('[data-lf="msg"]');
+  const nameEl = q('[data-lf="name"]');
+  if (nameEl) nameEl.focus();
+  q('.lf-cancel').onclick = () => { host.innerHTML = ''; };
+  q('.lf-save').onclick = async () => {
+    const name = q('[data-lf="name"]').value.trim();
+    if (!name) { msg.className = 'lf-msg err'; msg.textContent = 'Name is required.'; nameEl.focus(); return; }
+    const t0 = +q('[data-lf="start"]').value || 0;
+    const t1 = q('[data-lf="end"]').value === '' ? (ctx.fullDur || 0) : +q('[data-lf="end"]').value;
+    const { notes, durationSec } = sliceLickNotes(ctx.notes, t0, t1);
+    if (!notes.length) { msg.className = 'lf-msg err'; msg.textContent = 'No notes in that range — widen the clip.'; return; }
+    const tags = q('[data-lf="tags"]').value.split(',').map(t => t.trim()).filter(Boolean);
+    const lick = {
+      id: uid(),
+      name,
+      notes,
+      durationSec,
+      key: q('[data-lf="key"]').value.trim(),
+      context: q('[data-lf="context"]').value.trim(),
+      tags,
+      source: ctx.source || 'transcribe',
+      added: todayStr(),
+    };
+    if (ctx.bpmGuess != null) lick.bpmGuess = ctx.bpmGuess;
+    const btn = q('.lf-save'); btn.disabled = true;
+    msg.className = 'lf-msg'; msg.textContent = 'Saving…';
+    const res = await saveLickToApi(lick);
+    btn.disabled = false;
+    if (res.ok) {
+      msg.className = 'lf-msg ok'; msg.textContent = '✓ Saved to Lick Library';
+      showLickToast('Lick saved — ' + notes.length + ' notes. Tag & drill it in the Lick Library.');
+      setTimeout(() => { host.innerHTML = ''; }, 1400);
+    } else if (res.absent) {
+      msg.className = 'lf-msg err'; msg.textContent = 'Lick API not available — run the dev server (npm run dev) to save licks.';
+    } else {
+      msg.className = 'lf-msg err'; msg.textContent = '✗ Save failed — ' + res.error;
+    }
+  };
+}
+
+// tiny transient toast (self-contained; no dependency on the rest of the page)
+function showLickToast(text) {
+  let t = document.getElementById('lickToast');
+  if (!t) {
+    t = document.createElement('div'); t.id = 'lickToast';
+    t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--accent);color:var(--ink);padding:11px 18px;border-radius:10px;font-size:13px;z-index:80;box-shadow:0 6px 20px rgba(0,0,0,.35);opacity:0;transition:opacity .18s';
+    document.body.appendChild(t);
+  }
+  t.textContent = text;
+  requestAnimationFrame(() => { t.style.opacity = '1'; });
+  clearTimeout(t.__hide);
+  t.__hide = setTimeout(() => { t.style.opacity = '0'; }, 3200);
+}
+
+// result-area button: capture from the LIVE transcription (lastNotes + lastBuffer)
+$('saveLick').onclick = () => {
+  if (!lastNotes || !lastNotes.length) return;
+  const host = $('lickFormHost');
+  if (host.querySelector('.lickform')) { host.innerHTML = ''; return; }   // toggle off
+  const fullDur = lastBuffer ? lastBuffer.duration
+    : Math.max(...lastNotes.map(n => n.startTimeSeconds + n.durationSeconds), 0);
+  renderLickForm(host, {
+    notes: lastNotes,
+    fullDur,
+    source: SRC_LABEL_FOR_LICK[takeSource] || takeSource || 'transcribe',
+    bpmGuess: tempoEstimate(lastNotes),
+  });
+};
+// friendly source label the lick carries (matches the takes panel vocabulary)
+const SRC_LABEL_FOR_LICK = { mic: 'Recorded take', file: 'Uploaded take', selfcheck: 'Self-check' };
+
+// ---- mic level meter ----
+let analyser = null, meterRAF = null, meterBuf = null, meterSrc = null;
+function setMeter(level, clip){
+  const el = $('meterFill');
+  el.style.width = Math.round(level*100) + '%';
+  el.style.background = clip ? 'var(--bad,#e0655e)' : level > 0.6 ? 'var(--accent)' : 'var(--good,#5ec07a)';
+  const v = $('meterVal'); if (v) v.textContent = Math.round(level*100) + '%';
+}
+function attachMeter(stream){
+  const a = audioCtx(); if (a.resume) a.resume();
+  meterSrc = a.createMediaStreamSource(stream);
+  analyser = a.createAnalyser(); analyser.fftSize = 1024;
+  meterSrc.connect(analyser);
+  meterBuf = new Float32Array(analyser.fftSize);
+  let maxSeen = 0, frames = 0, warned = false;
+  const tick = () => {
+    if (!analyser) return;
+    analyser.getFloatTimeDomainData(meterBuf);
+    let sum = 0, peak = 0;
+    for (let i=0;i<meterBuf.length;i++){ const v = meterBuf[i]; sum += v*v; const a2 = Math.abs(v); if (a2 > peak) peak = a2; }
+    const level = Math.min(1, Math.sqrt(sum/meterBuf.length)*3.5);
+    if (level > maxSeen) maxSeen = level;
+    setMeter(level, peak > 0.98);
+    if (!warned && ++frames > 150 && maxSeen < 0.01) {   // ~2.5s and still flat
+      warned = true;
+      status('<span style="color:var(--bad)">No signal.</span> The mic opened (audio '+a.state+') but stays at 0% — almost always the wrong input device or a muted one. Windows: <b>Settings → System → Sound → Input</b>, pick the right mic, and confirm its level bar moves when you play.');
+    }
+    meterRAF = requestAnimationFrame(tick);
+  };
+  tick();
+}
+function detachMeter(){
+  if (meterRAF) cancelAnimationFrame(meterRAF); meterRAF = null;
+  if (meterSrc) { try{ meterSrc.disconnect(); }catch(e){} meterSrc = null; }
+  analyser = null; setMeter(0, false);
+}
+
+// ---- check-mic monitor (watch level without recording) ----
+let monitorStream = null;
+function stopMonitor(){
+  if (monitorStream) { monitorStream.getTracks().forEach(t=>t.stop()); monitorStream = null; }
+  detachMeter();
+  $('checkMic').classList.remove('rec'); $('checkMic').innerHTML = SVG_MIC + ' Check mic';
+}
+// raw, unprocessed mono stream from the chosen device — AGC/noise-suppression can gut a guitar signal
+// The device choice is SITE-GLOBAL now (localStorage 'micDeviceId', shared with the
+// header picker via mic.js). This page's Input select reads/writes the same setting.
+const MIC_KEY = 'micDeviceId';
+let curDeviceId = '';
+try { curDeviceId = localStorage.getItem(MIC_KEY) || localStorage.getItem('transcribeMicId') || ''; } catch(e){}
+const saveMic = () => {
+  if (window.WoodshedMic && WoodshedMic.setDeviceId) { WoodshedMic.setDeviceId(curDeviceId); return; }
+  try { curDeviceId ? localStorage.setItem(MIC_KEY, curDeviceId) : localStorage.removeItem(MIC_KEY); } catch(e){}
+};
+// header picker changes flow back into this page's select
+document.addEventListener('micdevice', e => { curDeviceId = e.detail || ''; const s = $('micSelect'); if (s) s.value = curDeviceId; });
+const micConstraints = () => ({ audio: Object.assign(
+  { echoCancellation:false, noiseSuppression:false, autoGainControl:false },
+  curDeviceId ? { deviceId: { exact: curDeviceId } } : {}) });
+// open the mic; if the remembered device is gone, fall back to default and clear it
+async function getMic(){
+  try { return await navigator.mediaDevices.getUserMedia(micConstraints()); }
+  catch(e){
+    if (curDeviceId && (e.name==='OverconstrainedError' || e.name==='NotFoundError')){
+      curDeviceId = ''; saveMic(); $('micSelect').value = '';
+      status('Remembered mic isn\'t available — using default. Pick your device from <b>Input</b>.');
+      return await navigator.mediaDevices.getUserMedia(micConstraints());
+    }
+    throw e;
+  }
+}
+const micErr = e => status('<span style="color:var(--bad)">Mic error — '+e.name+': '+e.message+'</span>'
+  + (e.name==='NotAllowedError' ? '<br>Permission is blocked. Click the 🔒/🎤 icon by the address bar → allow Microphone, and check Windows → Privacy → Microphone → "Let desktop apps access your microphone".'
+   : (e.name==='NotFoundError'||e.name==='OverconstrainedError') ? '<br>That input is unavailable — pick another from the Input list.' : ''));
+
+async function populateDevices(){
+  try{
+    const ins = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput');
+    const sel = $('micSelect');
+    sel.innerHTML = '<option value="">Default microphone</option>' +
+      ins.map((d,i) => `<option value="${d.deviceId}">${d.label || ('Microphone '+(i+1))}</option>`).join('');
+    if ([...sel.options].some(o => o.value === curDeviceId)) sel.value = curDeviceId;   // restore remembered choice
+  }catch(e){}
+}
+
+async function startMonitor(){
+  try{
+    await audioCtx().resume();
+    monitorStream = await getMic();
+    populateDevices();                                  // device labels are filled in once permission is granted
+    const label = monitorStream.getAudioTracks()[0]?.label || '(unnamed device)';
+    attachMeter(monitorStream);
+    $('checkMic').classList.add('rec'); $('checkMic').innerHTML = SVG_MIC + ' Stop check';
+    status('Listening on <b>'+label+'</b> — play and watch the level (green = good, red = too hot).');
+  }catch(e){ monitorStream = null; micErr(e); }
+}
+$('checkMic').onclick = () => { if (monitorStream) { stopMonitor(); status('Mic monitor off.'); } else startMonitor(); };
+$('refreshDev').onclick = populateDevices;
+$('micSelect').onchange = async () => { curDeviceId = $('micSelect').value; saveMic(); if (monitorStream) { stopMonitor(); await startMonitor(); } };
+navigator.mediaDevices.addEventListener?.('devicechange', populateDevices);
+populateDevices();
+
+// ---- recording ----
+let mediaRec = null, chunks = [];
+async function startRec(){
+  try{
+    takeSource = 'mic';
+    if (monitorStream) stopMonitor();                 // hand the mic over to the recorder
+    await audioCtx().resume();
+    const stream = await getMic();
+    populateDevices();
+    const label = stream.getAudioTracks()[0]?.label || 'mic';
+    attachMeter(stream);                              // live level while recording
+    chunks = []; mediaRec = new MediaRecorder(stream);
+    mediaRec.ondataavailable = e => chunks.push(e.data);
+    mediaRec.onstop = async () => {
+      detachMeter();
+      stream.getTracks().forEach(t=>t.stop());
+      $('rec').classList.remove('rec'); $('rec').textContent = '● Record';
+      if (!chunks.length){ status('<span style="color:var(--bad)">Nothing recorded — hold Record a little longer before stopping.</span>'); return; }
+      try{
+        const blob = new Blob(chunks, {type: chunks[0]?.type || 'audio/webm'});
+        setAudioBlob(blob, 'take.' + ((blob.type||'').includes('ogg')?'ogg':'webm'));
+        runOnBuffer(await decode(await blob.arrayBuffer()));
+      }catch(err){ status('<span style="color:var(--bad)">Couldn\'t decode that recording: '+err.message+'</span>'); }
+    };
+    mediaRec.start();
+    $('rec').classList.add('rec'); $('rec').textContent = '■ Stop';
+    status('Recording on <b>'+label+'</b>… play, then press Stop.');
+  }catch(e){ micErr(e); }
+}
+$('rec').onclick = () => (mediaRec && mediaRec.state==='recording') ? mediaRec.stop() : startRec();
+$('file').onclick = () => $('fileInput').click();
+$('fileInput').onchange = async e => { const f=e.target.files[0]; if(!f) return; takeSource='file'; setAudioBlob(f, f.name); status('Decoding '+f.name+'…'); runOnBuffer(await decode(await f.arrayBuffer())); };
+$('testTone').onclick = () => { takeSource='selfcheck'; setAudioBlob(null); runOnFloat(synth([69], 2)); };            // A4
+$('testChord').onclick = () => { takeSource='selfcheck'; setAudioBlob(null); runOnFloat(synth([60,64,67], 2)); };     // C major
+
+// ---- "My takes" panel: list, reload, debrief, delete ----
+const SRC_LABEL = { mic:'Recorded', file:'Uploaded', selfcheck:'Self-check' };
+const p2 = n => String(n).padStart(2,'0');
+function fmtWhen(ts){ const d = new Date(ts);
+  return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())} · ${p2(d.getHours())}:${p2(d.getMinutes())}`; }
+function fmtDur(s){ s = Math.round(s||0); return s>=60 ? `${Math.floor(s/60)}m ${p2(s%60)}s` : `${s}s`; }
+
+let takesOpen = false;
+function setTakesOpen(open){ takesOpen = open;
+  $('takesBody').style.display = open ? 'block' : 'none';
+  $('takesChevron').style.transform = open ? 'rotate(90deg)' : 'none';
+  if (open) refreshTakes();
+}
+$('takesHead').onclick = () => setTakesOpen(!takesOpen);
+
+async function refreshTakes(){
+  const takes = await listTakes();
+  $('takesCount').textContent = takes.length ? String(takes.length) : '0';
+  if (!takesOpen) return;
+  const list = $('takesList');
+  if (!takes.length){ list.innerHTML = '<div class="takes-empty">No takes yet. Record, upload, or run a self-check and it lands here.</div>'; return; }
+  const shown = takes.slice(0, 50);
+  list.innerHTML = shown.map(t => {
+    const bpm = t.meta && t.meta.tempoEstimate ? ` · ~${t.meta.tempoEstimate} BPM` : '';
+    return `<div class="take-item" data-id="${t.id}">
+      <div class="take-when">${fmtWhen(t.ts)}<span class="src">${SRC_LABEL[t.source]||t.source||'take'}</span></div>
+      <div class="take-stat">${fmtDur(t.durationSec)} · <span class="tab-num">${t.noteCount}</span> notes${bpm}</div>
+      <div class="take-actions">
+        <button class="rbtn take-load" data-id="${t.id}">Reload</button>
+        <button class="rbtn take-brief" data-id="${t.id}">Ask the Instructor</button>
+        <button class="rbtn take-lick" data-id="${t.id}" title="Capture a phrase from this take as a lick">Save as lick</button>
+        <button class="rbtn take-del" data-id="${t.id}" title="Delete this take">Delete</button>
+      </div>
+    </div>
+    <div class="lick-host" data-lickhost="${t.id}"></div>`;
+  }).join('') + (takes.length > 50 ? `<div class="hint">Showing the 50 most recent of ${takes.length}.</div>` : '');
+  list.querySelectorAll('.take-load').forEach(b => b.onclick = () => reloadTake(+b.dataset.id));
+  list.querySelectorAll('.take-brief').forEach(b => b.onclick = async () => { const t = await getTake(+b.dataset.id); if (t) debrief(t); });
+  list.querySelectorAll('.take-lick').forEach(b => b.onclick = async () => {
+    const host = list.querySelector('[data-lickhost="' + b.dataset.id + '"]');
+    if (!host) return;
+    if (host.querySelector('.lickform')) { host.innerHTML = ''; return; }   // toggle off
+    const t = await getTake(+b.dataset.id); if (!t) return;
+    renderLickForm(host, {
+      notes: t.notes,                                   // packed {midi,start,dur} — sliceLickNotes normalises
+      fullDur: t.durationSec || (t.notes && t.notes.length ? Math.max(...t.notes.map(n => (n.start||0)+(n.dur||0))) : 0),
+      source: (SRC_LABEL_FOR_LICK[t.source] || t.source || 'take'),
+      bpmGuess: t.meta && t.meta.tempoEstimate != null ? t.meta.tempoEstimate : null,
+    });
+  });
+  list.querySelectorAll('.take-del').forEach(b => b.onclick = async () => { await deleteTake(+b.dataset.id); if (currentTakeId === +b.dataset.id) currentTakeId = null; refreshTakes(); });
+}
+
+// re-render the piano roll / fretboard / tab from a stored take's notes (no audio → playback disabled)
+async function reloadTake(id){
+  const t = await getTake(id); if (!t) return;
+  stopPlayback();
+  lastBuffer = null; setAudioBlob(null);           // archived takes don't carry audio (v1)
+  currentTakeId = id;
+  render(unpackNotes(t.notes));                     // reuse the existing render path
+  $('play').disabled = true;                        // no buffer to play back
+  status(`Reloaded take from <b>${fmtWhen(t.ts)}</b> — ${t.noteCount} notes. Reload doesn't include audio, so Play is off; MIDI export and the report still work.`);
+  document.querySelector('.chord-readout')?.scrollIntoView({ block:'center', behavior:'smooth' });
+}
+refreshTakes();   // fill the count on load
+
+// arrived from the practice plan's "Record a take" — land ready to record (scroll + highlight the button; user still taps it for the mic gesture)
+if (location.hash === '#record'){
+  const r = $('rec');
+  if (r){
+    r.scrollIntoView({ block:'center' });
+    r.focus({ preventScroll:true });
+    r.animate([{ boxShadow:'0 0 0 0 var(--accent)' },{ boxShadow:'0 0 0 6px transparent' }], { duration:1100, iterations:3 });
+    status('Ready when you are — press <b>● Record</b>, play your take, then <b>Stop</b>. After it transcribes, hit <b>Ask the Instructor</b> for one fixable thing.');
+  }
+}
+
+// surface the site-wide mic-input picker in the header (mic.js loads async via header.js)
+(function sp(){ if(window.WoodshedMic)WoodshedMic.showPicker(); else setTimeout(sp,150); })();
+</script>
+</body>
+</html>

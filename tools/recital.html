@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<script>/* the recital is always a paper document — never dark, regardless of app theme */document.documentElement.classList.remove('dark');</script>
+<script src="stats.js"></script>
+<script src="header.js" defer></script>
+<title>Recital · The Woodshed</title>
+<style>
+  /* The recital is a DOCUMENT — it always wears paper, in both app themes. */
+  *{box-sizing:border-box}
+  body{margin:0;background:#efe7d6;color:#3a3128;font-family:var(--font-display);line-height:1.55;-webkit-font-smoothing:antialiased;padding:24px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .dark body{background:#efe7d6}
+  .wrap{max-width:820px;margin:0 auto}
+  .sheet{background:#f6f0e2;border:1px solid #ddd2ba;border-radius:12px;box-shadow:0 10px 30px -12px rgba(46,33,18,.35);padding:clamp(28px,6vw,56px)}
+  .doc-head{display:flex;align-items:center;gap:18px;margin-bottom:4px}
+  .doc-head img{width:64px;height:64px;flex:none;border-radius:50%;opacity:.9}
+  .kicker{font-family:var(--font-ui);font-size:11px;font-weight:650;letter-spacing:.22em;text-transform:uppercase;color:#b5741a;margin-bottom:8px}
+  h1{font-size:clamp(26px,5vw,34px);font-weight:600;margin:0 0 4px;letter-spacing:.01em}
+  .date{color:#7a6f60;font-size:14px;margin:0;font-style:italic}
+  h2{font-size:16px;letter-spacing:.02em;margin:32px 0 10px;border-bottom:1px solid #ddd2ba;padding-bottom:6px;font-weight:600}
+  .quiet{color:#7a6f60;font-style:italic;font-size:14px}
+  ul.imp{list-style:none;margin:0;padding:0}
+  ul.imp li{padding:7px 0;border-bottom:1px solid #e6dcc6;font-size:15px}
+  ul.imp li:last-child{border-bottom:none}
+  ul.imp .d{display:inline-block;min-width:52px;font-weight:700;color:#b5741a}
+  .tbl{width:100%;border-collapse:collapse;font-size:14px}
+  .tbl th{text-align:left;font-family:var(--font-ui);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#7a6f60;padding:6px 8px;border-bottom:1.5px solid #ddd2ba;font-weight:600}
+  .tbl td{padding:7px 8px;border-bottom:1px solid #e6dcc6}
+  .tbl .num{text-align:right;font-variant-numeric:tabular-nums}
+  .summary{font-size:14px;color:#7a6f60;margin:4px 0 10px}
+  .rep-item{padding:8px 0;border-bottom:1px solid #e6dcc6;font-size:15px}
+  .rep-item:last-child{border-bottom:none}
+  .rep-item .st{font-family:var(--font-ui);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#b5741a;margin-left:8px}
+  .rep-item .secs{display:block;font-size:13px;color:#7a6f60;margin-top:2px}
+  .fretline-p{height:7px;border:0;margin:38px 0 8px;background:
+    radial-gradient(circle 2.4px at 16% 50%, #b5741a 97%, transparent),
+    radial-gradient(circle 2.4px at 50% 50%, #b5741a 97%, transparent),
+    radial-gradient(circle 2.4px at 84% 50%, #b5741a 97%, transparent),
+    linear-gradient(90deg,transparent,#ddd2ba 8%,#ddd2ba 92%,transparent) center/100% 1px no-repeat}
+  .foot{text-align:center;color:#7a6f60;font-size:12px;letter-spacing:.04em}
+  /* ceremony stamps — pressed linocut marks, slightly tilted like a passport page */
+  .stamp-row{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;margin:6px 0 18px;padding:14px 8px 10px;border:1px dashed #ddd2ba;border-radius:10px}
+  .stamp{margin:0;display:flex;flex-direction:column;align-items:center;gap:5px;width:86px;transform:rotate(var(--tilt,0deg))}
+  .stamp img{width:64px;height:64px;object-fit:contain;mix-blend-mode:multiply;opacity:.92;filter:saturate(.92)}
+  .stamp figcaption{font-family:var(--font-ui);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#7a6f60;text-align:center;line-height:1.3}
+  .actions{display:flex;justify-content:flex-end;max-width:820px;margin:0 auto 12px;gap:8px}
+  .print-btn{font-family:var(--font-ui);font-size:13px;font-weight:600;padding:8px 18px;border-radius:9px;border:none;background:hsl(38 92% 50%);color:#1a1407;cursor:pointer}
+  .print-btn:hover{filter:brightness(1.05)}
+  /* the injected site header is chrome, not document — let it exist above the sheet */
+  .site-header{max-width:820px;margin:0 auto 14px}
+  .hdr-toggle:not(.hdr-mute){display:none} /* theme toggle is meaningless on a paper document */
+  @media print{
+    body{background:#fff;padding:0}
+    .site-header,.actions{display:none!important}
+    .sheet{border:none;box-shadow:none;border-radius:0;padding:24px 8px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="actions"><button class="print-btn" onclick="window.print()">Print / save PDF</button></div>
+  <div class="sheet">
+    <div class="doc-head">
+      <img src="../assets/stamps/stamp-laurel.png" alt="">
+      <div>
+        <div class="kicker">The Woodshed · Recital</div>
+        <h1 id="who">The Woodshed</h1>
+        <p class="date" id="date"></p>
+      </div>
+    </div>
+
+    <div id="stampRow" class="stamp-row" style="display:none"></div>
+
+    <h2>What improved this week</h2>
+    <div id="improvements"></div>
+
+    <h2>Repertoire</h2>
+    <div id="repertoire"><p class="quiet">Loading…</p></div>
+
+    <h2>Confirmed tempos</h2>
+    <div id="tempos"></div>
+
+    <h2>Practice — last 30 days</h2>
+    <div id="practice"></div>
+
+    <h2>Recorded takes</h2>
+    <div id="takes"><p class="quiet">Loading…</p></div>
+
+    <hr class="fretline-p">
+    <div class="foot">Keep the loop honest — plan, practice, evaluate.</div>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+function esc(s){return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+$('date').textContent=new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
+
+// ceremony stamps — pressed marks for real events (Stats.stamps decides earned)
+(function(){
+  try{
+    const earned=Stats.stamps().filter(s=>s.earned);
+    if(!earned.length)return;
+    $('stampRow').style.display='flex';
+    $('stampRow').innerHTML=earned.map((s,i)=>
+      `<figure class="stamp" style="--tilt:${((i*47)%9-4)}deg">
+        <img src="../assets/stamps/${s.img}" alt="">
+        <figcaption>${esc(s.label)}</figcaption>
+      </figure>`).join('');
+  }catch(e){}
+})();
+
+// improvements
+(function(){
+  const imps=Stats.improvements(7);
+  $('improvements').innerHTML=imps.length
+    ? '<ul class="imp">'+imps.map(im=>{const sign=im.delta>0?'+':'';return `<li><span class="d">${sign}${im.delta}</span> ${esc(im.label)}</li>`;}).join('')+'</ul>'
+    : '<p class="quiet">No improvements crossed the threshold this week.</p>';
+})();
+
+// confirmed tempos — best per label
+(function(){
+  const raw=[...(Stats.totals('metronome',90).tempos||[]),...(Stats.totals('technique-drills',90).tempos||[])];
+  const best={};
+  raw.forEach(t=>{const lab=t.label||'Clean tempo';if(!best[lab]||t.bpm>best[lab])best[lab]=t.bpm;});
+  const labs=Object.keys(best);
+  $('tempos').innerHTML=labs.length
+    ? '<table class="tbl"><tbody>'+labs.map(l=>`<tr><td>${esc(l)}</td><td class="num">${best[l]} bpm</td></tr>`).join('')+'</tbody></table>'
+    : '<p class="quiet">No clean tempos logged yet.</p>';
+})();
+
+// practice table
+(function(){
+  const tools=[['ear-trainer','Ear Trainer'],['fretboard-trainer','Fretboard Trainer'],
+    ['triad-trainer','Triad Trainer'],['scale-trainer','Scale Trainer'],['metronome','Metronome'],
+    ['technique-drills','Technique Drills'],['target-tone','Target Tone'],
+    ['circle-of-fifths','Circle of Fifths'],['transcribe','Transcribe'],
+    ['tone','Tone Studio'],['identity','My Sound']];
+  const rows=[];
+  tools.forEach(([id,label])=>{const t=Stats.totals(id,30);
+    if(!t.answered&&!t.minutes&&!t.tempos.length)return;
+    const a=t.answered>0?Math.round(t.correct/t.answered*100)+'%':'—';
+    rows.push(`<tr><td>${esc(label)}</td><td class="num">${t.answered||0}</td><td class="num">${a}</td><td class="num">${t.minutes||0}</td></tr>`);});
+  const confirms=Stats.confirmations(30).length;
+  $('practice').innerHTML=
+    `<p class="summary">${confirms} re-test${confirms===1?'':'s'} confirmed across the month.</p>`+
+    (rows.length
+      ? `<table class="tbl"><thead><tr><th>Tool</th><th class="num">Answered</th><th class="num">Accuracy</th><th class="num">Minutes</th></tr></thead><tbody>${rows.join('')}</tbody></table>`
+      : '<p class="quiet">No tool activity in the last 30 days.</p>');
+})();
+
+// student name from progress-data; repertoire from repertoire.json
+fetch('../student/progress-data.json').then(r=>r.ok?r.json():null).then(d=>{
+  const name=d&&((d.student&&d.student.name)||d.name);
+  if(name)$('who').textContent=name;
+}).catch(()=>{});
+fetch('../student/repertoire.json').then(r=>r.ok?r.json():Promise.reject()).then(d=>{
+  const active=(d.items||[]).filter(i=>i.status==='learning'||i.status==='performing');
+  $('repertoire').innerHTML=active.length
+    ? active.map(i=>{
+        const secs=(i.sections||[]).map(s=>`${esc(s.name)} — ${esc(s.status)}`).join(' · ');
+        return `<div class="rep-item"><b>${esc(i.title)}</b>${i.artist?` — ${esc(i.artist)}`:''}<span class="st">${esc(i.status)}</span>${secs?`<span class="secs">${secs}</span>`:''}</div>`;
+      }).join('')
+    : '<p class="quiet">No active pieces.</p>';
+}).catch(()=>{$('repertoire').innerHTML='<p class="quiet">Repertoire unavailable.</p>';});
+
+// takes from IndexedDB
+(function(){
+  let req;
+  try{ req=indexedDB.open('woodshedTakes'); }catch(e){ $('takes').innerHTML='<p class="quiet">No takes recorded yet.</p>'; return; }
+  req.onerror=()=>{ $('takes').innerHTML='<p class="quiet">No takes recorded yet.</p>'; };
+  req.onsuccess=()=>{
+    const db=req.result;
+    if(!db.objectStoreNames.contains('takes')){ $('takes').innerHTML='<p class="quiet">No takes recorded yet.</p>'; return; }
+    db.transaction('takes','readonly').objectStore('takes').getAll().onsuccess=(e)=>{
+      const takes=e.target.result||[];
+      if(!takes.length){ $('takes').innerHTML='<p class="quiet">No takes recorded yet.</p>'; return; }
+      const recent=takes.slice(-4).reverse();
+      $('takes').innerHTML=
+        `<p class="summary">${takes.length} take${takes.length===1?'':'s'} in the archive.</p>`+
+        '<table class="tbl"><tbody>'+recent.map(t=>{
+          const d=t.ts?new Date(t.ts).toLocaleDateString(undefined,{month:'short',day:'numeric'}):'—';
+          return `<tr><td>${d}</td><td>${esc(t.source||'take')}</td><td class="num">${t.noteCount||0} notes</td><td class="num">${t.durationSec?Math.round(t.durationSec)+'s':'—'}</td></tr>`;
+        }).join('')+'</tbody></table>';
+    };
+  };
+})();
+</script>
+</body>
+</html>
