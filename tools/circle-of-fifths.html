@@ -75,6 +75,20 @@
   .pchip .x{display:none}
   .pchip:hover{border-color:var(--accent2)}
   .pchip.on{background:var(--accent);color:#1a1407}.pchip.on .rn{color:#1a1407}
+  /* the hold badge: musical note glyph, click to cycle whole→half→quarter→2-bar */
+  .pchip .pdur{font-size:12px;color:var(--muted);border-top:1px dotted var(--line);width:100%;text-align:center;padding-top:1px;margin-top:1px;transition:color .12s}
+  .pchip .pdur:hover{color:var(--accent)}
+  .pchip.on .pdur{color:#1a1407;border-top-color:#1a140744}
+  /* the loop ring: the progression as a spinning wheel */
+  .loopwrap{margin:14px auto 4px;text-align:center}
+  .loopcap{font-size:11px;color:var(--muted);margin-top:6px}
+  .lr-arc{transition:opacity .12s ease}
+  .lr-arc:hover{opacity:.6!important}
+  /* what-comes-next hints */
+  .nexthints{font-size:12.5px;color:var(--muted);margin-top:8px;min-height:1.2em}
+  .nexthints b{color:var(--ink)}
+  .nexthints .nh{background:none;border:1px dashed var(--accent2);color:var(--accent);border-radius:8px;padding:3px 10px;margin-left:4px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.12s}
+  .nexthints .nh:hover{border-style:solid;background:color-mix(in srgb,var(--accent) 10%,transparent)}
   .pbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:12px}
   .pbar .tempo{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin-left:auto}
   .pbar input[type=range]{accent-color:var(--accent)}
@@ -166,8 +180,11 @@
     <div class="palgrp"><div class="lab">Secondary dominants</div><div id="palSec"></div></div>
     <div class="palgrp"><div class="lab">Borrowed / modal interchange</div><div id="palBor"></div></div>
     <div class="palgrp"><div class="lab">Presets</div><div id="presets"></div></div>
-    <div class="ihead" style="margin-top:6px">Your progression — click a chord to remove it</div>
+    <div class="ihead" style="margin-top:6px">Your progression — click a chord to remove it, click its note glyph to change the hold</div>
     <div class="strip" id="progStrip"></div>
+    <div class="nexthints" id="nextHints"></div>
+    <div class="loopwrap"><div id="loopRing" aria-label="Loop ring — the progression as a spinning loop; tap the center to play"></div>
+      <div class="loopcap">the loop, as a wheel — arcs are holds, the needle is now · tap center to play · scroll to nudge tempo</div></div>
     <div class="pbar">
       <button class="btn" id="progPlay"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg> Play</button>
       <button class="btn ghost" id="progLoop"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> Loop</button>
@@ -378,22 +395,60 @@ function extras(mode){
     bor:[['IV',5,'maj'],['I (Picardy)',0,'maj'],['ii',2,'min'],['♭II',1,'maj']],
   };
 }
+// ---- the preset library: researched progressions with CANONICAL durations ----
+// (12-bar blues really holds bars 9-10 as V then IV, one full bar each; rhythm
+// changes really moves in 2-beat cells.) Each carries a famous-song example.
+// Minor-mode romans are Aeolian-spelled (VII = the flat-7 major chord).
+const PROG_LIB=[
+ {name:'12-Bar Blues',genre:'blues',mode:'maj',song:'Sweet Home Chicago — Robert Johnson',steps:[['I7',16],['IV7',8],['I7',8],['V7',4],['IV7',4],['I7',4],['V7',4]]},
+ {name:'Quick-Change Blues',genre:'blues',mode:'maj',song:'Before You Accuse Me — Bo Diddley',steps:[['I7',4],['IV7',4],['I7',8],['IV7',8],['I7',8],['V7',4],['IV7',4],['I7',4],['V7',4]]},
+ {name:'8-Bar Blues',genre:'blues',mode:'maj',song:'Key to the Highway — Big Bill Broonzy',steps:[['I7',4],['V7',4],['IV7',8],['I7',4],['V7',4],['I7',4],['V7',4]]},
+ {name:'Doo-Wop',genre:'50s',mode:'maj',song:'Duke of Earl — Gene Chandler',steps:[['I',4],['vi',4],['IV',4],['V',4]]},
+ {name:'50s Turnaround',genre:'50s',mode:'maj',song:'Heart and Soul — Hoagy Carmichael',steps:[['I',2],['vi',2],['ii',2],['V7',2]]},
+ {name:'Axis',genre:'pop',mode:'maj',song:'Let It Be — The Beatles',steps:[['I',4],['V',4],['vi',4],['IV',4]]},
+ {name:'Axis (sad rotation)',genre:'pop',mode:'maj',song:'Numb — Linkin Park',steps:[['vi',4],['IV',4],['I',4],['V',4]]},
+ {name:'Pachelbel',genre:'classical',mode:'maj',song:'Canon in D — Pachelbel',steps:[['I',4],['V',4],['vi',4],['iii',4],['IV',4],['I',4],['IV',4],['V',4]]},
+ {name:'Jazz ii–V–I',genre:'jazz',mode:'maj',song:'Tune Up — Miles Davis',steps:[['ii7',4],['V7',4],['I',8]]},
+ {name:'Rhythm Changes (A)',genre:'jazz',mode:'maj',song:'I Got Rhythm — Gershwin',steps:[['I',2],['VI7',2],['ii7',2],['V7',2],['I',2],['VI7',2],['ii7',2],['V7',2],['I',2],['I7',2],['IV',2],['iv',2],['I',2],['VI7',2],['ii7',2],['V7',2]]},
+ {name:'Folk Three-Chord',genre:'folk',mode:'maj',song:'Twist and Shout — The Beatles',steps:[['I',4],['IV',4],['V7',8]]},
+ {name:'Pop-Punk',genre:'punk',mode:'maj',song:'All the Small Things — blink-182',steps:[['I',4],['V',4],['IV',4],['V',4]]},
+ {name:'Creep Changes',genre:'alt-rock',mode:'maj',song:'Creep — Radiohead',steps:[['I',8],['III7',8],['IV',8],['iv',8]]},
+ {name:'Gospel IV–iv',genre:'soul',mode:'maj',song:'In My Life — The Beatles',steps:[['I',4],['IV',4],['iv',4],['I',4]]},
+ {name:'Mixolydian Vamp',genre:'southern rock',mode:'maj',song:'Sweet Home Alabama — Skynyrd',steps:[['I',4],['bVII',4],['IV',8]]},
+ {name:'Royal Road',genre:'j-pop',mode:'maj',song:'Kiseki — GReeeeN',steps:[['IVmaj7',4],['V7',4],['iii7',4],['vi',4]]},
+ {name:'Andalusian',genre:'flamenco',mode:'min',song:'Runaway — Del Shannon',steps:[['i',4],['VII',4],['VI',4],['V7',4]]},
+ {name:'Minor ii–V–i',genre:'jazz',mode:'min',song:'Blue Bossa — Kenny Dorham',steps:[['iiø7',4],['V7',4],['i',8]]},
+ {name:'Minor Epic',genre:'rock',mode:'min',song:'Zombie — The Cranberries',steps:[['i',4],['VI',4],['III',4],['VII',4]]},
+ {name:'Dorian Vamp',genre:'latin',mode:'min',song:'Oye Como Va — Santana',steps:[['i7',4],['IV7',4]]},
+ {name:'Aeolian Vamp',genre:'rock',mode:'min',song:'All Along the Watchtower — Hendrix',steps:[['i',2],['VII',2],['VI',2],['VII',2]]},
+ {name:'Harmonic-minor cadence',genre:'classical',mode:'min',song:'—',steps:[['iiø7',4],['V7',4],['i',4],['i',4]]},
+];
+// roman numeral → {semis, q, label} in a given mode (Aeolian spelling in minor)
+function parseRN(rn,mode){
+  const m=rn.match(/^(b?)([iv]+|[IV]+)(maj7|ø7|m7b5|°7|°|7)?$/i);
+  const flat=rn.startsWith('b');
+  const body=rn.replace(/^b/,'').match(/^([iv]+|[IV]+)/i)[1];
+  const suffix=rn.replace(/^b/,'').slice(body.length);
+  const isUpper=body===body.toUpperCase();
+  const DEG={i:1,ii:2,iii:3,iv:4,v:5,vi:6,vii:7}[body.toLowerCase()];
+  const MAJ_SEMIS=[null,0,2,4,5,7,9,11], MIN_SEMIS=[null,0,2,3,5,7,8,10];
+  let semis=(mode==='min'?MIN_SEMIS:MAJ_SEMIS)[DEG];
+  if(flat)semis=(MAJ_SEMIS[DEG]+11)%12;                    // bVII etc: lowered MAJOR degree
+  let q;
+  if(suffix==='maj7')q='maj7';
+  else if(suffix==='ø7'||suffix==='m7b5')q='m7b5';
+  else if(suffix==='°7')q='dim7';
+  else if(suffix==='°')q='dim';
+  else if(suffix==='7')q=isUpper?'dom7':'min7';
+  else q=isUpper?'maj':'min';
+  const label=rn.replace(/^b/,'♭');
+  return {semis:((semis%12)+12)%12,q,label};
+}
 function presets(mode){
-  if(mode==='maj') return [
-    {n:'I–V–vi–IV', c:[['I',0,'maj'],['V',7,'maj'],['vi',9,'min'],['IV',5,'maj']]},
-    {n:'I–vi–IV–V (50s)', c:[['I',0,'maj'],['vi',9,'min'],['IV',5,'maj'],['V',7,'maj']]},
-    {n:'ii–V–I (jazz)', c:[['ii7',2,'min7'],['V7',7,'dom7'],['Imaj7',0,'maj7']]},
-    {n:'I–IV–V', c:[['I',0,'maj'],['IV',5,'maj'],['V',7,'maj']]},
-    {n:'vi–IV–I–V', c:[['vi',9,'min'],['IV',5,'maj'],['I',0,'maj'],['V',7,'maj']]},
-    {n:'12-bar blues', c:[['I7',0,'dom7'],['I7',0,'dom7'],['I7',0,'dom7'],['I7',0,'dom7'],['IV7',5,'dom7'],['IV7',5,'dom7'],['I7',0,'dom7'],['I7',0,'dom7'],['V7',7,'dom7'],['IV7',5,'dom7'],['I7',0,'dom7'],['V7',7,'dom7']]},
-  ];
-  return [
-    {n:'i–♭VI–♭III–♭VII', c:[['i',0,'min'],['♭VI',8,'maj'],['♭III',3,'maj'],['♭VII',10,'maj']]},
-    {n:'i–iv–v', c:[['i',0,'min'],['iv',5,'min'],['v',7,'min']]},
-    {n:'i–iv–V (harmonic)', c:[['i',0,'min'],['iv',5,'min'],['V',7,'maj']]},
-    {n:'ii°–V–i', c:[['ii°',2,'dim'],['V7',7,'dom7'],['i',0,'min']]},
-    {n:'i–♭VII–♭VI–V', c:[['i',0,'min'],['♭VII',10,'maj'],['♭VI',8,'maj'],['V',7,'maj']]},
-  ];
+  return PROG_LIB.filter(p=>p.mode===mode).map(p=>({
+    n:p.name, song:p.song, genre:p.genre,
+    c:p.steps.map(([rn,beats])=>{const r=parseRN(rn,mode);return [r.label,r.semis,r.q,beats];})
+  }));
 }
 let curPresets=[];
 // activePreset: index of the currently-loaded preset, or -1 if manually edited
@@ -413,7 +468,7 @@ function renderPalettes(dia){
   $('palSec').innerHTML = palHTML(ex.sec);
   $('palBor').innerHTML = palHTML(ex.bor);
   curPresets=presets(selMode);
-  $('presets').innerHTML = curPresets.map((p,i)=>`<button class="preset" data-i="${i}" aria-pressed="false">${p.n}</button>`).join('');
+  $('presets').innerHTML = curPresets.map((p,i)=>`<button class="preset" data-i="${i}" aria-pressed="false" title="${p.song?p.song+' · ':''}${p.genre}">${p.n}</button>`).join('');
   // re-apply active state after re-render
   if(activePreset>=0 && activePreset<curPresets.length) setActivePreset(activePreset);
 }
@@ -423,13 +478,47 @@ let prog=[];
 // restore progression from prefs
 try{ const saved=Stats.getPref(TOOL_ID,'prog',null); if(saved){ const arr=JSON.parse(saved); if(Array.isArray(arr))prog=arr; } }catch(e){}
 
+// ---- per-chord durations: whole / half / quarter (+ a 2-bar hold) ----
+// beats per chord; chips stretch with their length so the strip READS as rhythm
+const DUR_CYCLE=[4,2,1,8];
+const beatsOf=c=>{const b=+c.beats;return Number.isFinite(b)&&b>=1&&b<=64?Math.round(b):4;};
+const durGlyph=b=>({8:'𝅝𝅝',4:'𝅝',2:'𝅗𝅥',1:'♩'}[b]||((b/4)+'𝅝'));   // long holds read as bar counts
+const durName=b=>({8:'2 bars',4:'whole (1 bar)',2:'half',1:'quarter'}[b]||((b/4)+' bars'));
 function renderProg(){
   $('progStrip').innerHTML = prog.length
-    ? prog.map((c,i)=>`<button class="pchip" data-i="${i}"><span class="rn">${c.label}</span>${chordNameL((tonicPc()+c.semis)%12,c.q,c.label)}<span class="x">×</span></button>`).join('')
+    ? prog.map((c,i)=>{const b=beatsOf(c);return `<button class="pchip" data-i="${i}" style="min-width:${Math.min(140,34+b*13)}px"><span class="rn">${c.label}</span>${chordNameL((tonicPc()+c.semis)%12,c.q,c.label)}<span class="pdur" data-i="${i}" title="${durName(b)} — click to change">${durGlyph(b)}</span><span class="x">×</span></button>`;}).join('')
     : '<span class="muted2">Click chords above to build a progression, or load a preset.</span>';
+  buildLoopRing();
+  nextChordHints();
   savePrefs();
 }
-function appendChord(label,semis,q){ prog.push({label,semis,q}); clearActivePreset(); renderProg(); playChord((tonicPc()+semis)%12,q); }
+function appendChord(label,semis,q,beats){ prog.push({label,semis,q,beats:beats||4}); clearActivePreset(); renderProg(); playChord((tonicPc()+semis)%12,q); }
+
+// ---- "what usually comes next": transition counts mined from the preset library
+// (the poor man's Hooktheory — ranked by how often real progressions make the move)
+function nextChordHints(){
+  const host=$('nextHints'); if(!host)return;
+  if(!prog.length){ host.innerHTML=''; return; }
+  const last=prog[prog.length-1];
+  const key=c=>c.semis+':'+c.q;
+  const counts={};
+  presets(selMode).forEach(p=>{
+    const seq=p.c.map(([label,semis,q])=>({label,semis,q}));
+    seq.forEach((c,i)=>{
+      const nxt=seq[(i+1)%seq.length];                  // progressions loop — count the wrap too
+      if(key(c)!==key(last))return;
+      if(key(nxt)===key(c))return;                      // self-repeats aren't a suggestion
+      const k=key(nxt);
+      counts[k]=counts[k]||{n:0,c:nxt}; counts[k].n++;
+    });
+  });
+  const top=Object.values(counts).sort((a,b)=>b.n-a.n).slice(0,3);
+  host.innerHTML = top.length
+    ? 'after <b>'+last.label+'</b>, songs usually go: '+top.map(t=>
+        `<button class="nh" data-semis="${t.c.semis}" data-q="${t.c.q}" data-lbl="${t.c.label}">${t.c.label}</button>`).join(' ')
+    : '';
+  host.querySelectorAll('.nh').forEach(b=>b.addEventListener('click',()=>appendChord(b.dataset.lbl,+b.dataset.semis,b.dataset.q)));
+}
 
 // ---- audio ----
 function playChord(rootPc,q,at,dur,dest){ const base=48+(((rootPc%12)+12)%12); (VOICE[q]||VOICE.maj).forEach(iv=>tone(base+iv, at||0, dur||1.3, 0.21, dest)); }
@@ -450,13 +539,11 @@ function scheduleTick(a, at, accented){
   o.connect(g).connect(a.destination);
   o.start(at); o.stop(at+dur+0.002);
 }
-function scheduleClickTrack(a, startAbs, numChords, beatDur){
-  // one accent per chord (beat 1), one plain tick per second beat
-  for(let i=0;i<numChords;i++){
-    const cAt=startAbs+i*beatDur*2;
-    scheduleTick(a, cAt, true);           // beat 1 — accented
-    scheduleTick(a, cAt+beatDur, false);  // beat 2
-  }
+function scheduleClickTrack(a, startAbs, beatDur){
+  // a tick on every beat across the whole progression; accent lands on each chord's downbeat
+  const starts=new Set(); let acc=0;
+  prog.forEach(c=>{ starts.add(acc); acc+=beatsOf(c); });
+  for(let b=0;b<acc;b++) scheduleTick(a, startAbs+b*beatDur, starts.has(b));
 }
 
 // progression playback
@@ -475,19 +562,97 @@ if(drumsOn) $('progDrums').classList.add('on');
 // Play button face: EQ while drums groove, Stop while otherwise playing, Play at rest.
 function setPlayFace(){ $('progPlay').innerHTML = pPlaying ? ((drumsOn?ICON_EQ:ICON_STOP)+' Stop') : (ICON_PLAY+' Play'); }
 function stopProg(){ pPlaying=false; Drums.stop(); if(pBus){try{pBus.disconnect()}catch(e){}pBus=null;} cancelAnimationFrame(pRaf); document.querySelectorAll('#progStrip .pchip').forEach(e=>e.classList.remove('on')); setPlayFace(); }
-function chordDur(){ return 60/tempo*2; }            // 2 beats per chord
+const beatDurS=()=>60/tempo;
+const progBeats=()=>prog.reduce((a,c)=>a+beatsOf(c),0);   // total beats in the loop
 // tone() schedules at a.currentTime + offset, so pass RELATIVE offsets but anchor them to an
 // ABSOLUTE start (pStart) shared with the highlight clock. On loop we pass the previous loop's
 // exact end as startAbs so playback is gapless (no re-base to currentTime+lead each cycle).
 function scheduleProg(a, startAbs){
-  const dur=chordDur(); pStart = startAbs!=null ? startAbs : a.currentTime+0.08;
-  prog.forEach((c,i)=>{ const root=(tonicPc()+c.semis)%12; const off=(pStart-a.currentTime)+i*dur; playChord(root,c.q,Math.max(0,off),dur*0.96,pBus); });
-  scheduleClickTrack(a, pStart, prog.length, 60/tempo);
+  const bd=beatDurS(); pStart = startAbs!=null ? startAbs : a.currentTime+0.08;
+  let beat=0;
+  prog.forEach(c=>{ const root=(tonicPc()+c.semis)%12; const off=(pStart-a.currentTime)+beat*bd;
+    playChord(root,c.q,Math.max(0,off),beatsOf(c)*bd*0.96,pBus); beat+=beatsOf(c); });
+  scheduleClickTrack(a, pStart, bd);
 }
-function animateProg(a){ const dur=chordDur(); const chips=[...document.querySelectorAll('#progStrip .pchip')]; const tick=()=>{ if(!pPlaying)return; const idx=Math.floor((a.currentTime-pStart)/dur); chips.forEach((e,i)=>e.classList.toggle('on',i===idx)); if(idx>=prog.length){ if(loop){ scheduleProg(a, pStart+prog.length*dur); animateProg(a); return; } stopProg(); return; } pRaf=requestAnimationFrame(tick); }; pRaf=requestAnimationFrame(tick); }
+function animateProg(a){ const bd=beatDurS(); const chips=[...document.querySelectorAll('#progStrip .pchip')];
+  // chord boundaries in beats, for the highlight clock
+  const bounds=[]; let acc=0; prog.forEach(c=>{ bounds.push(acc); acc+=beatsOf(c); });
+  const total=acc;
+  const tick=()=>{ if(!pPlaying)return;
+    const beat=(a.currentTime-pStart)/bd;
+    let idx=-1; for(let i=0;i<bounds.length;i++){ if(beat>=bounds[i]) idx=i; }
+    if(beat<0)idx=-1;
+    chips.forEach((e,i)=>e.classList.toggle('on',i===idx));
+    if(typeof drawLoopRing==='function')drawLoopRing(beat,total,bounds);
+    if(beat>=total){ if(loop){ scheduleProg(a, pStart+total*bd); animateProg(a); return; } stopProg(); return; }
+    pRaf=requestAnimationFrame(tick); };
+  pRaf=requestAnimationFrame(tick); }
 function playProg(){ if(!prog.length)return; stopProg(); const a=ac(); if(a.resume)a.resume(); pBus=a.createGain(); pBus.connect(a.destination); pPlaying=true; setPlayFace(); scheduleProg(a); // scheduleProg sets pStart on the shared audio clock
   if(drumsOn){ Drums.setVol(+$('drVol').value/100); Drums.start(tempo,$('drPat').value,1,pStart); } // drums lock to pStart at the same tempo; loop with the internal pointer
   animateProg(a); Stats.activity(TOOL_ID); }
+
+// ==== THE LOOP RING: the progression as a spinning wheel — arcs are holds,
+// a radar needle is "now", the center is the transport. Tap center to play,
+// tap an arc to hear that chord (or hot-swap the highlight while running),
+// scroll anywhere on the ring to nudge tempo. Beat ticks ring the outside;
+// bar ticks are heavier. The kick pulses the hub when drums groove. ====
+const LR={CX:130,CY:130,R0:78,R1:114,TICK:120};
+function lrArc(r0,r1,a0,a1){
+  // degenerate/full-circle safe sector
+  if(a1-a0>=359.9)a1=a0+359.9;
+  const P=(r,a)=>{const t=(a-90)*Math.PI/180;return [LR.CX+r*Math.cos(t),LR.CY+r*Math.sin(t)];};
+  const big=a1-a0>180?1:0, f=n=>n.toFixed(2);
+  const [x0,y0]=P(r1,a0),[x1,y1]=P(r1,a1),[x2,y2]=P(r0,a1),[x3,y3]=P(r0,a0);
+  return `M${f(x0)} ${f(y0)} A${r1} ${r1} 0 ${big} 1 ${f(x1)} ${f(y1)} L${f(x2)} ${f(y2)} A${r0} ${r0} 0 ${big} 0 ${f(x3)} ${f(y3)} Z`;
+}
+const LR_COL={maj:'hsl(38 88% 54%)',maj7:'hsl(38 88% 54%)',dom7:'hsl(28 85% 50%)',min:'hsl(210 34% 56%)',min7:'hsl(210 34% 56%)',dim:'hsl(8 52% 50%)',dim7:'hsl(8 52% 50%)',m7b5:'hsl(8 52% 50%)',aug:'hsl(300 30% 55%)'};
+function buildLoopRing(){
+  const host=$('loopRing'); if(!host)return;
+  if(!prog.length){ host.innerHTML=''; host.parentElement.style.display='none'; return; }
+  host.parentElement.style.display='';
+  const total=progBeats(); let g='';
+  // beat + bar ticks around the outside
+  for(let b=0;b<total;b++){ const a=(b/total)*360-90, t=a*Math.PI/180;
+    const r0=LR.R1+2, r1=LR.R1+(b%4===0?9:5);
+    g+=`<line x1="${LR.CX+r0*Math.cos(t)}" y1="${LR.CY+r0*Math.sin(t)}" x2="${LR.CX+r1*Math.cos(t)}" y2="${LR.CY+r1*Math.sin(t)}" stroke="var(--line)" stroke-width="${b%4===0?2:1}"/>`; }
+  // chord arcs
+  let acc=0;
+  prog.forEach((c,i)=>{ const b=beatsOf(c), a0=acc/total*360, a1=(acc+b)/total*360;
+    const col=LR_COL[c.q]||LR_COL.maj;
+    g+=`<path class="lr-arc" data-i="${i}" d="${lrArc(LR.R0,LR.R1,a0,a1)}" fill="${col}" opacity="0.32" stroke="var(--panel)" stroke-width="2" style="cursor:pointer"><title>${c.label} · ${chordNameL((tonicPc()+c.semis)%12,c.q,c.label)} · ${durName(beatsOf(c))}</title></path>`;
+    // label at the arc's angular midpoint
+    const mid=((a0+a1)/2-90)*Math.PI/180, rL=(LR.R0+LR.R1)/2;
+    g+=`<text x="${LR.CX+rL*Math.cos(mid)}" y="${LR.CY+rL*Math.sin(mid)+4}" text-anchor="middle" font-size="${b>=2?12:9.5}" font-weight="700" fill="var(--ink)" style="pointer-events:none">${c.label}</text>`;
+    acc+=b; });
+  // the needle (rotated per frame) + hub transport
+  g+=`<g id="lrNeedle" style="visibility:hidden"><line x1="${LR.CX}" y1="${LR.CY}" x2="${LR.CX}" y2="${LR.CY-LR.R1-2}" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/><circle cx="${LR.CX}" cy="${LR.CY-LR.R1-2}" r="4" fill="var(--accent)"/></g>`;
+  g+=`<circle id="lrHub" cx="${LR.CX}" cy="${LR.CY}" r="30" fill="var(--panel2,#1f242e)" stroke="var(--line)" stroke-width="2" style="cursor:pointer"/>`;
+  g+=`<g id="lrFace" style="pointer-events:none">${pPlaying?`<rect x="${LR.CX-9}" y="${LR.CY-9}" width="18" height="18" rx="3" fill="var(--accent)"/>`:`<polygon points="${LR.CX-7},${LR.CY-11} ${LR.CX+12},${LR.CY} ${LR.CX-7},${LR.CY+11}" fill="var(--accent)"/>`}</g>`;
+  host.innerHTML=`<svg viewBox="0 0 260 260" style="display:block;width:min(260px,72vw);margin:0 auto;min-width:0">${g}</svg>`;
+  host.querySelectorAll('.lr-arc').forEach(p=>p.addEventListener('click',()=>{
+    const c=prog[+p.dataset.i]; if(!c)return;
+    if(!pPlaying)playChord((tonicPc()+c.semis)%12,c.q);
+  }));
+  const hub=host.querySelector('#lrHub');
+  if(hub)hub.addEventListener('click',()=>{ pPlaying?stopProg():playProg(); buildLoopRing(); });
+  host.querySelector('svg').addEventListener('wheel',e=>{ e.preventDefault();
+    tempo=Math.max(50,Math.min(170,tempo+(e.deltaY<0?2:-2)));
+    $('progTempo').value=tempo; $('tempoVal').textContent=tempo; savePrefs();
+    if(pPlaying)playProg();
+  },{passive:false});
+}
+// per-frame: rotate the needle, light the live arc, thump the hub on the beat
+function drawLoopRing(beat,total,bounds){
+  const host=$('loopRing'); if(!host||!host.firstChild)return;
+  const needle=host.querySelector('#lrNeedle'); if(!needle)return;
+  if(!pPlaying||beat<0||beat>=total){ needle.style.visibility='hidden'; return; }
+  needle.style.visibility='visible';
+  needle.setAttribute('transform',`rotate(${(beat/total)*360} ${LR.CX} ${LR.CY})`);
+  let idx=-1; for(let i=0;i<bounds.length;i++)if(beat>=bounds[i])idx=i;
+  host.querySelectorAll('.lr-arc').forEach((p,i)=>p.setAttribute('opacity',i===idx?'0.85':'0.32'));
+  const hub=host.querySelector('#lrHub');
+  if(hub){ const ph=beat%1; hub.setAttribute('r',String(30+(ph<0.12?2.5*(1-ph/0.12):0))); }
+}
 
 // ---- guitar chord diagrams (chords-db, loaded by the module below) ----
 const CDB_KEYS=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
@@ -659,8 +824,15 @@ $('chords').addEventListener('click',e=>{ const b=e.target.closest('button'); if
 $('related').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; select(+b.dataset.pos,b.dataset.mode); });
 ['palDia','palSec','palBor'].forEach(id=>$(id).addEventListener('click',e=>{ const b=e.target.closest('.pal'); if(!b)return; appendChord(b.dataset.lbl,+b.dataset.semis,b.dataset.q); }));
 $('presets').addEventListener('click',e=>{ const b=e.target.closest('.preset'); if(!b)return;
-  const i=+b.dataset.i; prog=curPresets[i].c.map(([label,semis,q])=>({label,semis,q})); stopProg(); setActivePreset(i); renderProg(); });
-$('progStrip').addEventListener('click',e=>{ const b=e.target.closest('.pchip'); if(!b)return; prog.splice(+b.dataset.i,1); stopProg(); clearActivePreset(); renderProg(); });
+  const i=+b.dataset.i; prog=curPresets[i].c.map(([label,semis,q,beats])=>({label,semis,q,beats:beats||4})); stopProg(); setActivePreset(i); renderProg(); });
+$('progStrip').addEventListener('click',e=>{ const b=e.target.closest('.pchip'); if(!b)return;
+  const d=e.target.closest('.pdur');
+  if(d){ // cycle the hold: whole → half → quarter → 2 bars
+    const c=prog[+d.dataset.i]; if(!c)return;
+    c.beats=DUR_CYCLE[(DUR_CYCLE.indexOf(beatsOf(c))+1)%DUR_CYCLE.length];
+    clearActivePreset(); renderProg(); if(pPlaying)playProg(); return;
+  }
+  prog.splice(+b.dataset.i,1); stopProg(); clearActivePreset(); renderProg(); });
 $('progPlay').onclick=()=>{ pPlaying?stopProg():playProg(); };
 $('progClear').onclick=()=>{ prog=[]; stopProg(); clearActivePreset(); renderProg(); };
 $('progLoop').onclick=()=>{ loop=!loop; $('progLoop').classList.toggle('on',loop); savePrefs(); };
