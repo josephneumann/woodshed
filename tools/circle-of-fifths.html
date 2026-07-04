@@ -89,6 +89,14 @@
   .nexthints b{color:var(--ink)}
   .nexthints .nh{background:none;border:1px dashed var(--accent2);color:var(--accent);border-radius:8px;padding:3px 10px;margin-left:4px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.12s}
   .nexthints .nh:hover{border-style:solid;background:color-mix(in srgb,var(--accent) 10%,transparent)}
+  .mirror-hl{stroke:var(--accent)!important;stroke-width:3.5!important;filter:brightness(1.25)}
+  .gv{animation:gvFlow 1.4s linear infinite}
+  @keyframes gvFlow{to{stroke-dashoffset:-22}}
+  @media(prefers-reduced-motion:reduce){.gv{animation:none}}
+  .nh-dial{margin-left:10px;display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;vertical-align:middle}
+  .nh-dial button{background:none;border:0;color:var(--muted);font-size:11px;padding:3px 8px;cursor:pointer;font-family:inherit}
+  .nh-dial button.sel{background:var(--panel);color:var(--accent);font-weight:650}
+  .lr-arc.accent{filter:drop-shadow(0 0 4px var(--accent))}
   .pbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:12px}
   .pbar .tempo{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin-left:auto}
   .pbar input[type=range]{accent-color:var(--accent)}
@@ -120,6 +128,12 @@
           <button data-l="roman">Roman numerals</button>
           <button data-l="both">Both</button>
           <button data-l="keysig">Key signatures</button>
+        </div>
+      </label>
+      <label>Overlays
+        <div class="seg" id="overlays">
+          <button id="ovMirror" title="Negative harmony: reflect across the tonic–dominant axis — hover any key to see its mirror; clicks play both">Mirror</button>
+          <button id="ovGravity" title="Functional gravity: the pull toward home — iii→vi→ii→V→I, and IV leaning in">Gravity</button>
         </div>
       </label>
       <span class="hint" style="margin:0">Tip: click the outer ring for a major key, the inner ring for a minor key. Arrow keys ◄ ► rotate, ▲ ▼ switch major/minor.</span>
@@ -184,7 +198,7 @@
     <div class="strip" id="progStrip"></div>
     <div class="nexthints" id="nextHints"></div>
     <div class="loopwrap"><div id="loopRing" aria-label="Loop ring — the progression as a spinning loop; tap the center to play"></div>
-      <div class="loopcap">the loop, as a wheel — arcs are holds, the needle is now · tap center to play · scroll to nudge tempo</div></div>
+      <div class="loopcap">the loop, as a wheel — tap center to play · tap an arc to hear it · drag along an arc to stretch its hold · double-tap = accent · scroll = tempo</div></div>
     <div class="pbar">
       <button class="btn" id="progPlay"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg> Play</button>
       <button class="btn ghost" id="progLoop"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> Loop</button>
@@ -192,6 +206,7 @@
       <select id="drPat" style="background:var(--panel2,#1f242e);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:13px;cursor:pointer"><option value="straight">Straight</option><option value="swing">Swing</option></select>
       <label class="click-wrap">Drums <input type="range" id="drVol" min="0" max="100" value="25" style="accent-color:var(--accent);width:70px"></label>
       <button class="btn ghost" id="progClear">Clear</button>
+      <button class="btn ghost" id="progMidi" title="Download the progression as a .mid file (chords, holds, tempo)"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg> MIDI</button>
       <label class="click-wrap"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg><input type="checkbox" id="clickTrack"> Click</label>
       <span class="tempo">Tempo <input type="range" id="progTempo" min="50" max="170" value="100"> <span id="tempoVal">100</span> bpm</span>
     </div>
@@ -318,6 +333,9 @@ function sector(r0,r1,a0,a1){const[x0,y0]=pol(r1,a0),[x1,y1]=pol(r1,a1),[x2,y2]=
 let selPos=Stats.getPref(TOOL_ID,'selPos',0);
 let selMode=Stats.getPref(TOOL_ID,'selMode','maj');
 let labelMode=Stats.getPref(TOOL_ID,'labelMode','name');
+let mirrorOn=Stats.getPref(TOOL_ID,'mirror',false);
+let gravityOn=Stats.getPref(TOOL_ID,'gravity',false);
+let hintMode=Stats.getPref(TOOL_ID,'hintMode','safe');
 let lastDia=null;
 
 function savePrefs(){
@@ -361,7 +379,49 @@ function render(){
   g+=`<circle cx="${CX}" cy="${CY}" r="${CTR}" fill="var(--panel)" stroke="var(--line)" stroke-width="2"/>`;
   g+=`<text x="${CX}" y="${CY-6}" fill="var(--ink)" font-size="42" font-weight="580" text-anchor="middle" style="pointer-events:none;font-family:var(--font-display)">${ctrName}</text>`;
   g+=`<text x="${CX}" y="${CY+22}" fill="var(--muted)" font-size="14" text-anchor="middle" style="pointer-events:none">${selMode==='maj'?'major':'minor'}</text>`;
+  // ---- overlays: negative-harmony mirror axis + functional-gravity arrows ----
+  if(mirrorOn){
+    // the reflection axis runs between the tonic and dominant sectors
+    const axisA=(selPos+0.5)*30-90;
+    const [ax0,ay0]=pol(228,axisA),[ax1,ay1]=pol(228,axisA+180);
+    g+=`<line x1="${ax0.toFixed(1)}" y1="${ay0.toFixed(1)}" x2="${ax1.toFixed(1)}" y2="${ay1.toFixed(1)}" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.75" style="pointer-events:none"/>`;
+    g+=`<text x="${pol(238,axisA)[0].toFixed(1)}" y="${pol(238,axisA)[1].toFixed(1)}" text-anchor="middle" font-size="9" fill="var(--accent)" style="pointer-events:none">mirror</text>`;
+  }
+  if(gravityOn){
+    // the pull toward home: iii→vi→ii→V→I down the diatonic ladder, IV leaning in
+    const P=o=>((selPos+o)%12+12)%12;
+    const segA=i=>i*30-90;
+    const arrows=[
+      {a0:segA(P(1)),r0:MIN[2],a1:segA(P(0)),r1:MIN[2],w:1.4},   // iii→vi
+      {a0:segA(P(0)),r0:MIN[2],a1:segA(P(-1)),r1:MIN[2],w:1.6},  // vi→ii
+      {a0:segA(P(-1)),r0:MIN[2],a1:segA(P(1)),r1:MAJ[2],w:2.0},  // ii→V
+      {a0:segA(P(1)),r0:MAJ[2],a1:segA(P(0)),r1:MAJ[2],w:3.4},   // V→I — the strong pull
+      {a0:segA(P(-1)),r0:MAJ[2],a1:segA(P(0)),r1:MAJ[2],w:2.2},  // IV→I
+    ];
+    g+=`<defs><marker id="gvArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker></defs>`;
+    arrows.forEach(ar=>{
+      const [x0,y0]=pol(ar.r0,ar.a0),[x1,y1]=pol(ar.r1,ar.a1);
+      let midA=(ar.a0+ar.a1)/2; if(Math.abs(ar.a0-ar.a1)>180)midA+=180;
+      const [cx,cy]=pol(Math.min(ar.r0,ar.r1)*0.55,midA);
+      g+=`<path class="gv" d="M${x0.toFixed(1)} ${y0.toFixed(1)} Q${cx.toFixed(1)} ${cy.toFixed(1)} ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="var(--accent)" stroke-width="${ar.w}" opacity="0.65" marker-end="url(#gvArrow)" stroke-dasharray="5 6" style="pointer-events:none"/>`;
+    });
+  }
   $('wheel').innerHTML=g;
+  // mirror hover: pair each sector with its negative-harmony reflection (quality flips)
+  if(mirrorOn){
+    const pcAt=(pos,ring)=>ring==='maj'?majRoot(pos):minRoot(pos);
+    $('wheel').querySelectorAll('path[data-pos]').forEach(el=>{
+      el.addEventListener('mouseenter',()=>{
+        const pc=pcAt(+el.dataset.pos,el.dataset.ring);
+        const mpc=((2*tonicPc()-pc)%12+12)%12, mring=el.dataset.ring==='maj'?'min':'maj';
+        for(let i=0;i<12;i++) if(pcAt(i,mring)===mpc){
+          const tgt=$('wheel').querySelector(`path[data-pos="${i}"][data-ring="${mring}"]`);
+          if(tgt)tgt.classList.add('mirror-hl');
+        }
+      });
+      el.addEventListener('mouseleave',()=>$('wheel').querySelectorAll('.mirror-hl').forEach(x=>x.classList.remove('mirror-hl')));
+    });
+  }
   renderInfo(dia);
   renderPalettes(dia);
   renderProg();
@@ -513,15 +573,33 @@ function nextChordHints(){
     });
   });
   const top=Object.values(counts).sort((a,b)=>b.n-a.n).slice(0,3);
-  host.innerHTML = top.length
-    ? 'after <b>'+last.label+'</b>, songs usually go: '+top.map(t=>
-        `<button class="nh" data-semis="${t.c.semis}" data-q="${t.c.q}" data-lbl="${t.c.label}">${t.c.label}</button>`).join(' ')
+  let picks, lead;
+  if(hintMode==='spicy'){
+    // adventurous: the top target's own secondary dominant + borrowed colour
+    picks=[]; const seen=new Set([key(last)]);
+    if(top[0]){ const t=top[0].c, v7={label:'V7/'+t.label,semis:(t.semis+7)%12,q:'dom7'};
+      if(!seen.has(key(v7))){picks.push(v7);seen.add(key(v7));} }
+    (selMode==='maj'
+      ? [{label:'iv',semis:5,q:'min'},{label:'♭VII',semis:10,q:'maj'},{label:'♭VI',semis:8,q:'maj'}]
+      : [{label:'IV',semis:5,q:'maj'},{label:'♭II',semis:1,q:'maj'},{label:'V7',semis:7,q:'dom7'}]
+    ).forEach(c=>{ if(picks.length<3&&!seen.has(key(c))){picks.push(c);seen.add(key(c));} });
+    lead='after <b>'+last.label+'</b>, get adventurous: ';
+  } else {
+    picks=top.map(t=>t.c);
+    lead='after <b>'+last.label+'</b>, songs usually go: ';
+  }
+  const dial=`<span class="nh-dial"><button data-m="safe" class="${hintMode==='safe'?'sel':''}">safe</button><button data-m="spicy" class="${hintMode==='spicy'?'sel':''}">spicy</button></span>`;
+  host.innerHTML = picks.length
+    ? lead+picks.map(t=>`<button class="nh" data-semis="${t.semis}" data-q="${t.q}" data-lbl="${t.label}">${t.label}</button>`).join(' ')+dial
     : '';
   host.querySelectorAll('.nh').forEach(b=>b.addEventListener('click',()=>appendChord(b.dataset.lbl,+b.dataset.semis,b.dataset.q)));
+  host.querySelectorAll('.nh-dial button').forEach(b=>b.addEventListener('click',()=>{
+    hintMode=b.dataset.m; Stats.setPref(TOOL_ID,'hintMode',hintMode); nextChordHints();
+  }));
 }
 
 // ---- audio ----
-function playChord(rootPc,q,at,dur,dest){ const base=48+(((rootPc%12)+12)%12); (VOICE[q]||VOICE.maj).forEach(iv=>tone(base+iv, at||0, dur||1.3, 0.21, dest)); }
+function playChord(rootPc,q,at,dur,dest,vol){ const base=48+(((rootPc%12)+12)%12); (VOICE[q]||VOICE.maj).forEach(iv=>tone(base+iv, at||0, dur||1.3, vol||0.21, dest)); }
 function playTonic(){ const d=diatonic(selPos,selMode); playChord(d[0].root,d[0].q); }
 function playCadence(){ const d=diatonic(selPos,selMode); const seq=[d[0],d[3],d[4],d[0]]; let t=0; const a=ac(); if(a.resume)a.resume(); seq.forEach(c=>{ playChord(c.root,c.q,t,0.7); t+=0.72; }); }
 function playScale(){ const ints = selMode==='maj'?[0,2,4,5,7,9,11]:[0,2,3,5,7,8,10]; const root=tonicPc(); let t=0; const a=ac(); if(a.resume)a.resume(); ints.concat([12]).forEach(iv=>{ tone(48+root+iv, t, 0.28, 0.3); t+=0.28; }); }
@@ -571,7 +649,7 @@ function scheduleProg(a, startAbs){
   const bd=beatDurS(); pStart = startAbs!=null ? startAbs : a.currentTime+0.08;
   let beat=0;
   prog.forEach(c=>{ const root=(tonicPc()+c.semis)%12; const off=(pStart-a.currentTime)+beat*bd;
-    playChord(root,c.q,Math.max(0,off),beatsOf(c)*bd*0.96,pBus); beat+=beatsOf(c); });
+    playChord(root,c.q,Math.max(0,off),beatsOf(c)*bd*0.96,pBus,c.accent?0.34:0.21); beat+=beatsOf(c); });
   scheduleClickTrack(a, pStart, bd);
 }
 function animateProg(a){ const bd=beatDurS(); const chips=[...document.querySelectorAll('#progStrip .pchip')];
@@ -590,6 +668,49 @@ function animateProg(a){ const bd=beatDurS(); const chips=[...document.querySele
 function playProg(){ if(!prog.length)return; stopProg(); const a=ac(); if(a.resume)a.resume(); pBus=a.createGain(); pBus.connect(a.destination); pPlaying=true; setPlayFace(); scheduleProg(a); // scheduleProg sets pStart on the shared audio clock
   if(drumsOn){ Drums.setVol(+$('drVol').value/100); Drums.start(tempo,$('drPat').value,1,pStart); } // drums lock to pStart at the same tempo; loop with the internal pointer
   animateProg(a); Stats.activity(TOOL_ID); }
+
+// ---- MIDI export: the progression as a type-0 Standard MIDI File ----
+function progToMidi(){
+  const TPQ=480, chan=0;
+  const vlq=n=>{ // variable-length quantity
+    const b=[n&0x7f]; while((n>>=7))b.unshift((n&0x7f)|0x80); return b; };
+  const ev=[]; let atTicks=0;
+  // tempo meta (microseconds per quarter)
+  ev.push({at:0,bytes:[0xff,0x51,0x03,...(t=>[t>>16&255,t>>8&255,t&255])(Math.round(60000000/tempo))]});
+  prog.forEach(c=>{
+    const root=48+(((tonicPc()+c.semis)%12)+12)%12;
+    const notes=(VOICE[c.q]||VOICE.maj).map(iv=>root+iv);
+    const vel=c.accent?108:84, len=beatsOf(c)*TPQ;
+    notes.forEach(n=>ev.push({at:atTicks,bytes:[0x90|chan,n,vel]}));
+    notes.forEach(n=>ev.push({at:atTicks+len-8,bytes:[0x80|chan,n,0]}));
+    atTicks+=len;
+  });
+  ev.push({at:atTicks,bytes:[0xff,0x2f,0x00]});
+  ev.sort((a,b)=>a.at-b.at);
+  const trk=[]; let prev=0;
+  ev.forEach(e=>{ trk.push(...vlq(e.at-prev),...e.bytes); prev=e.at; });
+  const be32=n=>[n>>24&255,n>>16&255,n>>8&255,n&255], be16=n=>[n>>8&255,n&255];
+  const bytes=[0x4d,0x54,0x68,0x64,...be32(6),...be16(0),...be16(1),...be16(TPQ),
+               0x4d,0x54,0x72,0x6b,...be32(trk.length),...trk];
+  return new Uint8Array(bytes);
+}
+$('progMidi').addEventListener('click',()=>{
+  if(!prog.length)return;
+  const k=KEYS[selPos], keyName=(selMode==='maj'?k.maj:k.min.slice(0,-1)+'m').replace(/[^A-Za-z#bm]/g,'');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([progToMidi()],{type:'audio/midi'}));
+  a.download='woodshed-progression-'+keyName+'-'+tempo+'bpm.mid';
+  a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+});
+
+// ---- overlay toggles ----
+function syncOverlayBtns(){
+  $('ovMirror').classList.toggle('sel',!!mirrorOn);
+  $('ovGravity').classList.toggle('sel',!!gravityOn);
+}
+$('ovMirror').addEventListener('click',()=>{ mirrorOn=!mirrorOn; Stats.setPref(TOOL_ID,'mirror',mirrorOn); syncOverlayBtns(); render(); });
+$('ovGravity').addEventListener('click',()=>{ gravityOn=!gravityOn; Stats.setPref(TOOL_ID,'gravity',gravityOn); syncOverlayBtns(); render(); });
+syncOverlayBtns();
 
 // ==== THE LOOP RING: the progression as a spinning wheel — arcs are holds,
 // a radar needle is "now", the center is the transport. Tap center to play,
@@ -619,7 +740,7 @@ function buildLoopRing(){
   let acc=0;
   prog.forEach((c,i)=>{ const b=beatsOf(c), a0=acc/total*360, a1=(acc+b)/total*360;
     const col=LR_COL[c.q]||LR_COL.maj;
-    g+=`<path class="lr-arc" data-i="${i}" d="${lrArc(LR.R0,LR.R1,a0,a1)}" fill="${col}" opacity="0.32" stroke="var(--panel)" stroke-width="2" style="cursor:pointer"><title>${c.label} · ${chordNameL((tonicPc()+c.semis)%12,c.q,c.label)} · ${durName(beatsOf(c))}</title></path>`;
+    g+=`<path class="lr-arc${c.accent?' accent':''}" data-i="${i}" d="${lrArc(LR.R0,LR.R1,a0,a1)}" fill="${col}" opacity="${c.accent?0.5:0.32}" stroke="${c.accent?'var(--accent)':'var(--panel)'}" stroke-width="2" style="cursor:pointer"><title>${c.label} · ${chordNameL((tonicPc()+c.semis)%12,c.q,c.label)} · ${durName(beatsOf(c))}</title></path>`;
     // label at the arc's angular midpoint
     const mid=((a0+a1)/2-90)*Math.PI/180, rL=(LR.R0+LR.R1)/2;
     g+=`<text x="${LR.CX+rL*Math.cos(mid)}" y="${LR.CY+rL*Math.sin(mid)+4}" text-anchor="middle" font-size="${b>=2?12:9.5}" font-weight="700" fill="var(--ink)" style="pointer-events:none">${c.label}</text>`;
@@ -629,10 +750,35 @@ function buildLoopRing(){
   g+=`<circle id="lrHub" cx="${LR.CX}" cy="${LR.CY}" r="30" fill="var(--panel2,#1f242e)" stroke="var(--line)" stroke-width="2" style="cursor:pointer"/>`;
   g+=`<g id="lrFace" style="pointer-events:none">${pPlaying?`<rect x="${LR.CX-9}" y="${LR.CY-9}" width="18" height="18" rx="3" fill="var(--accent)"/>`:`<polygon points="${LR.CX-7},${LR.CY-11} ${LR.CX+12},${LR.CY} ${LR.CX-7},${LR.CY+11}" fill="var(--accent)"/>`}</g>`;
   host.innerHTML=`<svg viewBox="0 0 260 260" style="display:block;width:min(260px,72vw);margin:0 auto;min-width:0">${g}</svg>`;
-  host.querySelectorAll('.lr-arc').forEach(p=>p.addEventListener('click',()=>{
-    const c=prog[+p.dataset.i]; if(!c)return;
-    if(!pPlaying)playChord((tonicPc()+c.semis)%12,c.q);
-  }));
+  // arc gestures (Patterning/OP-Z school):
+  //   tap        = hear the chord
+  //   drag along = stretch/shrink the hold, one beat per step (snaps, live preview)
+  //   double-tap = accent (rings louder, burns brighter)
+  host.querySelectorAll('.lr-arc').forEach(p=>{
+    p.addEventListener('pointerdown',e=>{
+      if(pPlaying)return;
+      const i=+p.dataset.i, c=prog[i]; if(!c)return;
+      const angOf=ev=>{const svg=$('loopRing').querySelector('svg'); if(!svg)return 0;
+        const r=svg.getBoundingClientRect();
+        const x=(ev.clientX-r.left)*(260/r.width)-LR.CX, y=(ev.clientY-r.top)*(260/r.height)-LR.CY;
+        return Math.atan2(y,x)*180/Math.PI+90;};
+      const st={b0:beatsOf(c),a0:angOf(e),total:progBeats(),moved:false};
+      const mv=ev=>{
+        let da=angOf(ev)-st.a0; while(da>180)da-=360; while(da<-180)da+=360;
+        const db=Math.round(da/(360/st.total));
+        const nb=Math.max(1,Math.min(32,st.b0+db));
+        if(nb!==beatsOf(prog[i])){ st.moved=true; prog[i].beats=nb; clearActivePreset(); renderProg(); }
+      };
+      const up=()=>{ window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up);
+        if(!st.moved)playChord((tonicPc()+c.semis)%12,c.q,0,1.1,null,c.accent?0.3:0.21); };
+      window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up);
+    });
+    p.addEventListener('dblclick',()=>{
+      const c=prog[+p.dataset.i]; if(!c)return;
+      c.accent=!c.accent; clearActivePreset(); renderProg();
+      if(pPlaying)playProg();
+    });
+  });
   const hub=host.querySelector('#lrHub');
   if(hub)hub.addEventListener('click',()=>{ pPlaying?stopProg():playProg(); buildLoopRing(); });
   host.querySelector('svg').addEventListener('wheel',e=>{ e.preventDefault();
