@@ -23,13 +23,18 @@
   .seg button:last-child{border-right:none}
   /* Amber discipline: label-mode selected state is quiet — amber fill reserved for the Play button */
   .seg button.sel{background:var(--panel);color:var(--ink);font-weight:600;border:1px solid var(--line);box-shadow:0 1px 2px hsl(26 30% 8%/.12)}
-  .layout{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
-  .wheelbox{flex:1;min-width:340px}
-  #wheel{display:block;width:100%;max-width:480px;margin:0 auto}
+  .layout{display:flex;flex-direction:column;align-items:center;gap:2px}
+  .wheelbox{width:100%;max-width:620px}
+  #wheel{display:block;width:100%;max-width:560px;margin:0 auto;outline:none;border-radius:50%}
+  #wheel:focus-visible{outline:2px solid hsl(var(--brand)/.55);outline-offset:10px}
   #wheel path{cursor:pointer;transition:opacity .1s}
   #wheel path:hover{opacity:.85}
-  .info{flex:1;min-width:280px}
-  .info h3{font-size:18px;margin:0 0 4px}
+  .info{width:100%;max-width:640px;text-align:center}
+  .info h3{font-family:var(--font-display);font-size:24px;font-weight:580;margin:2px 0 2px}
+  .info .row{justify-content:center}
+  .info .chips{justify-content:center}
+  .info .ihead{margin-top:14px}
+  .info .sig,.info .rel{display:inline-block;margin:0 8px}
   .info .sig{font-size:13px;color:var(--muted);margin-bottom:2px}
   .info .rel{font-size:13px;color:var(--muted);margin-bottom:12px}
   .ihead{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:14px 0 7px}
@@ -43,10 +48,12 @@
   .btn.ghost{background:var(--panel2,#1f242e);color:var(--ink);border:1px solid var(--line);font-weight:500}
   .btn.ghost:hover{border-color:var(--accent)}
   .btn.on{background:var(--accent2);color:#10151d}
-  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:10px}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:4px;justify-content:center}
   .legend span{display:inline-flex;align-items:center;gap:6px}.sw{width:13px;height:13px;border-radius:3px;display:inline-block}
   .hint{font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:12px}
   /* degree map */
+  .ph2row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .ph2row h2{margin:0}
   .dm-bar{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
   .dm-drill{border:1px solid hsl(var(--brand)/.55);background:none;color:hsl(var(--brand-strong));border-radius:8px;padding:6px 13px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s}
   .dm-drill:hover{background:hsl(var(--brand)/.1)}
@@ -97,6 +104,14 @@
   .nh-dial button{background:none;border:0;color:var(--muted);font-size:11px;padding:3px 8px;cursor:pointer;font-family:inherit}
   .nh-dial button.sel{background:var(--panel);color:var(--accent);font-weight:650}
   .lr-arc.accent{filter:drop-shadow(0 0 4px var(--accent))}
+  .cowriter{margin-top:16px;border-top:1px solid var(--line);padding-top:10px}
+  .cowriter summary{cursor:pointer;font-size:13px;color:var(--accent);font-weight:600;list-style:none;display:flex;align-items:center;gap:7px}
+  .cowriter summary::before{content:"▸";transition:transform .15s}
+  .cowriter[open] summary::before{transform:rotate(90deg)}
+  .cw-chips{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}
+  .cw{background:none;border:1px dashed var(--accent2);color:var(--accent);border-radius:9px;padding:5px 12px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.12s}
+  .cw:hover{border-style:solid;background:color-mix(in srgb,var(--accent) 10%,transparent)}
+  .cowriter #coachFullPage{height:440px;display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
   .pbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:12px}
   .pbar .tempo{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin-left:auto}
   .pbar input[type=range]{accent-color:var(--accent)}
@@ -152,9 +167,8 @@
         </div>
       </div>
       <div class="info">
-        <h3 id="selKey"></h3>
-        <div class="sig" id="selSig"></div>
-        <div class="rel" id="relKey"></div>
+        <h3 id="selKey" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"></h3>
+        <div style="font-size:13px;color:var(--muted)"><span class="sig" id="selSig"></span> · <span class="rel" id="relKey"></span></div>
         <div class="row">
           <button class="btn" id="playTonic"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg> Hear the chord</button>
           <button class="btn ghost" id="playCad"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg> I–IV–V–I</button>
@@ -170,12 +184,14 @@
   </div>
 
   <div class="panel">
-    <h2>Guitar shapes in this key</h2>
+    <div class="ph2row"><h2>On the neck, in this key</h2>
+      <div class="seg" id="neckView">
+        <button data-v="shapes" class="sel">Chord grips</button>
+        <button data-v="map">Degree map</button>
+      </div>
+    </div>
     <div id="shapes"></div>
-  </div>
-
-  <div class="panel">
-    <h2>Degree map — where the chords live from a barre</h2>
+    <div id="neckMap" hidden>
     <div class="dm-bar">
       <div class="seg" role="group" aria-label="Anchor string">
         <button type="button" id="dmAnchorE" aria-pressed="true">Root on E</button>
@@ -186,6 +202,7 @@
     </div>
     <div id="degMap"></div>
     <div class="hint" id="degRule"></div>
+    </div>
   </div>
 
   <div class="panel">
@@ -211,6 +228,20 @@
       <span class="tempo">Tempo <input type="range" id="progTempo" min="50" max="170" value="100"> <span id="tempoVal">100</span> bpm</span>
     </div>
     <div class="hint">Everything here is stored as roman numerals, so when you click a new tonic on the wheel the whole progression <b>transposes automatically</b>. Secondary dominants borrow a chord's own V7 to lead into it; borrowed chords pull colour from the parallel major/minor.</div>
+
+    <details class="cowriter" id="cowriter">
+      <summary>Co-writer — the Instructor, in the room</summary>
+      <div class="cw-chips">
+        <button class="cw" data-p="finish">Finish it</button>
+        <button class="cw" data-p="bridge">Write me a bridge</button>
+        <button class="cw" data-p="darker">Make it darker</button>
+        <button class="cw" data-p="jazz">Jazz it up</button>
+        <button class="cw" data-p="melody">Melody seeds</button>
+        <button class="cw" data-p="feel">Strum &amp; feel</button>
+        <button class="cw" data-p="vibe">Name the vibe</button>
+      </div>
+      <div id="coachFullPage"></div>
+    </details>
   </div>
 </div>
 <script>
@@ -460,28 +491,28 @@ function extras(mode){
 // changes really moves in 2-beat cells.) Each carries a famous-song example.
 // Minor-mode romans are Aeolian-spelled (VII = the flat-7 major chord).
 const PROG_LIB=[
- {name:'12-Bar Blues',genre:'blues',mode:'maj',song:'Sweet Home Chicago — Robert Johnson',steps:[['I7',16],['IV7',8],['I7',8],['V7',4],['IV7',4],['I7',4],['V7',4]]},
- {name:'Quick-Change Blues',genre:'blues',mode:'maj',song:'Before You Accuse Me — Bo Diddley',steps:[['I7',4],['IV7',4],['I7',8],['IV7',8],['I7',8],['V7',4],['IV7',4],['I7',4],['V7',4]]},
- {name:'8-Bar Blues',genre:'blues',mode:'maj',song:'Key to the Highway — Big Bill Broonzy',steps:[['I7',4],['V7',4],['IV7',8],['I7',4],['V7',4],['I7',4],['V7',4]]},
- {name:'Doo-Wop',genre:'50s',mode:'maj',song:'Duke of Earl — Gene Chandler',steps:[['I',4],['vi',4],['IV',4],['V',4]]},
- {name:'50s Turnaround',genre:'50s',mode:'maj',song:'Heart and Soul — Hoagy Carmichael',steps:[['I',2],['vi',2],['ii',2],['V7',2]]},
- {name:'Axis',genre:'pop',mode:'maj',song:'Let It Be — The Beatles',steps:[['I',4],['V',4],['vi',4],['IV',4]]},
- {name:'Axis (sad rotation)',genre:'pop',mode:'maj',song:'Numb — Linkin Park',steps:[['vi',4],['IV',4],['I',4],['V',4]]},
- {name:'Pachelbel',genre:'classical',mode:'maj',song:'Canon in D — Pachelbel',steps:[['I',4],['V',4],['vi',4],['iii',4],['IV',4],['I',4],['IV',4],['V',4]]},
- {name:'Jazz ii–V–I',genre:'jazz',mode:'maj',song:'Tune Up — Miles Davis',steps:[['ii7',4],['V7',4],['I',8]]},
- {name:'Rhythm Changes (A)',genre:'jazz',mode:'maj',song:'I Got Rhythm — Gershwin',steps:[['I',2],['VI7',2],['ii7',2],['V7',2],['I',2],['VI7',2],['ii7',2],['V7',2],['I',2],['I7',2],['IV',2],['iv',2],['I',2],['VI7',2],['ii7',2],['V7',2]]},
- {name:'Folk Three-Chord',genre:'folk',mode:'maj',song:'Twist and Shout — The Beatles',steps:[['I',4],['IV',4],['V7',8]]},
- {name:'Pop-Punk',genre:'punk',mode:'maj',song:'All the Small Things — blink-182',steps:[['I',4],['V',4],['IV',4],['V',4]]},
- {name:'Creep Changes',genre:'alt-rock',mode:'maj',song:'Creep — Radiohead',steps:[['I',8],['III7',8],['IV',8],['iv',8]]},
- {name:'Gospel IV–iv',genre:'soul',mode:'maj',song:'In My Life — The Beatles',steps:[['I',4],['IV',4],['iv',4],['I',4]]},
- {name:'Mixolydian Vamp',genre:'southern rock',mode:'maj',song:'Sweet Home Alabama — Skynyrd',steps:[['I',4],['bVII',4],['IV',8]]},
- {name:'Royal Road',genre:'j-pop',mode:'maj',song:'Kiseki — GReeeeN',steps:[['IVmaj7',4],['V7',4],['iii7',4],['vi',4]]},
- {name:'Andalusian',genre:'flamenco',mode:'min',song:'Runaway — Del Shannon',steps:[['i',4],['VII',4],['VI',4],['V7',4]]},
- {name:'Minor ii–V–i',genre:'jazz',mode:'min',song:'Blue Bossa — Kenny Dorham',steps:[['iiø7',4],['V7',4],['i',8]]},
- {name:'Minor Epic',genre:'rock',mode:'min',song:'Zombie — The Cranberries',steps:[['i',4],['VI',4],['III',4],['VII',4]]},
- {name:'Dorian Vamp',genre:'latin',mode:'min',song:'Oye Como Va — Santana',steps:[['i7',4],['IV7',4]]},
- {name:'Aeolian Vamp',genre:'rock',mode:'min',song:'All Along the Watchtower — Hendrix',steps:[['i',2],['VII',2],['VI',2],['VII',2]]},
- {name:'Harmonic-minor cadence',genre:'classical',mode:'min',song:'—',steps:[['iiø7',4],['V7',4],['i',4],['i',4]]},
+ {name:'12-Bar Blues',genre:'blues',mode:'maj',bpm:112,song:'Sweet Home Chicago — Robert Johnson',steps:[['I7',16],['IV7',8],['I7',8],['V7',4],['IV7',4],['I7',4],['V7',4]]},
+ {name:'Quick-Change Blues',genre:'blues',mode:'maj',bpm:112,song:'Before You Accuse Me — Bo Diddley',steps:[['I7',4],['IV7',4],['I7',8],['IV7',8],['I7',8],['V7',4],['IV7',4],['I7',4],['V7',4]]},
+ {name:'8-Bar Blues',genre:'blues',mode:'maj',bpm:100,song:'Key to the Highway — Big Bill Broonzy',steps:[['I7',4],['V7',4],['IV7',8],['I7',4],['V7',4],['I7',4],['V7',4]]},
+ {name:'Doo-Wop',genre:'50s',mode:'maj',bpm:118,song:'Duke of Earl — Gene Chandler',steps:[['I',4],['vi',4],['IV',4],['V',4]]},
+ {name:'50s Turnaround',genre:'50s',mode:'maj',bpm:126,song:'Heart and Soul — Hoagy Carmichael',steps:[['I',2],['vi',2],['ii',2],['V7',2]]},
+ {name:'Axis',genre:'pop',mode:'maj',bpm:120,song:'Let It Be — The Beatles',steps:[['I',4],['V',4],['vi',4],['IV',4]]},
+ {name:'Axis (sad rotation)',genre:'pop',mode:'maj',bpm:110,song:'Numb — Linkin Park',steps:[['vi',4],['IV',4],['I',4],['V',4]]},
+ {name:'Pachelbel',genre:'classical',mode:'maj',bpm:96,song:'Canon in D — Pachelbel',steps:[['I',4],['V',4],['vi',4],['iii',4],['IV',4],['I',4],['IV',4],['V',4]]},
+ {name:'Jazz ii–V–I',genre:'jazz',mode:'maj',bpm:132,song:'Tune Up — Miles Davis',steps:[['ii7',4],['V7',4],['I',8]]},
+ {name:'Rhythm Changes (A)',genre:'jazz',mode:'maj',bpm:152,song:'I Got Rhythm — Gershwin',steps:[['I',2],['VI7',2],['ii7',2],['V7',2],['I',2],['VI7',2],['ii7',2],['V7',2],['I',2],['I7',2],['IV',2],['iv',2],['I',2],['VI7',2],['ii7',2],['V7',2]]},
+ {name:'Folk Three-Chord',genre:'folk',mode:'maj',bpm:124,song:'Twist and Shout — The Beatles',steps:[['I',4],['IV',4],['V7',8]]},
+ {name:'Pop-Punk',genre:'punk',mode:'maj',bpm:160,song:'All the Small Things — blink-182',steps:[['I',4],['V',4],['IV',4],['V',4]]},
+ {name:'Creep Changes',genre:'alt-rock',mode:'maj',bpm:92,song:'Creep — Radiohead',steps:[['I',8],['III7',8],['IV',8],['iv',8]]},
+ {name:'Gospel IV–iv',genre:'soul',mode:'maj',bpm:88,song:'In My Life — The Beatles',steps:[['I',4],['IV',4],['iv',4],['I',4]]},
+ {name:'Mixolydian Vamp',genre:'southern rock',mode:'maj',bpm:128,song:'Sweet Home Alabama — Skynyrd',steps:[['I',4],['bVII',4],['IV',8]]},
+ {name:'Royal Road',genre:'j-pop',mode:'maj',bpm:130,song:'Kiseki — GReeeeN',steps:[['IVmaj7',4],['V7',4],['iii7',4],['vi',4]]},
+ {name:'Andalusian',genre:'flamenco',mode:'min',bpm:120,song:'Runaway — Del Shannon',steps:[['i',4],['VII',4],['VI',4],['V7',4]]},
+ {name:'Minor ii–V–i',genre:'jazz',mode:'min',bpm:140,song:'Blue Bossa — Kenny Dorham',steps:[['iiø7',4],['V7',4],['i',8]]},
+ {name:'Minor Epic',genre:'rock',mode:'min',bpm:84,song:'Zombie — The Cranberries',steps:[['i',4],['VI',4],['III',4],['VII',4]]},
+ {name:'Dorian Vamp',genre:'latin',mode:'min',bpm:126,song:'Oye Como Va — Santana',steps:[['i7',4],['IV7',4]]},
+ {name:'Aeolian Vamp',genre:'rock',mode:'min',bpm:112,song:'All Along the Watchtower — Hendrix',steps:[['i',2],['VII',2],['VI',2],['VII',2]]},
+ {name:'Harmonic-minor cadence',genre:'classical',mode:'min',bpm:100,song:'—',steps:[['iiø7',4],['V7',4],['i',4],['i',4]]},
 ];
 // roman numeral → {semis, q, label} in a given mode (Aeolian spelling in minor)
 function parseRN(rn,mode){
@@ -506,7 +537,7 @@ function parseRN(rn,mode){
 }
 function presets(mode){
   return PROG_LIB.filter(p=>p.mode===mode).map(p=>({
-    n:p.name, song:p.song, genre:p.genre,
+    n:p.name, song:p.song, genre:p.genre, bpm:p.bpm,
     c:p.steps.map(([rn,beats])=>{const r=parseRN(rn,mode);return [r.label,r.semis,r.q,beats];})
   }));
 }
@@ -711,6 +742,28 @@ function syncOverlayBtns(){
 $('ovMirror').addEventListener('click',()=>{ mirrorOn=!mirrorOn; Stats.setPref(TOOL_ID,'mirror',mirrorOn); syncOverlayBtns(); render(); });
 $('ovGravity').addEventListener('click',()=>{ gravityOn=!gravityOn; Stats.setPref(TOOL_ID,'gravity',gravityOn); syncOverlayBtns(); render(); });
 syncOverlayBtns();
+
+// ---- CO-WRITER: the Instructor inline, briefed on the working progression ----
+function progAsText(){
+  const k=KEYS[selPos], keyName=selMode==='maj'?k.maj+' major':k.min.slice(0,-1)+' minor';
+  if(!prog.length)return 'Key: '+keyName+' at '+tempo+' bpm. The progression is empty so far.';
+  const chords=prog.map(c=>c.label+' ('+chordNameL((tonicPc()+c.semis)%12,c.q,c.label)+', '+beatsOf(c)+' beats'+(c.accent?', accented':'')+')').join(' | ');
+  return 'Key: '+keyName+' at '+tempo+' bpm. Working progression: '+chords+'.';
+}
+const CW_PROMPTS={
+  finish:()=>progAsText()+" Suggest 2-3 ways to FINISH or extend this progression. For each: the roman numerals + the actual chords in this key, WHY it works (function + voice-leading in one line), and which famous song makes the same move. Terse — this is a writing room, not a lecture.",
+  bridge:()=>progAsText()+" Write me a BRIDGE: a contrasting 4-8 bar section. Start away from the tonic, pull one borrowed or secondary-dominant colour, and land on a chord that sets up the return. Give romans + real chords + beats per chord so I can punch it straight into the builder. One alternative flavour after.",
+  darker:()=>progAsText()+" Make it DARKER without changing key: minor-mixture swaps (iv, bVI, bIII...), a rotation that starts on the vi, or one substitution per chord. Show the altered progression with real chords, and say what each swap does emotionally in a few words.",
+  jazz:()=>progAsText()+" JAZZ IT UP: extend triads to 7ths/9ths where they'll sit well on guitar, insert a secondary ii-V in front of one target, and offer one tritone substitution. Real chord names + which barre/drop shapes to grab. Keep it playable, not a theory flex.",
+  melody:()=>progAsText()+" Give me 3 MELODY SEEDS over these changes: short motifs (4-8 notes each) described as scale degrees AND as frets on the B and high-E strings, each targeting a chord tone on the strong beats. Different character each (stepwise / arpeggiated / rhythmic hook).",
+  feel:()=>progAsText()+" Prescribe the GROOVE: a strumming or picking pattern (with counting, e.g. 'D  D-U  -U-D'), the right feel (straight/swing/16ths), a tempo check, and how to voice the chords (open vs barre, where on the neck) for this style. One tightening drill if my rhythm wobbles.",
+  vibe:()=>progAsText()+" NAME THE VIBE: which well-known songs share this progression or its bones, what genre conventions it implies (tone, tempo, dynamics), and ONE thing I could change to make it mine instead of theirs.",
+};
+document.querySelectorAll('.cw').forEach(b=>b.addEventListener('click',()=>{
+  const mk=CW_PROMPTS[b.dataset.p]; if(!mk)return;
+  $('cowriter').open=true;
+  if(window.WoodshedCoach&&WoodshedCoach.open)WoodshedCoach.open({prefill:mk(),autosend:true});
+}));
 
 // ==== THE LOOP RING: the progression as a spinning wheel — arcs are holds,
 // a radar needle is "now", the center is the transport. Tap center to play,
@@ -959,6 +1012,17 @@ $('dmDrill').addEventListener('click',()=>{
   $('dmDrill').textContent='Stop';
   dmNextQuestion();
 });
+// grips ⇄ degree map tab (persisted)
+(function(){
+  let v=Stats.getPref(TOOL_ID,'neckView','shapes');
+  function apply(view){ v=view;
+    $('shapes').hidden=view!=='shapes'; $('neckMap').hidden=view!=='map';
+    document.querySelectorAll('#neckView button').forEach(b=>b.classList.toggle('sel',b.dataset.v===view));
+    Stats.setPref(TOOL_ID,'neckView',view);
+  }
+  document.querySelectorAll('#neckView button').forEach(b=>b.addEventListener('click',()=>apply(b.dataset.v)));
+  apply(v==='map'?'map':'shapes');
+})();
 $('dmAnchorE').addEventListener('click',()=>{ dmAnchor='E'; Stats.setPref(TOOL_ID,'degAnchor','E'); renderDegreeMap(diatonic(selPos,selMode)); });
 $('dmAnchorA').addEventListener('click',()=>{ dmAnchor='A'; Stats.setPref(TOOL_ID,'degAnchor','A'); renderDegreeMap(diatonic(selPos,selMode)); });
 
@@ -970,7 +1034,9 @@ $('chords').addEventListener('click',e=>{ const b=e.target.closest('button'); if
 $('related').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; select(+b.dataset.pos,b.dataset.mode); });
 ['palDia','palSec','palBor'].forEach(id=>$(id).addEventListener('click',e=>{ const b=e.target.closest('.pal'); if(!b)return; appendChord(b.dataset.lbl,+b.dataset.semis,b.dataset.q); }));
 $('presets').addEventListener('click',e=>{ const b=e.target.closest('.preset'); if(!b)return;
-  const i=+b.dataset.i; prog=curPresets[i].c.map(([label,semis,q,beats])=>({label,semis,q,beats:beats||4})); stopProg(); setActivePreset(i); renderProg(); });
+  const i=+b.dataset.i; prog=curPresets[i].c.map(([label,semis,q,beats])=>({label,semis,q,beats:beats||4}));
+  if(curPresets[i].bpm){ tempo=curPresets[i].bpm; $('progTempo').value=tempo; $('tempoVal').textContent=tempo; }
+  stopProg(); setActivePreset(i); renderProg(); });
 $('progStrip').addEventListener('click',e=>{ const b=e.target.closest('.pchip'); if(!b)return;
   const d=e.target.closest('.pdur');
   if(d){ // cycle the hold: whole → half → quarter → 2 bars

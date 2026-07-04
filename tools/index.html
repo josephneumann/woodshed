@@ -51,7 +51,20 @@
   /* Two hero moods: light mode = the luthier engraving (day at the bench);
      dark mode = the photograph (night in the workshop). */
   /* --- the front door: a little tweed amp with a lit tube + a swaying VU needle --- */
-  .session-cta{display:flex;flex-direction:column;align-items:center;gap:10px;margin:22px 0 28px}
+  /* the amp lives ON the bench: bottom-center of the hero, floating over the scene.
+     The help pop overlays downward instead of pushing the page. */
+  .session-cta{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:3;
+    display:flex;flex-direction:column;align-items:center;gap:7px;margin:0;width:max-content;max-width:92%}
+  .session-cta .amp-sub{color:#4a3a26;text-shadow:0 1px 6px hsl(42 45% 90%/.85)}
+  .dark .session-cta .amp-sub{color:hsl(40 30% 86%);text-shadow:0 1px 6px hsl(24 40% 4%/.85)}
+  .cta-helppop{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);width:min(560px,86vw);
+    background:hsl(var(--card)/.97);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-md);z-index:6}
+  /* phones: the hero is short and text-anchored — the amp goes back into the flow */
+  @media(max-width:600px){
+    .session-cta{position:static;transform:none;margin:14px 0 20px;max-width:100%}
+    .session-cta .amp-sub{color:hsl(var(--muted-foreground));text-shadow:none}
+    .cta-helppop{position:static;transform:none;width:auto}
+  }
   .amp-row{position:relative;display:flex;align-items:center;justify-content:center}
   .amp-cta{display:inline-flex;text-decoration:none;color:inherit}
   .amp-cta-panel{display:inline-flex;align-items:center;gap:12px;padding:9px 13px;border-radius:11px;
@@ -335,9 +348,8 @@
       <h1>The Woodshed</h1>
       <p>Tools for deliberate and focused learning of guitar.</p>
     </div>
-  </div>
-  <!-- THE front door: a little amp, centered. Tap the plate: the session view opens
-       with the plan beside the Instructor and the coach counts you in. -->
+  <!-- THE front door sits ON the bench: a little amp inside the hero. Tap the plate
+       and the session view opens with the plan beside the Instructor. -->
   <div class="session-cta">
     <div class="amp-row">
       <a class="amp-cta" href="session.html?autostart=1" id="ampCta">
@@ -353,6 +365,7 @@
     </div>
     <small class="amp-sub">~20 min &mdash; the plan and the Instructor, side by side</small>
     <div class="cta-helppop" id="ctaHelp" hidden>The Instructor &mdash; the amber pick in the corner of every page &mdash; reads your plan, stats and files, and sees your practice as it lands. Say "practice with me" anywhere for a guided session strip; record takes in Transcribe and hit <b>Ask the Instructor</b> for one fixable thing; say "log today's session" when you're done. Deep rebuilds still happen in Claude Code via <span class="mono">/instructor</span>.</div>
+  </div>
   </div>
 
   <h2 data-collapse="status" data-collapse-target="sec-status">Where you are</h2>
