@@ -104,6 +104,9 @@
   .nh-dial button{background:none;border:0;color:var(--muted);font-size:11px;padding:3px 8px;cursor:pointer;font-family:inherit}
   .nh-dial button.sel{background:var(--panel);color:var(--accent);font-weight:650}
   .lr-arc.accent{filter:drop-shadow(0 0 4px var(--accent))}
+  .prog-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .prog-clear{flex:none;background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:3px 12px;font-size:12px;cursor:pointer;font-family:inherit;transition:.12s}
+  .prog-clear:hover{border-color:hsl(8 55% 52%);color:hsl(8 60% 60%)}
   .builder-input{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;margin-bottom:6px}
   .iw-wrap{flex:none;text-align:center}
   #inputWheel svg{display:block;width:200px;height:200px}
@@ -227,7 +230,7 @@
       </div>
     </div>
     <div class="palgrp"><div class="lab">Presets</div><div id="presets"></div></div>
-    <div class="ihead" style="margin-top:6px">Your progression — click a chord to remove it, click its note glyph to change the hold</div>
+    <div class="ihead prog-head" style="margin-top:6px"><span>Your progression — click a chord to remove it, click its note glyph to change the hold</span><button type="button" class="prog-clear" id="progClearTop" title="Remove all chords">Clear</button></div>
     <div class="strip" id="progStrip"></div>
     <div class="nexthints" id="nextHints"></div>
     <div class="loopwrap"><div id="loopRing" aria-label="Loop ring — the progression as a spinning loop; tap the center to play"></div>
@@ -1118,7 +1121,9 @@ $('progStrip').addEventListener('click',e=>{ const b=e.target.closest('.pchip');
   }
   prog.splice(+b.dataset.i,1); stopProg(); clearActivePreset(); renderProg(); });
 $('progPlay').onclick=()=>{ pPlaying?stopProg():playProg(); };
-$('progClear').onclick=()=>{ prog=[]; stopProg(); clearActivePreset(); renderProg(); };
+function clearProg(){ prog=[]; stopProg(); clearActivePreset(); renderProg(); }
+$('progClear').onclick=clearProg;
+$('progClearTop').onclick=clearProg;
 $('progLoop').onclick=()=>{ loop=!loop; $('progLoop').classList.toggle('on',loop); savePrefs(); };
 $('progDrums').onclick=()=>{ drumsOn=!drumsOn; $('progDrums').classList.toggle('on',drumsOn); Stats.setPref(TOOL_ID,'drums',drumsOn);
   if(!drumsOn){ Drums.stop(); }
