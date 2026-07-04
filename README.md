@@ -168,6 +168,31 @@ Practice for a year, commit daily, push freely — **none of it can end up in th
 repo.** The Instructor's conversations, your recordings, and your uploads are
 ignored too. The `.env` with your keys never leaves either.
 
+### Syncing your data across machines
+
+Want your practice data on a second computer without exposing it? `sync-data`
+manages a **private** repo overlaid on the same folder — a second git repo (its
+own hidden git dir) that tracks *only* your personal paths and pushes to a private
+GitHub repo. The public app repo never sees it.
+
+```bash
+# First machine — one time:
+node scripts/sync-data.mjs init                 # create it locally
+#   → make an empty PRIVATE repo on github.com/new
+node scripts/sync-data.mjs link https://github.com/<you>/woodshed-data.git
+node scripts/sync-data.mjs save                 # commit + push your data
+
+# Second machine — after a normal clone + npm install:
+node scripts/sync-data.mjs clone https://github.com/<you>/woodshed-data.git
+
+# Day to day, on either machine:
+node scripts/sync-data.mjs save "message"       # push what changed
+node scripts/sync-data.mjs load                 # pull the latest
+```
+
+No symlinks, identical on Windows and macOS. `git` commands still act on the
+public app; `sync-data` acts on your private data.
+
 ---
 
 ## Under the hood

@@ -27,3 +27,6 @@ reference/justinguitar-practical-music-theory.md
 reference/andrew-clarke-connected-guitar.md
 reference/supplementary-resources.md
 reference/resource-library.json
+
+# private personal-data repo (managed by scripts/sync-data.mjs — never public)
+.datagit/
