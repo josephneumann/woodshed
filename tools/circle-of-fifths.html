@@ -104,6 +104,14 @@
   .nh-dial button{background:none;border:0;color:var(--muted);font-size:11px;padding:3px 8px;cursor:pointer;font-family:inherit}
   .nh-dial button.sel{background:var(--panel);color:var(--accent);font-weight:650}
   .lr-arc.accent{filter:drop-shadow(0 0 4px var(--accent))}
+  .builder-input{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;margin-bottom:6px}
+  .iw-wrap{flex:none;text-align:center}
+  #inputWheel svg{display:block;width:200px;height:200px}
+  #inputWheel .iw-seg{cursor:pointer;transition:opacity .1s,filter .1s}
+  #inputWheel .iw-seg:hover{filter:brightness(1.25)}
+  #inputWheel .iw-lbl{pointer-events:none;font-weight:600}
+  .iw-cap{font-size:10.5px;color:var(--muted);margin-top:4px;max-width:200px}
+  .input-pals{flex:1;min-width:260px}
   .cowriter{margin-top:22px;border-top:1px solid var(--line);padding-top:16px}
   .cowriter summary{cursor:pointer;font-size:14px;color:var(--accent);font-weight:600;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:2px}
   .cowriter summary::before{content:"▸";transition:transform .15s}
@@ -207,9 +215,17 @@
 
   <div class="panel">
     <h2>Progression builder</h2>
-    <div class="palgrp"><div class="lab">Diatonic</div><div id="palDia"></div></div>
-    <div class="palgrp"><div class="lab">Secondary dominants</div><div id="palSec"></div></div>
-    <div class="palgrp"><div class="lab">Borrowed / modal interchange</div><div id="palBor"></div></div>
+    <div class="builder-input">
+      <div class="iw-wrap">
+        <div id="inputWheel" aria-label="Tap a key to add its chord"></div>
+        <div class="iw-cap">tap to add · outer ring major, inner ring minor</div>
+      </div>
+      <div class="input-pals">
+        <div class="palgrp"><div class="lab">Diatonic</div><div id="palDia"></div></div>
+        <div class="palgrp"><div class="lab">Secondary dominants</div><div id="palSec"></div></div>
+        <div class="palgrp"><div class="lab">Borrowed / modal interchange</div><div id="palBor"></div></div>
+      </div>
+    </div>
     <div class="palgrp"><div class="lab">Presets</div><div id="presets"></div></div>
     <div class="ihead" style="margin-top:6px">Your progression — click a chord to remove it, click its note glyph to change the hold</div>
     <div class="strip" id="progStrip"></div>
@@ -553,6 +569,52 @@ function setActivePreset(i){
 function clearActivePreset(){ setActivePreset(-1); }
 
 function palHTML(arr){ return arr.map(([lbl,semis,q])=>`<button class="pal" data-semis="${semis}" data-q="${q}" data-lbl="${lbl}"><span class="rn">${lbl}</span> ${chordNameL((tonicPc()+semis)%12,q,lbl)}</button>`).join(''); }
+// forward roman-numeral namer for the input wheel (semis above tonic + quality)
+function romanOf(semis,q){
+  const s=((semis%12)+12)%12;
+  const NM={0:'I',1:'♭II',2:'II',3:'♭III',4:'III',5:'IV',6:'♯IV',7:'V',8:'♭VI',9:'VI',10:'♭VII',11:'VII'};
+  let base=NM[s]||'I';
+  if(q==='min'||q==='min7'||q==='dim'||q==='dim7'||q==='m7b5')base=base.replace(/[IV]+/,m=>m.toLowerCase());
+  const suf=q==='dom7'?'7':q==='maj7'?'maj7':q==='min7'?'7':q==='dim'?'°':q==='dim7'?'°7':q==='m7b5'?'ø7':'';
+  return base+suf;
+}
+// a compact clickable circle of fifths — its own input device; a click APPENDS
+// that key's chord to the progression (diatonic chords keep their true quality)
+function buildInputWheel(){
+  const host=$('inputWheel'); if(!host)return;
+  const CX=100,CY=100, OUT=[68,92,80], INN=[42,66,54];
+  const pol=(r,d)=>{const a=(d-90)*Math.PI/180;return [CX+r*Math.cos(a),CY+r*Math.sin(a)];};
+  const sec=(r0,r1,a0,a1)=>{const[x0,y0]=pol(r1,a0),[x1,y1]=pol(r1,a1),[x2,y2]=pol(r0,a1),[x3,y3]=pol(r0,a0);
+    const f=n=>n.toFixed(1);return `M${f(x0)} ${f(y0)} A${r1} ${r1} 0 0 1 ${f(x1)} ${f(y1)} L${f(x2)} ${f(y2)} A${r0} ${r0} 0 0 0 ${f(x3)} ${f(y3)} Z`;};
+  const dia=diatonic(selPos,selMode);
+  const diaByRoot={}; dia.forEach(c=>{ (diaByRoot[c.root]=diaByRoot[c.root]||[]).push(c); });
+  const MAJQ=['maj','maj7','dom7'], MINQ=['min','min7','dim','dim7','m7b5'];
+  let g='';
+  for(let i=0;i<12;i++){
+    const slot=((i-selPos)%12+12)%12, ai=slot*30, a0=ai-15, a1=ai+15;
+    [['maj',OUT,majRoot(i)],['min',INN,minRoot(i)]].forEach(([ring,R,pc])=>{
+      const hit=(diaByRoot[pc]||[]).find(c=>(ring==='maj'?MAJQ:MINQ).includes(c.q));
+      const isTonic=(pc===tonicPc()&&((selMode==='maj')===(ring==='maj')));
+      const fill=isTonic?'var(--accent)':(hit?'var(--accent2)':'var(--panel2,#1f242e)');
+      const tcol=isTonic?'#1a1407':(hit?'#06140b':'var(--ink)');
+      const [lx,ly]=pol(R[2],ai);
+      const lbl=hit?hit.name:pcName(pc,KEYS[selPos].sig<0)+(ring==='min'?'m':'');
+      g+=`<path class="iw-seg" data-pc="${pc}" data-ring="${ring}" d="${sec(R[0],R[1],a0,a1)}" fill="${fill}" stroke="var(--panel)" stroke-width="1.5"/>`;
+      g+=`<text class="iw-lbl" x="${lx.toFixed(1)}" y="${(ly+3).toFixed(1)}" text-anchor="middle" font-size="${ring==='maj'?9:7.5}" fill="${tcol}">${lbl}</text>`;
+    });
+  }
+  g+=`<circle cx="${CX}" cy="${CY}" r="40" fill="var(--panel)" stroke="var(--line)"/>`;
+  g+=`<text x="${CX}" y="${CY-2}" text-anchor="middle" font-size="17" font-weight="600" fill="var(--ink)" style="font-family:var(--font-display)">${selMode==='maj'?KEYS[selPos].maj:KEYS[selPos].min.slice(0,-1)}</text>`;
+  g+=`<text x="${CX}" y="${CY+12}" text-anchor="middle" font-size="8" fill="var(--muted)">${selMode==='maj'?'major':'minor'}</text>`;
+  host.innerHTML=`<svg viewBox="0 0 200 200">${g}</svg>`;
+  host.querySelectorAll('.iw-seg').forEach(el=>el.addEventListener('click',()=>{
+    const pc=+el.dataset.pc, ring=el.dataset.ring;
+    const hit=(diaByRoot[pc]||[]).find(c=>(ring==='maj'?MAJQ:MINQ).includes(c.q));
+    if(hit){ appendChord(hit.rn,((hit.root-tonicPc())%12+12)%12,hit.q); return; }
+    const q=ring==='maj'?'maj':'min', semis=((pc-tonicPc())%12+12)%12;
+    appendChord(romanOf(semis,q),semis,q);
+  }));
+}
 function renderPalettes(dia){
   $('palDia').innerHTML = palHTML(dia.map(c=>[c.rn,(c.root-tonicPc()+12)%12,c.q]));
   const ex=extras(selMode);
@@ -560,6 +622,7 @@ function renderPalettes(dia){
   $('palBor').innerHTML = palHTML(ex.bor);
   curPresets=presets(selMode);
   $('presets').innerHTML = curPresets.map((p,i)=>`<button class="preset" data-i="${i}" aria-pressed="false" title="${p.song?p.song+' · ':''}${p.genre}">${p.n}</button>`).join('');
+  buildInputWheel();
   // re-apply active state after re-render
   if(activePreset>=0 && activePreset<curPresets.length) setActivePreset(activePreset);
 }
@@ -679,8 +742,17 @@ const progBeats=()=>prog.reduce((a,c)=>a+beatsOf(c),0);   // total beats in the 
 function scheduleProg(a, startAbs){
   const bd=beatDurS(); pStart = startAbs!=null ? startAbs : a.currentTime+0.08;
   let beat=0;
-  prog.forEach(c=>{ const root=(tonicPc()+c.semis)%12; const off=(pStart-a.currentTime)+beat*bd;
-    playChord(root,c.q,Math.max(0,off),beatsOf(c)*bd*0.96,pBus,c.accent?0.34:0.21); beat+=beatsOf(c); });
+  prog.forEach(c=>{ const root=(tonicPc()+c.semis)%12, nb=beatsOf(c);
+    // re-articulate on EVERY beat so a long hold doesn't decay into silence — a
+    // gentle quarter-note comp: the chord's downbeat rings out, the rest pulse
+    // softer underneath. Fills the time so nothing sounds like "chord … pause".
+    for(let k=0;k<nb;k++){
+      const off=(pStart-a.currentTime)+(beat+k)*bd;
+      const down=(k===0);
+      const vol=down?(c.accent?0.32:0.24):0.15;
+      playChord(root,c.q,Math.max(0,off),bd*(down?1.35:0.95),pBus,vol);
+    }
+    beat+=nb; });
   scheduleClickTrack(a, pStart, bd);
 }
 function animateProg(a){ const bd=beatDurS(); const chips=[...document.querySelectorAll('#progStrip .pchip')];
