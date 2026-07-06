@@ -21,6 +21,24 @@
   .controls{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
   .controls label{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center}
   select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;cursor:pointer}
+  /* interval-set picker: a summary button that opens a preset + per-interval popover */
+  .setctl{position:relative;display:inline-flex}
+  .setbtn{display:inline-flex;align-items:center;gap:7px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 11px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}
+  .setbtn:hover{border-color:var(--accent)}
+  .setbtn svg{width:13px;height:13px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .setpop{position:absolute;top:calc(100% + 7px);left:0;z-index:40;width:296px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px hsl(26 30% 6%/.4);padding:14px}
+  .setpop[hidden]{display:none}
+  .setpop .plbl{font-size:11px;color:var(--muted);margin:0 0 8px}
+  .setpop .plbl.two{margin-top:14px}
+  .presets{display:flex;flex-wrap:wrap;gap:6px}
+  .preset{font-size:12.5px;padding:5px 11px;border-radius:7px;border:1px solid var(--line);background:none;color:var(--muted);cursor:pointer;font-family:inherit}
+  .preset:hover{border-color:var(--accent);color:var(--ink)}
+  .preset.on{border-color:var(--accent);color:var(--accent);font-weight:600}
+  .ivgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .iv{font-size:14px;font-weight:600;padding:9px 0;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;font-family:inherit;transition:.12s}
+  .iv:hover{border-color:var(--accent)}
+  .iv.on{background:var(--accent);color:#1a1407;border-color:var(--accent)}
+  .ivcount{margin:12px 0 0;font-size:11px;color:var(--muted);text-align:right}
   .play{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 2px}
   .pbtn{padding:13px 20px;font-size:16px;font-weight:600;border:none;border-radius:10px;background:var(--accent);color:#1a1407;cursor:pointer}
   .rbtn{padding:11px 14px;font-size:13px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink);cursor:pointer}
@@ -73,7 +91,19 @@
       <label>Mode
         <div class="seg" id="mode"><button data-m="interval" class="sel">Intervals</button><button data-m="chord">Chord quality</button><button data-m="degree">Scale degrees</button></div>
       </label>
-      <label>Set <select id="difficulty"></select></label>
+      <label id="diffWrap">Set <select id="difficulty"></select></label>
+      <label id="setWrap">Intervals
+        <span class="setctl">
+          <button type="button" class="setbtn" id="setBtn" aria-haspopup="true" aria-expanded="false"><span id="setBtnLabel">Common</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="setpop" id="setPop" hidden>
+            <p class="plbl">Start from a preset</p>
+            <div class="presets" id="ivPresets"></div>
+            <p class="plbl two">Tap any interval to include or drop it</p>
+            <div class="ivgrid" id="ivGrid"></div>
+            <p class="ivcount" id="ivCount"></p>
+          </div>
+        </span>
+      </label>
       <label id="dirWrap">Play
         <div class="seg" id="dir"><button data-d="both" class="sel">Seq + together</button><button data-d="asc">Ascending</button><button data-d="desc">Descending</button><button data-d="harm">Together</button></div>
       </label>
@@ -126,6 +156,18 @@ const CHORDS={'Triads':{'Major':[0,4,7],'Minor':[0,3,7],'Diminished':[0,3,6],'Au
 const CHORD_RECIPE={'Major':'1 – 3 – 5','Minor':'1 – ♭3 – 5','Diminished':'1 – ♭3 – ♭5','Augmented':'1 – 3 – ♯5','Maj7':'1 – 3 – 5 – 7','Dominant 7':'1 – 3 – 5 – ♭7','Dom7':'1 – 3 – 5 – ♭7','Min7':'1 – ♭3 – 5 – ♭7','Min7♭5':'1 – ♭3 – ♭5 – ♭7','Dim7':'1 – ♭3 – ♭5 – ♭♭7','Dim':'1 – ♭3 – ♭5'};
 const MAJOR_DEG=[['1',0],['2',2],['3',4],['4',5],['5',7],['6',9],['7',11]];
 const DEG_SETS={'Do Re Mi (1 2 3)':['1','2','3'],'Pentatonic (1 2 3 5 6)':['1','2','3','5','6'],'Full major (1–7)':['1','2','3','4','5','6','7']};
+
+// interval-set selection: the chosen intervals ARE the source of truth; presets just fill them.
+function orderIv(a){return INTERVALS.map(i=>i[0]).filter(n=>a.includes(n));} // canonical semitone order
+let intervalSel=(function(){
+  const saved=Stats.getPref(TOOL,'intervalSel',null);
+  if(Array.isArray(saved)){const clean=orderIv(saved.filter(n=>INT_SETS['All 12'].includes(n)));if(clean.length)return clean;}
+  const legacy=Stats.getPref(TOOL,'diff_interval',null); // migrate the old preset-name pref
+  if(legacy&&INT_SETS[legacy])return INT_SETS[legacy].slice();
+  return INT_SETS['Common'].slice();
+})();
+function activeIntervalSet(){return intervalSel.length?intervalSel:INT_SETS['Common'];}
+function intervalPresetMatch(){for(const k in INT_SETS){const p=INT_SETS[k];if(p.length===intervalSel.length&&p.every(n=>intervalSel.includes(n)))return k;}return null;}
 
 const MAXF=15,NUT=44,FW=46,SG=28,TOP=24; // fretboard geometry for this view (px)
 const midiOf=p=>OPEN_MIDI[p.s]+p.f, posName=p=>NOTES[midiOf(p)%12]; // {string,fret} → MIDI / note name
@@ -268,6 +310,8 @@ function fillDifficulty(){
 }
 function modeHint(){
   $('modehint').innerHTML=mode==='interval'?'Hear it → guess → then SEE it as a real fingering and hear it again with a song you know. Blue = lower note, amber = higher. Use <b>Fretboard</b> to show a guitar voicing across strings, the same interval living inside a chord grip, or the plain single‑string view.':mode==='chord'?'Name the chord <em>quality</em>. It arpeggiates (one note at a time) then plays together. Listen to the overall colour.':'A key is set (I–IV–V–I), then a note plays. Name its scale degree. Degrees are intervals measured from the root.';
+  $('setWrap').style.display=mode==='interval'?'flex':'none'; // the per-interval picker (interval mode)
+  $('diffWrap').style.display=mode==='interval'?'none':'flex'; // the preset <select> (chord / degree modes)
   $('dirWrap').style.display=mode==='interval'?'flex':'none';
   $('layoutWrap').style.display=mode==='interval'?'flex':'none';
   $('chordWrap').style.display=(mode==='interval'&&layout==='chord')?'flex':'none';
@@ -281,11 +325,11 @@ function newQuestion(){
   const diff=$('difficulty').value;
   if(mode==='interval'){
     if(layout==='chord'){
-      const r=pickChordPair(INT_SETS[diff],$('chordSel').value);
+      const r=pickChordPair(activeIntervalSet(),$('chordSel').value);
       if(r){cur={type:'interval',name:r.name,semi:r.semi,pos:r.pos,chordPos:r.chord.notes,chordName:r.chord.name};}
     }
     if(!cur){ // voicing, single string, or chord-context fallback (Task 1)
-      const name=pickAdaptiveItem(INT_SETS[diff]);const semi=INTERVALS.find(i=>i[0]===name)[1];
+      const name=pickAdaptiveItem(activeIntervalSet());const semi=INTERVALS.find(i=>i[0]===name)[1];
       let pos;
       if(layout==='string'){const base=1+Math.floor(Math.random()*(MAXF-semi-1));pos=[{s:0,f:base},{s:0,f:base+semi}];}
       else pos=pickVoicing(semi);
@@ -369,7 +413,7 @@ function drawBoard(){
     const x1=cx(cur.pos[0]),x2=cx(cur.pos[1]),yb=TOP+SG*5+34;const p=document.createElementNS(ns,'path');p.setAttribute('d',`M${x1} ${yb-5} L${x1} ${yb} L${x2} ${yb} L${x2} ${yb-5}`);p.setAttribute('stroke','var(--accent)');p.setAttribute('fill','none');p.setAttribute('stroke-width',1.5);svg.appendChild(p);const lt=document.createElementNS(ns,'text');lt.setAttribute('x',(x1+x2)/2);lt.setAttribute('y',yb+14);lt.setAttribute('fill','var(--accent)');lt.setAttribute('font-size','11');lt.setAttribute('text-anchor','middle');lt.textContent=cur.semi+' semitones';svg.appendChild(lt);}
 }
 
-function buildChoices(){const wrap=$('choices');wrap.innerHTML='';let opts=mode==='interval'?INT_SETS[$('difficulty').value]:mode==='chord'?Object.keys(CHORDS[$('difficulty').value]):DEG_SETS[$('difficulty').value];opts.forEach(o=>{const b=document.createElement('button');b.textContent=o;b.onclick=()=>answer(o,b);wrap.appendChild(b);});}
+function buildChoices(){const wrap=$('choices');wrap.innerHTML='';let opts=mode==='interval'?activeIntervalSet():mode==='chord'?Object.keys(CHORDS[$('difficulty').value]):DEG_SETS[$('difficulty').value];opts.forEach(o=>{const b=document.createElement('button');b.textContent=o;b.onclick=()=>answer(o,b);wrap.appendChild(b);});}
 
 function answer(name,btn){
   if(!cur||cur.answered)return;cur.answered=true;
@@ -466,6 +510,47 @@ $('skipbtn').onclick=()=>{
   newQuestion();
 };
 
+// ---- interval-set popover ----
+function buildIvSelector(){
+  const pg=$('ivPresets');pg.innerHTML='';
+  Object.keys(INT_SETS).forEach(name=>{
+    const b=document.createElement('button');b.type='button';b.className='preset';b.textContent=name;b.dataset.p=name;
+    b.onclick=()=>{intervalSel=INT_SETS[name].slice();commitIvSel();};
+    pg.appendChild(b);
+  });
+  const gg=$('ivGrid');gg.innerHTML='';
+  INTERVALS.forEach(iv=>{
+    const b=document.createElement('button');b.type='button';b.className='iv';b.textContent=iv[0];b.dataset.n=iv[0];b.title=INTERVAL_LONG[iv[0]];
+    b.onclick=()=>{
+      if(intervalSel.includes(iv[0])){if(intervalSel.length<=1)return;intervalSel=intervalSel.filter(n=>n!==iv[0]);} // keep at least one
+      else intervalSel=orderIv(intervalSel.concat(iv[0]));
+      commitIvSel();
+    };
+    gg.appendChild(b);
+  });
+  renderIvSelector();
+}
+function renderIvSelector(){
+  const m=intervalPresetMatch();
+  $('setBtnLabel').textContent=m||('Custom · '+intervalSel.length);
+  [...$('ivPresets').children].forEach(b=>b.classList.toggle('on',b.dataset.p===m));
+  [...$('ivGrid').children].forEach(b=>b.classList.toggle('on',intervalSel.includes(b.dataset.n)));
+  $('ivCount').textContent=intervalSel.length+' of 12 selected';
+}
+function commitIvSel(){
+  Stats.setPref(TOOL,'intervalSel',intervalSel);
+  renderIvSelector();
+  $('choices').innerHTML='';$('revealPanel').classList.remove('show');cur=null; // the pool changed — drop the live question
+}
+function toggleIvPop(open){
+  const p=$('setPop');const willOpen=open!==undefined?open:p.hasAttribute('hidden');
+  if(willOpen){p.removeAttribute('hidden');$('setBtn').setAttribute('aria-expanded','true');}
+  else{p.setAttribute('hidden','');$('setBtn').setAttribute('aria-expanded','false');}
+}
+$('setBtn').onclick=e=>{e.stopPropagation();toggleIvPop();};
+document.addEventListener('click',e=>{if(!$('setPop').hasAttribute('hidden')&&!e.target.closest('#setWrap'))toggleIvPop(false);});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('setPop').hasAttribute('hidden'))toggleIvPop(false);});
+
 // controls
 document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');
@@ -515,7 +600,7 @@ document.addEventListener('keydown',e=>{if(e.target instanceof Element && e.targ
   $('study').checked=!!study;
 })();
 
-fillDifficulty();modeHint();renderHist30();
+buildIvSelector();fillDifficulty();modeHint();renderHist30();
 Stats.activity(TOOL); // count the visit toward practice minutes
 </script>
 </body>
