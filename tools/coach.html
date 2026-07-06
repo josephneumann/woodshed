@@ -17,6 +17,10 @@
     -webkit-font-smoothing:antialiased;display:flex;flex-direction:column;overflow:hidden}
   .app-shell{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;width:100%;
     max-width:1280px;margin:0 auto;padding:12px 20px 16px}
+  /* a running guided session floats a fixed strip at the viewport bottom; reserve
+     a lane below the chat panel so it clears the docked composer (coach.js toggles
+     body.wsc-ps-live) */
+  body.wsc-ps-live .app-shell{padding-bottom:calc(68px + env(safe-area-inset-bottom))}
   /* slim one-line masthead — the tall version belongs on documents, not apps */
   .coach-mast{flex:none;display:flex;align-items:baseline;gap:14px;padding:2px 4px 10px}
   .coach-mast .kicker{margin:0}

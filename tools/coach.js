@@ -670,6 +670,9 @@
     var state = psLoad();
     if (psTimer) { clearInterval(psTimer); psTimer = null; }
     if (psEl && psEl.parentNode) { psEl.parentNode.removeChild(psEl); psEl = null; }
+    // on the coach full page the composer is docked at the panel bottom — clear
+    // the class first so the reserved lane collapses when no session is running
+    document.body.classList.remove('wsc-ps-live');
     if (!state || !state.running) return;
     if (state.cur >= state.steps.length) { finishPracticeSession(state); return; }
     psInjectStyles();
@@ -730,6 +733,9 @@
     psEl.appendChild(nextBtn); psEl.appendChild(endBtn);
 
     document.body.appendChild(psEl);
+    // full page only: reserve a lane below the chat panel so the fixed strip
+    // sits under the docked composer instead of covering it
+    if (FULL) document.body.classList.add('wsc-ps-live');
     requestAnimationFrame(function () { if (psEl) psEl.classList.add('show'); });
 
     function tick() {

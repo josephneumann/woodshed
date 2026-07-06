@@ -13,6 +13,9 @@
 *{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;font-family:var(--font-ui);background:var(--bg);color:var(--ink);display:flex;flex-direction:column;padding:14px 20px 16px}
+/* a running guided session floats a fixed strip at the viewport bottom; reserve a
+   lane so it clears the docked chat composer (coach.js toggles body.wsc-ps-live) */
+body.wsc-ps-live{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
 .wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;width:100%;max-width:1360px;margin:0 auto}
 /* compact masthead — this page is a workspace, not a brochure */
 .sess-mast{display:flex;align-items:baseline;gap:14px;margin:2px 0 10px;flex-wrap:wrap}
